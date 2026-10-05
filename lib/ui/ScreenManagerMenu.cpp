@@ -236,6 +236,17 @@ void formatSleepMinutes(char *out, size_t size, uint32_t minutes) {
 
 }  // namespace
 
+void ScreenManager::goHome() {
+  // The active collection's browse tabs too, so opening it lands on its
+  // root rather than wherever it was left.
+  tabs_.stack(navigation::Tab::Library).popToRoot();
+  tabs_.stack(navigation::Tab::Files).popToRoot();
+  tabs_.restoreTabs(navigation::Tab::Menu, tabs_.lastBrowseTab(), tabs_.activeCollection());
+  tabs_.activeStack().popToRoot();
+  homeSelection_ = 0;
+  render();
+}
+
 // Settings' rows. A table, so adding one never renumbers the handler for
 // the rows after it -- which is exactly what the two ADR 0018 rows would
 // otherwise have done to USB drive.

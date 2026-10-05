@@ -504,8 +504,8 @@ int g_injectedDetents = 0;
 // display contents (see LvglGlue::writeScreenshotToSerial(), decoded by
 // scripts/screenshot.py into a BMP) -- lets a UI bug be diagnosed from an
 // actual capture instead of a description or a phone photo. "TAP x y"
-// taps the screen, "SWIPE x1 y1 x2 y2" drags across it, and "KNOB n"
-// turns the knob n detents, so a flow can be
+// taps the screen, "HOLD x y ms" holds a finger there, "SWIPE x1 y1 x2 y2"
+// drags across it, and "KNOB n" turns the knob n detents, so a flow can be
 // driven without a hand on the device. "INFO" prints the reset reason:
 // after a crash the TinyUSB serial port comes back too late to show the
 // panic itself.
@@ -534,6 +534,15 @@ void pollSerialCommands() {
           g_injectedTapToY = static_cast<int16_t>(toY);
           g_injectedTapStartMs = millis();
           g_injectedTapUntilMs = g_injectedTapStartMs + kInjectedSwipeMs;
+        } else if (sscanf(buf, "HOLD %d %d %d", &x, &y, &toX) == 3) {
+          // A finger held still for toX ms: with KNOB sent meanwhile, the
+          // hold-and-turn gestures (unlock, shuttle) can be driven too.
+          g_injectedTapX = static_cast<int16_t>(x);
+          g_injectedTapY = static_cast<int16_t>(y);
+          g_injectedTapToX = g_injectedTapX;
+          g_injectedTapToY = g_injectedTapY;
+          g_injectedTapStartMs = millis();
+          g_injectedTapUntilMs = g_injectedTapStartMs + static_cast<uint32_t>(toX);
         } else if (sscanf(buf, "TAP %d %d", &x, &y) == 2) {
           g_injectedTapX = static_cast<int16_t>(x);
           g_injectedTapY = static_cast<int16_t>(y);
@@ -556,6 +565,19 @@ void pollSerialCommands() {
           // (ADR 0022) -- the pitches are assigned by ear, so tuning them
           // means hearing them back to back.
           g_toneOutput.blip(static_cast<uint16_t>(x), 240);
+        } else if (strcmp(buf, "HOME") == 0) {
+          // Back to Home from anywhere, for scripted tours of the UI
+          // (scripts/readme-screenshots.py): a known place to start from.
+          // Wakes the display too: a tap on a dark screen only wakes it, so
+          // a tour's first tap would otherwise be swallowed.
+          g_idleTimer.noteActivity(millis());
+          g_screenManager.goHome();
+          Serial.println("[where] 0");
+        } else if (strcmp(buf, "WHERE") == 0) {
+          // The screen on top, as navigation::ScreenKind's value -- what a
+          // scripted tour checks after each step.
+          Serial.printf("[where] %d\n",
+                        static_cast<int>(g_tabs.activeStack().current().kind));
         } else if (strcmp(buf, "BT") == 0) {
           // The Bluetooth link at a glance (ADR 0027), for checking on the
           // device without the UI.

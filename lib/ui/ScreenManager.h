@@ -101,6 +101,13 @@ class ScreenManager : public input::KnobSink {
   // the axis has to be in place first.
   void restoreBrowseAxis();
 
+  // Back to Home with its first entry selected and the active collection's
+  // browse tabs at their roots, from anywhere -- the known
+  // starting point of a scripted tour (the HOME serial command,
+  // scripts/readme-screenshots.py). The carousel wraps, so knob steps only
+  // lead somewhere predictable from a known selection.
+  void goHome();
+
   // Call after anything that might change what should be on screen:
   // a tap, a swipe, playback starting/stopping.
   void render();

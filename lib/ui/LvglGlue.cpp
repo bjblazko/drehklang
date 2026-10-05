@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <esp_heap_caps.h>
 
+#include <algorithm>
 #include <cstring>
 
 #include "Theme.h"
@@ -116,8 +117,24 @@ void LvglGlue::writeScreenshotToSerial() const {
   }
   Serial.printf("SCREENSHOT %d %d 16\n", drivers::kLcdHorRes,
                 drivers::kLcdVerRes);
-  Serial.write(reinterpret_cast<const uint8_t *>(shadowFrame_),
-               drivers::kLcdHorRes * drivers::kLcdVerRes * sizeof(uint16_t));
+  // In chunks, waiting for room: one 259 KB write gave up part-way on the
+  // 3.x core's TinyUSB CDC (197 of 259 KB arrived, 2026-10-05). A host
+  // that stops reading ends it after kStallMs instead of hanging the loop.
+  constexpr size_t kChunkBytes = 512;
+  constexpr uint32_t kStallMs = 2000;
+  const auto *bytes = reinterpret_cast<const uint8_t *>(shadowFrame_);
+  size_t left = drivers::kLcdHorRes * drivers::kLcdVerRes * sizeof(uint16_t);
+  uint32_t lastProgressMs = millis();
+  while (left > 0 && millis() - lastProgressMs < kStallMs) {
+    const size_t written = Serial.write(bytes, std::min(left, kChunkBytes));
+    if (written == 0) {
+      delay(1);
+      continue;
+    }
+    bytes += written;
+    left -= written;
+    lastProgressMs = millis();
+  }
   Serial.flush();
 }
 
