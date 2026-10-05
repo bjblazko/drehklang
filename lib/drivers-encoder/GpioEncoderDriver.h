@@ -4,7 +4,7 @@
 
 #include "EncoderDriver.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // GPIO7/GPIO8 quadrature decoder for the primary MCU's rotation-only
 // encoder (no push button -- see device.md, ADR 0004). Interrupt-driven
@@ -71,4 +71,4 @@ class GpioEncoderDriver : public input::EncoderDriver {
   static GpioEncoderDriver *instance_;
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

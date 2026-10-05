@@ -4,7 +4,7 @@
 #include <cctype>
 #include <cstdio>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -99,4 +99,4 @@ void CoverArtCache::ensureCoverCached(const std::string &albumFolderPath,
                  writer);
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

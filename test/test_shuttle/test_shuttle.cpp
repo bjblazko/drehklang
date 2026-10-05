@@ -6,12 +6,12 @@
 #include "PlaybackStateMachine.h"
 #include "Shuttle.h"
 
-using dialhard::playback::KeyValueStore;
-using dialhard::playback::PlaybackDriver;
-using dialhard::playback::PlaybackState;
-using dialhard::playback::PlaybackStateMachine;
-using dialhard::playback::Shuttle;
-using dialhard::playback::VolumePersistence;
+using drehklang::playback::KeyValueStore;
+using drehklang::playback::PlaybackDriver;
+using drehklang::playback::PlaybackState;
+using drehklang::playback::PlaybackStateMachine;
+using drehklang::playback::Shuttle;
+using drehklang::playback::VolumePersistence;
 
 void setUp() {}
 void tearDown() {}
@@ -34,7 +34,7 @@ class FakeDriver : public PlaybackDriver {
   void setOutputGain(uint16_t) override {}
   bool isRunning() override { return true; }
   uint32_t durationSeconds() override { return duration; }
-  dialhard::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
+  drehklang::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
     return {};
   }
   void loop() override {}
@@ -257,7 +257,7 @@ void test_track_change_drops_the_hold() {
 
 void test_repeat_one_restart_of_same_path_drops_the_hold() {
   Fixture f;
-  f.playback.setRepeat(dialhard::playback::RepeatMode::One);
+  f.playback.setRepeat(drehklang::playback::RepeatMode::One);
   f.shuttle.hold(0);
   f.shuttle.turn(3, 0);
 
@@ -275,7 +275,7 @@ void test_hold_on_cued_track_then_tick_stays_held() {
   PlaybackStateMachine cuedSm{cuedDriver, cuedVolume};
   Shuttle cuedShuttle{cuedSm};
   cuedSm.begin();
-  cuedSm.cue({"/a.mp3"}, 0, false, dialhard::playback::PlayScope::File, 1234, 5,
+  cuedSm.cue({"/a.mp3"}, 0, false, drehklang::playback::PlayScope::File, 1234, 5,
              0);
 
   TEST_ASSERT_TRUE(cuedShuttle.hold(2000));  // hold() resumes the cued track.

@@ -9,7 +9,7 @@
 #include "PlaylistBuilder.h"
 #include "ResumeSource.h"
 
-namespace dialhard::resume {
+namespace drehklang::resume {
 
 // Resumes the play queue (ADR 0012). Only the current track's path, the
 // scope and the collection it came from are saved, not the queue: the queue
@@ -101,4 +101,4 @@ class PlaybackResumeSource : public ResumeSource {
   FileExists fileExists_;
 };
 
-}  // namespace dialhard::resume
+}  // namespace drehklang::resume

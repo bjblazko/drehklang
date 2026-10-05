@@ -3,7 +3,7 @@
 #include "RawFile.h"
 #include "TagResult.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 // Parses ID3v2.3/2.4 frames (TIT2/TPE1/TALB/TRCK) from the start of an
 // MP3 file, falling back to a trailing 128-byte ID3v1 tag if no ID3v2
@@ -17,4 +17,4 @@ class Id3v2Parser {
   static TagResult parse(RawFile &file);
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

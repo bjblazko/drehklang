@@ -5,7 +5,7 @@
 
 #include "ToneGenerator.h"
 
-using dialhard::playback::ToneGenerator;
+using drehklang::playback::ToneGenerator;
 
 void setUp() {}
 void tearDown() {}

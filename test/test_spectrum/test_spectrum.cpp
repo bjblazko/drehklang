@@ -6,7 +6,7 @@
 
 #include "Spectrum.h"
 
-using dialhard::signal::Spectrum;
+using drehklang::signal::Spectrum;
 
 void setUp() {}
 void tearDown() {}

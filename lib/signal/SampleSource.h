@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace dialhard::signal {
+namespace drehklang::signal {
 
 // Where a scope gets its samples (ADR 0024): the DAC's ring for the tone
 // generator now, the microphone for the recorder and analyzer later.
@@ -21,4 +21,4 @@ class SampleSource {
   virtual size_t readRecent(int16_t *dst, size_t maxSamples) = 0;
 };
 
-}  // namespace dialhard::signal
+}  // namespace drehklang::signal

@@ -1,6 +1,6 @@
 #include "GpioEncoderDriver.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 GpioEncoderDriver *GpioEncoderDriver::instance_ = nullptr;
 
@@ -67,4 +67,4 @@ void IRAM_ATTR GpioEncoderDriver::isr() {
   if (instance_) instance_->handleInterrupt();
 }
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

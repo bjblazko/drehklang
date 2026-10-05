@@ -7,7 +7,7 @@
 
 // In-memory RawFile for host tests -- lets tag parsers be exercised
 // against hand-built byte buffers with no filesystem involved.
-class FakeRawFile : public dialhard::library::RawFile {
+class FakeRawFile : public drehklang::library::RawFile {
  public:
   explicit FakeRawFile(std::vector<uint8_t> data) : data_(std::move(data)) {}
 

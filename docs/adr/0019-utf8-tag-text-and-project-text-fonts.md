@@ -40,7 +40,7 @@ glyphs fed garbled bytes still show garbage.
 
 ### Convert to UTF-8 at the parser boundary
 
-`lib/library/Utf8.h` (`dialhard::library::utf8`) adds `fromLatin1()`,
+`lib/library/Utf8.h` (`drehklang::library::utf8`) adds `fromLatin1()`,
 `fromUtf16()` (handling both byte orders and surrogate pairs, dropping
 unpaired surrogates), `isValidUtf8()`, and `truncate()` (UTF-8-boundary-
 aware, for `Mp4Parser`'s 512-byte text cap, which used to be able to cut
@@ -63,7 +63,7 @@ without each needing its own encoding-mismatch defense.
 ### Replace, don't fall back: full Montserrat fonts with a wider range
 
 `scripts/generate-text-fonts.sh` regenerates `lib/ui-widgets/
-TextFont14/16/20/28.c` (`dialhard_text_font_14/16/20/28`) from the same
+TextFont14/16/20/28.c` (`drehklang_text_font_14/16/20/28`) from the same
 `Montserrat-Medium.ttf` and `FontAwesome5-Solid+Brands+Regular.woff`
 LVGL's own built-ins use (found under `.pio/libdeps/esp32-s3/lvgl/
 scripts/built_in_font/`), with the FontAwesome codepoint range copied
@@ -74,7 +74,7 @@ from 0x20-0x7F to 0x20-0x7F, 0xA0-0xFF (Latin-1 Supplement), 0x100-0x17F
 covering the accented Latin scripts the library actually contains, not
 just German. `LV_FONT_MONTSERRAT_14/16/20/28` are switched off in
 `include/lv_conf.h`; `LV_FONT_CUSTOM_DECLARE` declares the four
-replacements and `LV_FONT_DEFAULT` points at `dialhard_text_font_16`.
+replacements and `LV_FONT_DEFAULT` points at `drehklang_text_font_16`.
 
 The alternative -- a small fallback font carrying only the extra
 glyphs, `.fallback`-chained onto the existing Montserrat build, the same
@@ -116,7 +116,7 @@ still reads as an Å, while a missing one renders as a box.
 
 ### Consequences of the font swap
 
-- `IconFont16`'s `.fallback` now points at `dialhard_text_font_14`
+- `IconFont16`'s `.fallback` now points at `drehklang_text_font_14`
   instead of `lv_font_montserrat_14`; its metrics-matching comment
   (line_height/base_line hand-copied from the fallback) is unchanged in
   substance, just repointed.

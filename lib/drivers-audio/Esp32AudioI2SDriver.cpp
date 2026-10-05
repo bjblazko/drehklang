@@ -9,7 +9,7 @@
 #include "AudioGain.h"
 #include "AudioOutputStage.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 void Esp32AudioI2SDriver::begin() {
   audio_.setPinout(kAudioBclkPin, kAudioLrcPin, kAudioDoutPin);
@@ -32,9 +32,9 @@ void Esp32AudioI2SDriver::begin() {
                           /*core=*/0);
 }
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 playback::SampleWindow Esp32AudioI2SDriver::readRecentSamples(int16_t *dst,
                                                               size_t maxSamples) {
@@ -49,7 +49,7 @@ void Esp32AudioI2SDriver::setOutputGain(uint16_t gain) {
   audioOutputStage().setOutputGain(gain);
 }
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers
 
 // ESP32-audioI2S 2.3.0's Audio::playSample() unconditionally halves every
 // sample (`sample >> 1`, "half Vin so we can boost up to 6dB in filters")
@@ -60,7 +60,7 @@ void Esp32AudioI2SDriver::setOutputGain(uint16_t gain) {
 // audio_process_extern hook (tried and reverted, see AGENTS.md), it only
 // rewrites one packed sample and leaves the library's write path intact.
 namespace {
-using dialhard::playback::AudioGain;
+using drehklang::playback::AudioGain;
 
 // ESP32-audioI2S 2.3.0's Audio::playSample() halves every sample before
 // its EQ and Gain() ("half Vin so we can boost up to 6dB in filters"), so
@@ -77,16 +77,16 @@ void audio_process_i2s(uint32_t *sample, bool *continueI2S) {
   // Packed as Gain() returns it: left in the high 16 bits, right in the low.
   // Verified on hardware 2026-09-13: loud tracks peak at 16383 in, 32766
   // out, zero clipped samples.
-  auto &stage = dialhard::drivers::audioOutputStage();
+  auto &stage = drehklang::drivers::audioOutputStage();
   const uint16_t gain = stage.outputGain();
   // The game's blips ride on top of whatever is playing (ADR 0022). This is
   // the library path's only per-sample seam, so it is where they join;
   // when nothing is playing the hook never runs and ToneOutput.cpp pushes
   // them to the DAC itself.
   const int16_t toneSample = stage.nextToneSample();
-  const int16_t left = dialhard::drivers::AudioOutputStage::mixTone(
+  const int16_t left = drehklang::drivers::AudioOutputStage::mixTone(
       compensate(static_cast<int16_t>(*sample >> 16), gain), toneSample);
-  const int16_t right = dialhard::drivers::AudioOutputStage::mixTone(
+  const int16_t right = drehklang::drivers::AudioOutputStage::mixTone(
       compensate(static_cast<int16_t>(*sample & 0xFFFF), gain), toneSample);
   stage.noteMonoSample(static_cast<int16_t>((static_cast<int32_t>(left) + right) / 2));
   *sample = (static_cast<uint32_t>(static_cast<uint16_t>(left)) << 16) |

@@ -6,8 +6,8 @@
 
 #include "PlayQueue.h"
 
-using dialhard::playback::PlayQueue;
-using dialhard::playback::RepeatMode;
+using drehklang::playback::PlayQueue;
+using drehklang::playback::RepeatMode;
 
 void setUp() {}
 void tearDown() {}

@@ -6,7 +6,7 @@
 #include "Id3Genres.h"
 #include "Utf8.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -247,4 +247,4 @@ Mp4Info Mp4Parser::parse(RawFile &file) {
   return info;
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

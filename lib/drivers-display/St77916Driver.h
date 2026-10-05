@@ -5,7 +5,7 @@
 
 #include "KnobSt77916.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // Display pins, per device.md's pinout.
 constexpr int kLcdClkPin = 13;
@@ -79,4 +79,4 @@ class St77916Driver {
   Arduino_TFT *gfx_ = nullptr;
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

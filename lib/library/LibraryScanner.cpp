@@ -1,6 +1,6 @@
 #include "LibraryScanner.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -106,4 +106,4 @@ LibraryIndex LibraryScanner::scan(FileLister &lister, FileOpener &opener,
   return index;
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

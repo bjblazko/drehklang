@@ -4,7 +4,7 @@
 
 #include "TouchDriver.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // Touch pins/address, per device.md's pinout. Shares the I2C bus with
 // the (out-of-v1-scope) DRV2605 haptics driver.
@@ -81,4 +81,4 @@ class Cst816Driver : public input::TouchDriver {
   int16_t lastY_ = 0;
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

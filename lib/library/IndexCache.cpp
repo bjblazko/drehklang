@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -215,4 +215,4 @@ bool IndexCache::decode(const std::vector<uint8_t> &bytes, LibraryIndex &index,
   return true;
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

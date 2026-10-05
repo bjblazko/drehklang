@@ -5,7 +5,7 @@
 
 #include "PlaybackStateMachine.h"
 
-namespace dialhard::playback {
+namespace drehklang::playback {
 
 // Jog/shuttle on Now Playing (ADR 0013): while the time pill is held, knob
 // detents set a speed step (±kMaxStep, speed 1 << |step|) and the track is
@@ -133,4 +133,4 @@ class Shuttle {
   uint32_t trackGeneration_ = 0;
 };
 
-}  // namespace dialhard::playback
+}  // namespace drehklang::playback

@@ -4,8 +4,8 @@
 
 #include "Bookmarks.h"
 
-using dialhard::resume::Bookmark;
-using dialhard::resume::Bookmarks;
+using drehklang::resume::Bookmark;
+using drehklang::resume::Bookmarks;
 
 void setUp() {}
 void tearDown() {}

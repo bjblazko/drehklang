@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 // Minimal file-reading surface tag parsers need. Deliberately not the
 // Arduino File/SD API, so parsing logic can run against fake in-memory
@@ -18,4 +18,4 @@ class RawFile {
   virtual size_t read(uint8_t *buf, size_t n) = 0;
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

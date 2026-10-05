@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 
-namespace dialhard::signal {
+namespace drehklang::signal {
 
 // The scope's two scales (ADR 0024), stepped the way a bench scope's
 // time/div and volts/div knobs are, so a change shows up as a change.
@@ -94,4 +94,4 @@ class ScopeScale {
   bool hasLevel_ = false;
 };
 
-}  // namespace dialhard::signal
+}  // namespace drehklang::signal

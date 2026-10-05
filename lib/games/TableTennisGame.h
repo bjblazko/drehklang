@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 
-namespace dialhard::games {
+namespace drehklang::games {
 
 // Table Tennis (ADR 0022), as close to the 1972 original as this hardware
 // allows -- Magnavox Odyssey's game of that name, which Atari's better
@@ -382,4 +382,4 @@ class TableTennisGame {
   uint8_t soundCount_ = 0;
 };
 
-}  // namespace dialhard::games
+}  // namespace drehklang::games

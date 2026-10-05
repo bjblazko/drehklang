@@ -3,13 +3,13 @@
 #include "NavigationStack.h"
 #include "TabController.h"
 
-using dialhard::collection::CollectionId;
+using drehklang::collection::CollectionId;
 
-using dialhard::navigation::NavigationStack;
-using dialhard::navigation::Screen;
-using dialhard::navigation::ScreenKind;
-using dialhard::navigation::Tab;
-using dialhard::navigation::TabController;
+using drehklang::navigation::NavigationStack;
+using drehklang::navigation::Screen;
+using drehklang::navigation::ScreenKind;
+using drehklang::navigation::Tab;
+using drehklang::navigation::TabController;
 
 void setUp() {}
 void tearDown() {}
@@ -63,7 +63,7 @@ void test_tab_controller_starts_on_home() {
 
 void test_open_music_starts_on_library_artists_root() {
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   TEST_ASSERT_TRUE(tabs.activeTab() == Tab::Library);
   TEST_ASSERT_TRUE(tabs.activeStack().current().kind == ScreenKind::Artists);
   TEST_ASSERT_TRUE(tabs.canGoBackOrHome());
@@ -71,14 +71,14 @@ void test_open_music_starts_on_library_artists_root() {
 
 void test_back_at_music_root_goes_home() {
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   tabs.back();
   TEST_ASSERT_TRUE(tabs.activeStack().current().kind == ScreenKind::Home);
 }
 
 void test_back_pops_before_going_home() {
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   tabs.activeStack().push(Screen{ScreenKind::Albums, {}});
   tabs.back();
   TEST_ASSERT_TRUE(tabs.activeStack().current().kind == ScreenKind::Artists);
@@ -86,11 +86,11 @@ void test_back_pops_before_going_home() {
 
 void test_open_music_returns_to_last_used_tab_and_stack() {
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   tabs.switchTab();
   tabs.activeStack().push(Screen{ScreenKind::Folder, {}});
   tabs.goHome();
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   TEST_ASSERT_TRUE(tabs.activeTab() == Tab::Files);
   TEST_ASSERT_TRUE(tabs.activeStack().canGoBack());
 }
@@ -114,7 +114,7 @@ void test_settings_and_brightness_stack_on_the_menu() {
 
 void test_swipe_back_pops_when_possible() {
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   tabs.activeStack().push(Screen{ScreenKind::Albums, {}});
 
   bool popped = tabs.handleSwipeBack();
@@ -126,7 +126,7 @@ void test_swipe_back_pops_when_possible() {
 
 void test_swipe_back_switches_tab_at_root() {
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
 
   bool popped = tabs.handleSwipeBack();
 
@@ -137,7 +137,7 @@ void test_swipe_back_switches_tab_at_root() {
 
 void test_switch_tab_preserves_each_tabs_own_stack() {
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   tabs.activeStack().push(Screen{ScreenKind::Albums, {}});
 
   tabs.switchTab();

@@ -6,14 +6,14 @@
 #include "GeneratorControl.h"
 #include "ToneSession.h"
 
-using dialhard::playback::KeyValueStore;
-using dialhard::signal::GeneratorControl;
-using dialhard::signal::GeneratorOutput;
-using dialhard::signal::OscillatorParams;
-using dialhard::signal::ToneParam;
-using dialhard::signal::ToneSession;
-using dialhard::signal::ToneSettings;
-using dialhard::signal::Waveform;
+using drehklang::playback::KeyValueStore;
+using drehklang::signal::GeneratorControl;
+using drehklang::signal::GeneratorOutput;
+using drehklang::signal::OscillatorParams;
+using drehklang::signal::ToneParam;
+using drehklang::signal::ToneSession;
+using drehklang::signal::ToneSettings;
+using drehklang::signal::Waveform;
 
 void setUp() {}
 void tearDown() {}
@@ -112,7 +112,7 @@ void test_the_control_hands_parameters_across_intact() {
   p.frequencyHz = 439.61f;
   p.amplitude = 0.001f;
   p.shape = 0.35f;
-  p.noise = dialhard::signal::NoiseColor::Blue;
+  p.noise = drehklang::signal::NoiseColor::Blue;
   control.publish(p);
   control.setRunning(true);
   const OscillatorParams q = control.snapshot();
@@ -121,7 +121,7 @@ void test_the_control_hands_parameters_across_intact() {
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 439.61f, q.frequencyHz);
   TEST_ASSERT_FLOAT_WITHIN(0.00005f, 0.001f, q.amplitude);
   TEST_ASSERT_FLOAT_WITHIN(0.0001f, 0.35f, q.shape);
-  TEST_ASSERT_EQUAL(dialhard::signal::NoiseColor::Blue, q.noise);
+  TEST_ASSERT_EQUAL(drehklang::signal::NoiseColor::Blue, q.noise);
 }
 
 int main(int argc, char **argv) {

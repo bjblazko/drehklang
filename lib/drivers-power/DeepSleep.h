@@ -3,7 +3,7 @@
 #include <driver/rtc_io.h>
 #include <esp_sleep.h>
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // The CST816's interrupt output, per device.md's pinout: pulled low while
 // a finger is on the screen. An RTC-capable pin on the ESP32-S3.
@@ -22,4 +22,4 @@ constexpr gpio_num_t kTouchIntPin = GPIO_NUM_9;
   esp_deep_sleep_start();
 }
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

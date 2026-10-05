@@ -12,7 +12,7 @@
 #include "RawFile.h"
 #include "TagReader.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace detail {
 
@@ -271,4 +271,4 @@ class LibraryScanner {
                             ScanProgressListener *progress = nullptr);
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

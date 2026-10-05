@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace dialhard::navigation {
+namespace drehklang::navigation {
 
 // Which main-menu destinations the user has chosen to show (ADR 0018) --
 // one bit per entry in the menu table, 1 = shown.
@@ -75,4 +75,4 @@ class MenuVisibility {
   uint8_t mask_ = kDefaultMask;
 };
 
-}  // namespace dialhard::navigation
+}  // namespace drehklang::navigation

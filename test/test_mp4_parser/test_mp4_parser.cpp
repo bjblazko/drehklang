@@ -8,10 +8,10 @@
 #include "Mp4Parser.h"
 #include "TagReader.h"
 
-using dialhard::library::Mp4Info;
-using dialhard::library::Mp4Parser;
-using dialhard::library::TagReader;
-using dialhard::library::TagResult;
+using drehklang::library::Mp4Info;
+using drehklang::library::Mp4Parser;
+using drehklang::library::TagReader;
+using drehklang::library::TagResult;
 
 void setUp() {}
 void tearDown() {}

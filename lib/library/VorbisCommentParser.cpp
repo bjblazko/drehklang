@@ -5,7 +5,7 @@
 #include <cstring>
 #include <vector>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -128,4 +128,4 @@ TagResult VorbisCommentParser::parse(RawFile &file) {
   return result;
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

@@ -6,9 +6,9 @@
 #include "LetterJump.h"
 #include "LibraryScanner.h"
 
-using dialhard::library::LibraryIndex;
-using dialhard::navigation::LetterBucket;
-using dialhard::navigation::LetterJump;
+using drehklang::library::LibraryIndex;
+using drehklang::navigation::LetterBucket;
+using drehklang::navigation::LetterJump;
 
 void setUp() {}
 void tearDown() {}

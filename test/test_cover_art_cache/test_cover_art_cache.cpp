@@ -8,14 +8,14 @@
 #include "CoverArtCache.h"
 #include "TagResult.h"
 
-using dialhard::library::CoverArtCache;
-using dialhard::library::CoverWriter;
-using dialhard::library::DirectoryReader;
-using dialhard::library::FileOpener;
-using dialhard::library::FolderEntry;
-using dialhard::library::JpegDecoder;
-using dialhard::library::RawFile;
-using dialhard::library::TagResult;
+using drehklang::library::CoverArtCache;
+using drehklang::library::CoverWriter;
+using drehklang::library::DirectoryReader;
+using drehklang::library::FileOpener;
+using drehklang::library::FolderEntry;
+using drehklang::library::JpegDecoder;
+using drehklang::library::RawFile;
+using drehklang::library::TagResult;
 
 void setUp() {}
 void tearDown() {}

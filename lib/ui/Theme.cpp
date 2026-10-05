@@ -1,6 +1,6 @@
 #include "Theme.h"
 
-namespace dialhard::ui::theme {
+namespace drehklang::ui::theme {
 
 namespace {
 
@@ -88,4 +88,4 @@ void apply(lv_disp_t *disp) {
   lv_disp_set_theme(disp, &childTheme);
 }
 
-}  // namespace dialhard::ui::theme
+}  // namespace drehklang::ui::theme

@@ -9,31 +9,31 @@
 #include "ResumeCodec.h"
 #include "ResumeScheduler.h"
 
-using dialhard::library::Album;
-using dialhard::library::Artist;
-using dialhard::library::LibraryIndex;
-using dialhard::library::Track;
-using dialhard::navigation::Screen;
-using dialhard::navigation::ScreenKind;
-using dialhard::navigation::ScreenParams;
-using dialhard::navigation::Tab;
-using dialhard::navigation::TabController;
-using dialhard::playback::KeyValueStore;
-using dialhard::playback::PlaybackDriver;
-using dialhard::playback::PlaybackState;
-using dialhard::playback::PlaybackStateMachine;
-using dialhard::playback::PlayScope;
-using dialhard::playback::VolumePersistence;
-using dialhard::resume::BlobStore;
-using dialhard::resume::PlaybackResumeSource;
-using dialhard::resume::PlaybackSnapshot;
-using dialhard::resume::NavEntry;
-using dialhard::resume::NavigationResumeSource;
-using dialhard::resume::NavigationSnapshot;
-using dialhard::resume::ResumeCodec;
-using dialhard::resume::ResumeRecord;
-using dialhard::resume::ResumeScheduler;
-using dialhard::resume::ResumeSource;
+using drehklang::library::Album;
+using drehklang::library::Artist;
+using drehklang::library::LibraryIndex;
+using drehklang::library::Track;
+using drehklang::navigation::Screen;
+using drehklang::navigation::ScreenKind;
+using drehklang::navigation::ScreenParams;
+using drehklang::navigation::Tab;
+using drehklang::navigation::TabController;
+using drehklang::playback::KeyValueStore;
+using drehklang::playback::PlaybackDriver;
+using drehklang::playback::PlaybackState;
+using drehklang::playback::PlaybackStateMachine;
+using drehklang::playback::PlayScope;
+using drehklang::playback::VolumePersistence;
+using drehklang::resume::BlobStore;
+using drehklang::resume::PlaybackResumeSource;
+using drehklang::resume::PlaybackSnapshot;
+using drehklang::resume::NavEntry;
+using drehklang::resume::NavigationResumeSource;
+using drehklang::resume::NavigationSnapshot;
+using drehklang::resume::ResumeCodec;
+using drehklang::resume::ResumeRecord;
+using drehklang::resume::ResumeScheduler;
+using drehklang::resume::ResumeSource;
 
 void setUp() {}
 void tearDown() {}
@@ -58,7 +58,7 @@ class FakeDriver : public PlaybackDriver {
   void setOutputGain(uint16_t) override {}
   bool isRunning() override { return true; }
   uint32_t durationSeconds() override { return 0; }
-  dialhard::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
+  drehklang::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
     return {};
   }
   void loop() override {}
@@ -102,18 +102,18 @@ LibraryIndex makeLibrary() {
 
 // The three collections, with only Music populated -- the resume sources
 // resolve names against whichever one a record names (ADR 0018).
-class FakeCollections : public dialhard::collection::CollectionSet {
+class FakeCollections : public drehklang::collection::CollectionSet {
  public:
-  LibraryIndex &index(dialhard::collection::CollectionId id) override {
-    return indexes[dialhard::collection::indexOf(id)];
+  LibraryIndex &index(drehklang::collection::CollectionId id) override {
+    return indexes[drehklang::collection::indexOf(id)];
   }
 
-  void rescan(dialhard::collection::CollectionId,
-              dialhard::library::ScanProgressListener *) override {
+  void rescan(drehklang::collection::CollectionId,
+              drehklang::library::ScanProgressListener *) override {
     ++rescans;
   }
 
-  LibraryIndex indexes[dialhard::collection::kCollectionCount];
+  LibraryIndex indexes[drehklang::collection::kCollectionCount];
   int rescans = 0;
 };
 
@@ -385,7 +385,7 @@ void test_scheduler_discard_removes_the_record() {
 
 void test_capture_then_restore_brings_back_screen_and_paused_track() {
   Rig before;
-  before.tabs.openCollection(dialhard::collection::CollectionId::Music);
+  before.tabs.openCollection(drehklang::collection::CollectionId::Music);
   before.tabs.activeStack().push(Screen{ScreenKind::Albums, ScreenParams{.artistId = 1}});
   before.tabs.activeStack().push(Screen{ScreenKind::Tracks, ScreenParams{.albumId = 1}});
   before.playback.play({"/Music/B/Second/b1.mp3", "/Music/B/Second/b2.mp3"}, 1, 0,

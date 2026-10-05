@@ -2,10 +2,10 @@
 
 #include "UsbDriveSession.h"
 
-using dialhard::usbdrive::UsbDriveEnd;
-using dialhard::usbdrive::UsbDrivePhase;
-using dialhard::usbdrive::UsbDriveSession;
-using dialhard::usbdrive::UsbStorage;
+using drehklang::usbdrive::UsbDriveEnd;
+using drehklang::usbdrive::UsbDrivePhase;
+using drehklang::usbdrive::UsbDriveSession;
+using drehklang::usbdrive::UsbStorage;
 
 namespace {
 

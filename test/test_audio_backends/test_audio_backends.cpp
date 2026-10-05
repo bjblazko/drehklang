@@ -5,9 +5,9 @@
 #include "AudioBackendKind.h"
 #include "AudioGain.h"
 
-using dialhard::playback::AudioBackendKind;
-using dialhard::playback::AudioGain;
-using dialhard::playback::backendForPath;
+using drehklang::playback::AudioBackendKind;
+using drehklang::playback::AudioGain;
+using drehklang::playback::backendForPath;
 
 void setUp() {}
 void tearDown() {}

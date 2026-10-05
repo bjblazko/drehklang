@@ -5,8 +5,8 @@
 
 #include "BrightnessSetting.h"
 
-using dialhard::playback::KeyValueStore;
-using dialhard::power::BrightnessSetting;
+using drehklang::playback::KeyValueStore;
+using drehklang::power::BrightnessSetting;
 
 void setUp() {}
 void tearDown() {}

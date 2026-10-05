@@ -8,8 +8,8 @@ layout (already once amended by ADR 0015).
 
 ## Context
 
-DialHard had exactly one library: a `LibraryIndex` scanned from `/Music`,
-cached in one `/dialhard/library.idx`, behind one Home tile. The user also
+Drehklang had exactly one library: a `LibraryIndex` scanned from `/Music`,
+cached in one `/drehklang/library.idx`, behind one Home tile. The user also
 listens to Hörbücher and Hörspiele.
 
 Those are not music. Putting them in the same tag-based Artist → Album →
@@ -39,7 +39,7 @@ injected `LibraryIndex &`.
 - Roots are `/Music`, `/Audiobooks`, `/RadioPlays`. Each has its own cache
   (`library.idx`, `audiobooks.idx`, `radioplays.idx`). Music keeps the
   historical path, so updating does not invalidate an existing card.
-- Covers stay in one `/dialhard/covers`: `CoverArtCache::cacheFileNameFor()`
+- Covers stay in one `/drehklang/covers`: `CoverArtCache::cacheFileNameFor()`
   hashes the full album folder path, so roots cannot collide.
 - `library::LibraryRescanner` is replaced by `collection::CollectionSet`,
   which answers both "this collection's index" and "rescan it". The UI
@@ -85,7 +85,7 @@ gained the five menu glyphs, since the neighbour tiles draw at that size.
 
 ### The wordmark
 
-Home carries a "DialHard" wordmark: a small dial and the word, set in an
+Home carries a "Drehklang" wordmark: a small dial and the word, set in an
 `ink` capsule with both drawn in `surface`. The dial is a disc with a
 pointer notched out of it, set off vertical so it reads as a knob at a
 setting rather than a full stop.

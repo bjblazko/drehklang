@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <utility>
 
-namespace dialhard::visualizer {
+namespace drehklang::visualizer {
 
 // Turns a window of recent mono PCM samples into dot-matrix column heights
 // for the Now Playing spectrum (ADR 0009). Pure logic, host-tested: Hann
@@ -169,4 +169,4 @@ class SpectrumAnalyzer {
   uint32_t binsForRate_ = 0;
 };
 
-}  // namespace dialhard::visualizer
+}  // namespace drehklang::visualizer

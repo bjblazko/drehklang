@@ -2,8 +2,8 @@
 
 #include "SleepTimer.h"
 
-using dialhard::power::SleepPhase;
-using dialhard::power::SleepTimer;
+using drehklang::power::SleepPhase;
+using drehklang::power::SleepTimer;
 
 void setUp() {}
 void tearDown() {}

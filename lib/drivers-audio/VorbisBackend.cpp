@@ -18,12 +18,12 @@
 #define STB_VORBIS_HEADER_ONLY
 #include "stb_vorbis.c"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 bool VorbisBackend::open(const std::string &path, uint32_t startSample) {
   close();
   // The SD card is mounted at /sdcard; stb_vorbis reads it through the
-  // normal filesystem rather than DialHard's RawFile abstraction, which
+  // normal filesystem rather than Drehklang's RawFile abstraction, which
   // exists for tag parsing on the host.
   const std::string fsPath = "/sdcard" + path;
   int error = 0;
@@ -169,4 +169,4 @@ void VorbisBackend::runSession() {
   running_.store(false, std::memory_order_release);
 }
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

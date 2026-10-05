@@ -2,7 +2,7 @@
 
 #include "GestureRecognizer.h"
 
-namespace dialhard::input {
+namespace drehklang::input {
 
 // Sits between the once-per-loop touch poll and LVGL's periodic indev
 // read. LVGL only samples the latest touch state when its read timer
@@ -42,4 +42,4 @@ class TouchLatch {
   int16_t pressY_ = 0;
 };
 
-}  // namespace dialhard::input
+}  // namespace drehklang::input

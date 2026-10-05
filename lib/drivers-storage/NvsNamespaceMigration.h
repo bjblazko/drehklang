@@ -5,17 +5,18 @@
 
 #include <vector>
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
-// The product was renamed from "knobify" to "DialHard" (2026-10-05), and
-// with it the NVS namespace NvsKeyValueStore uses. This moves a device's
-// existing settings and resume record across once, at boot, before
-// anything reads them.
+// The product was renamed from "knobify" via "DialHard" to "Drehklang"
+// (2026-10-05), and with it the NVS namespace NvsKeyValueStore uses. This
+// moves a device's existing settings and resume record across once, at
+// boot, before anything reads them.
 //
 // Copy first, erase the old namespace last: a power cut part-way through
 // leaves the old namespace intact, so the next boot simply copies again.
 // Only the two value types the store writes (u8 and blobs) are carried.
-constexpr const char *kLegacyNvsNamespace = "knobify";
+// Oldest first, so the newer value wins if a key exists in both.
+constexpr const char *kLegacyNvsNamespaces[] = {"knobify", "dialhard"};
 
 inline bool copyNvsEntry(nvs_handle_t from, nvs_handle_t to,
                          const nvs_entry_info_t &entry) {
@@ -49,15 +50,16 @@ inline bool copyNvsNamespace(nvs_iterator_t it, nvs_handle_t from,
   return ok && nvs_commit(to) == ESP_OK;
 }
 
-inline void migrateLegacyNvsNamespace(const char *newNamespace) {
+inline void migrateNvsNamespace(const char *oldNamespace,
+                                const char *newNamespace) {
   // Looked up by entries rather than opened: opening read-write would
   // create the old namespace on every boot.
   nvs_iterator_t it =
-      nvs_entry_find(NVS_DEFAULT_PART_NAME, kLegacyNvsNamespace, NVS_TYPE_ANY);
+      nvs_entry_find(NVS_DEFAULT_PART_NAME, oldNamespace, NVS_TYPE_ANY);
   if (it == nullptr) return;
   nvs_handle_t from;
   nvs_handle_t to;
-  if (nvs_open(kLegacyNvsNamespace, NVS_READWRITE, &from) != ESP_OK) {
+  if (nvs_open(oldNamespace, NVS_READWRITE, &from) != ESP_OK) {
     nvs_release_iterator(it);
     return;
   }
@@ -69,8 +71,7 @@ inline void migrateLegacyNvsNamespace(const char *newNamespace) {
   if (copyNvsNamespace(it, from, to)) {
     nvs_erase_all(from);
     nvs_commit(from);
-    Serial.printf("[migrate] NVS %s -> %s\n", kLegacyNvsNamespace,
-                  newNamespace);
+    Serial.printf("[migrate] NVS %s -> %s\n", oldNamespace, newNamespace);
   } else {
     Serial.println("[migrate] NVS copy failed, will retry next boot");
   }
@@ -78,4 +79,10 @@ inline void migrateLegacyNvsNamespace(const char *newNamespace) {
   nvs_close(from);
 }
 
-}  // namespace dialhard::drivers
+inline void migrateLegacyNvsNamespaces(const char *newNamespace) {
+  for (const char *oldNamespace : kLegacyNvsNamespaces) {
+    migrateNvsNamespace(oldNamespace, newNamespace);
+  }
+}
+
+}  // namespace drehklang::drivers

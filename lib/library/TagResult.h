@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 // An embedded cover image found inside the audio file itself (currently
 // only ID3v2 APIC frames in mp3s). `present` is only set for JPEG
@@ -36,4 +36,4 @@ struct TagResult {
   EmbeddedPicture picture;
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

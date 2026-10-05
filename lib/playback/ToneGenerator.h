@@ -3,7 +3,7 @@
 #include <atomic>
 #include <cstdint>
 
-namespace dialhard::playback {
+namespace drehklang::playback {
 
 // A game's blips (ADR 0022): a gated square wave, which is literally what
 // the 1972 table-tennis machine produces -- its sounds are taps off the same divider
@@ -129,4 +129,4 @@ class ToneGenerator {
   uint16_t lfsr_ = kLfsrSeed;
 };
 
-}  // namespace dialhard::playback
+}  // namespace drehklang::playback

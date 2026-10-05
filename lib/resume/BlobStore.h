@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace dialhard::resume {
+namespace drehklang::resume {
 
 // Persistent storage for one small binary record per key. The concrete
 // adapter (NvsKeyValueStore, lib/drivers-storage/) uses NVS, whose writes are
@@ -19,4 +19,4 @@ class BlobStore {
   virtual void removeBlob(const std::string &key) = 0;
 };
 
-}  // namespace dialhard::resume
+}  // namespace drehklang::resume

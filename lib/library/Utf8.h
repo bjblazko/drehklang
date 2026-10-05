@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace dialhard::library::utf8 {
+namespace drehklang::library::utf8 {
 
 // Latin-1 (ISO-8859-1) is a strict subset of Unicode's first 256 code
 // points, so each input byte maps 1:1 to a codepoint: 0x00-0x7F pass
@@ -186,4 +186,4 @@ inline std::string truncate(std::string s, size_t maxBytes) {
   return s;
 }
 
-}  // namespace dialhard::library::utf8
+}  // namespace drehklang::library::utf8

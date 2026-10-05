@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-namespace dialhard::playback {
+namespace drehklang::playback {
 
 // Off -> All -> One, the order the Now Playing repeat toggle cycles through.
 enum class RepeatMode : uint8_t { Off = 0, All = 1, One = 2 };
@@ -113,4 +113,4 @@ class PlayQueue {
   uint32_t rng_ = 1;
 };
 
-}  // namespace dialhard::playback
+}  // namespace drehklang::playback

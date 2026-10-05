@@ -7,7 +7,7 @@
 
 #include "TriggeredScope.h"
 
-using dialhard::signal::TriggeredScope;
+using drehklang::signal::TriggeredScope;
 
 void setUp() {}
 void tearDown() {}

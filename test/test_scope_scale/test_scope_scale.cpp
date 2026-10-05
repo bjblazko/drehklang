@@ -4,7 +4,7 @@
 
 #include "ScopeScale.h"
 
-using dialhard::signal::ScopeScale;
+using drehklang::signal::ScopeScale;
 
 void setUp() {}
 void tearDown() {}

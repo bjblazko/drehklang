@@ -4,9 +4,9 @@
 #include "IdleTimer.h"
 #include "LockController.h"
 
-using dialhard::power::BatteryMonitor;
-using dialhard::power::IdleTimer;
-using dialhard::power::LockController;
+using drehklang::power::BatteryMonitor;
+using drehklang::power::IdleTimer;
+using drehklang::power::LockController;
 
 void setUp() {}
 void tearDown() {}

@@ -41,7 +41,7 @@
 #include "TouchCalibrator.h"
 #include "UsbDriveSession.h"
 
-namespace dialhard::ui {
+namespace drehklang::ui {
 
 // Renders whatever screen TabController's active stack currently shows,
 // and forwards taps into navigation/playback. Also implements
@@ -655,4 +655,4 @@ class ScreenManager : public input::KnobSink {
   std::vector<std::unique_ptr<ItemContext>> itemContexts_;
 };
 
-}  // namespace dialhard::ui
+}  // namespace drehklang::ui

@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace dialhard::signal {
+namespace drehklang::signal {
 
 // A fine spectrum for measuring (ADR 0024): the level in dBFS in each of
 // `columns` slices of 20 Hz .. 20 kHz on a log axis, so every octave is
@@ -188,4 +188,4 @@ class Spectrum {
   std::vector<float> sin_;
 };
 
-}  // namespace dialhard::signal
+}  // namespace drehklang::signal

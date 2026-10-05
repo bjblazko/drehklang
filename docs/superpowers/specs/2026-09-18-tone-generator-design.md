@@ -6,7 +6,7 @@ were each asked and answered.*
 ## Why
 
 Three related tools are planned: a **tone generator**, a **voice recorder**
-and a **spectrum analyzer** (microphone, or DialHard's own output). What
+and a **spectrum analyzer** (microphone, or Drehklang's own output). What
 they share is a signal path and a scope/spectrum display. Only the tone
 generator is built now, but its pieces are cut so the other two reuse them:
 an oscillator, a triggered scope, a scope widget, and a sample source (the
@@ -70,7 +70,7 @@ InputRouter ── turn ──▶ ToneSession ──▶ GeneratorControl (atomic
      ui_widgets::ScopeTrace (lv_line)
 ```
 
-### `lib/signal/` — new, pure, host-tested (namespace `dialhard::signal`)
+### `lib/signal/` — new, pure, host-tested (namespace `drehklang::signal`)
 
 The shared home for all three tools. No Arduino, no LVGL.
 
@@ -129,7 +129,7 @@ its own tests.
   rate. Today a paused track resumed after a game blip (22.05 kHz) or,
   now, a tone (48 kHz) plays at the wrong speed, because the library's
   `pauseResume()` does not re-set the rate.
-- `-DDIALHARD_GENERATOR_DEBUG`: logs the frequency and peak measured from
+- `-DDREHKLANG_GENERATOR_DEBUG`: logs the frequency and peak measured from
   the ring, and the worst chunk time, once a second.
 
 ### UI
@@ -174,7 +174,7 @@ its own tests.
 ## Verification on the device
 
 1. `scripts/check.sh` green.
-2. Flash with `-DDIALHARD_GENERATOR_DEBUG`; serial shows measured
+2. Flash with `-DDREHKLANG_GENERATOR_DEBUG`; serial shows measured
    frequency/level matching 1 kHz/−20 dB, 20 Hz, 15 kHz.
 3. Screenshots per waveform, plus a look at the physical round screen.
 4. Listening: no clicks turning, starting, stopping; music pauses on ▶;

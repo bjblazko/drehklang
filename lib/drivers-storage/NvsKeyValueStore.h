@@ -7,7 +7,7 @@
 #include "BlobStore.h"
 #include "KeyValueStore.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // Wraps ESP32 Preferences (NVS) for the handful of small persisted
 // values this project needs (volume, settings, the resume record) -- see
@@ -15,7 +15,7 @@ namespace dialhard::drivers {
 class NvsKeyValueStore : public playback::KeyValueStore,
                          public resume::BlobStore {
  public:
-  static constexpr const char *kNamespace = "dialhard";
+  static constexpr const char *kNamespace = "drehklang";
 
   bool getU8(const std::string &key, uint8_t &out) override {
     prefs_.begin(kNamespace, /*readOnly=*/true);
@@ -64,4 +64,4 @@ class NvsKeyValueStore : public playback::KeyValueStore,
   Preferences prefs_;
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

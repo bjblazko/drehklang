@@ -6,7 +6,7 @@
 #include "St77916Driver.h"
 #include "TouchLatch.h"
 
-namespace dialhard::ui {
+namespace drehklang::ui {
 
 // Connects LVGL to the display and touch drivers: registers the display
 // flush callback and the touch input device, and pumps lv_timer_handler().
@@ -63,4 +63,4 @@ class LvglGlue {
   uint16_t *shadowFrame_ = nullptr;
 };
 
-}  // namespace dialhard::ui
+}  // namespace drehklang::ui

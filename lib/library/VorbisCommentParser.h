@@ -3,7 +3,7 @@
 #include "RawFile.h"
 #include "TagResult.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 // Extracts ARTIST/ALBUM/TITLE/TRACKNUMBER from an OGG Vorbis comment
 // header. Rather than fully parsing Ogg page framing, this scans the
@@ -19,4 +19,4 @@ class VorbisCommentParser {
   static TagResult parse(RawFile &file);
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

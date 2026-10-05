@@ -11,9 +11,9 @@
 
 struct stb_vorbis;
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
-// Ogg Vorbis playback on DialHard's own decode path (ADR 0017): stb_vorbis
+// Ogg Vorbis playback on Drehklang's own decode path (ADR 0017): stb_vorbis
 // reading through the filesystem, decoding on a task of its own because it
 // needs about 32 KB of stack -- far more than the shared audio task has (or
 // the main loop, which crashed seeking a resumed track). The task is created
@@ -63,4 +63,4 @@ class VorbisBackend : public DecoderBackend {
   static constexpr uint32_t kNoSeek = UINT32_MAX;
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

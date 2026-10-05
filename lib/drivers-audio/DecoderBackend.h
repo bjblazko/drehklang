@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <string>
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
-// A decoder DialHard drives itself, as opposed to the ESP32-audioI2S path
+// A decoder Drehklang drives itself, as opposed to the ESP32-audioI2S path
 // (ADR 0017). Positions are sample indices: that is what a Vorbis stream
 // can seek to, and PlaybackDriver's position is opaque above the driver.
 class DecoderBackend {
@@ -25,4 +25,4 @@ class DecoderBackend {
   virtual void setPaused(bool paused) = 0;
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

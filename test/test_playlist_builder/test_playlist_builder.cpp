@@ -3,9 +3,9 @@
 #include "LibraryScanner.h"
 #include "PlaylistBuilder.h"
 
-using dialhard::library::LibraryIndex;
-using dialhard::library::PlaylistBuilder;
-using dialhard::library::SortOrder;
+using drehklang::library::LibraryIndex;
+using drehklang::library::PlaylistBuilder;
+using drehklang::library::SortOrder;
 
 void setUp() {}
 void tearDown() {}

@@ -8,7 +8,7 @@
 #include "Id3Genres.h"
 #include "Utf8.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -281,4 +281,4 @@ TagResult Id3v2Parser::parse(RawFile &file) {
   return parseId3v1(file);
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

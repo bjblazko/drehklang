@@ -6,7 +6,7 @@
 #include "CollectionProfile.h"
 #include "LibraryScanner.h"  // LibraryIndex, ScanProgressListener
 
-namespace dialhard::collection {
+namespace drehklang::collection {
 
 // The device's collections, as the UI sees them: each one's index, its
 // profile, and a way to rebuild it on demand.
@@ -56,4 +56,4 @@ class CollectionSet {
   }
 };
 
-}  // namespace dialhard::collection
+}  // namespace drehklang::collection

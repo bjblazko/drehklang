@@ -1,4 +1,4 @@
-# DialHard
+# Drehklang
 
 Offline audio player built on a Waveshare ESP32-S3-Knob-Touch-LCD-1.8 — music, audiobooks and radio plays, each on its own shelf. See [`device.md`](device.md) for full hardware specs (dual MCU, display, audio DAC, encoders, etc.), the official product page, and wiki links.
 
@@ -64,7 +64,7 @@ screens described below.
   progressive JPEG covers decode too. Settings > USB drive exposes the
   SD card to a computer over the USB cable — see
   [ADR 0016](docs/adr/0016-native-formats-and-usb-drive.md).
-- Ogg Vorbis plays too, on DialHard's own decode path (ESP32-audioI2S has
+- Ogg Vorbis plays too, on Drehklang's own decode path (ESP32-audioI2S has
   no Vorbis decoder). Embedded Ogg cover art
   (`METADATA_BLOCK_PICTURE`) isn't read; a folder `cover.jpg` still works
   — see [ADR 0017](docs/adr/0017-two-audio-decode-paths.md).
@@ -99,9 +99,9 @@ Replace `diskN` / `sdX` with your card — **check twice, this erases it.**
 **macOS** (`diskutil list` to find the disk):
 
 ```bash
-diskutil partitionDisk /dev/diskN MBR "MS-DOS FAT32" DIALHARD 100%
+diskutil partitionDisk /dev/diskN MBR "MS-DOS FAT32" DREHKLANG 100%
 diskutil unmount /dev/diskNs1
-sudo newfs_msdos -F 32 -c 64 -v DIALHARD /dev/rdiskNs1
+sudo newfs_msdos -F 32 -c 64 -v DREHKLANG /dev/rdiskNs1
 ```
 
 The first command creates the partition, the third replaces the
@@ -113,7 +113,7 @@ the cluster size).
 ```bash
 sudo parted /dev/sdX mklabel msdos
 sudo parted -a optimal /dev/sdX mkpart primary fat32 4MiB 100%
-sudo mkfs.vfat -F 32 -s 64 -n DIALHARD /dev/sdX1
+sudo mkfs.vfat -F 32 -s 64 -n DREHKLANG /dev/sdX1
 ```
 
 **Windows**: use [Rufus](https://rufus.ie) — Windows' own formatter
@@ -159,7 +159,7 @@ Settings > USB drive, at about 0.8 MB/s writing and 0.9 MB/s reading
 - General visual polish and animation ("eye candy") beyond the planned
   one-time gesture-hint nudge and screen-transition slide
 - Voice memo / dictation recording via the onboard PDM microphone, and
-  a spectrum analyzer (microphone or DialHard's own output) -- both on
+  a spectrum analyzer (microphone or Drehklang's own output) -- both on
   `lib/signal/`'s oscillator, scope and `SampleSource` (ADR 0024)
 - For Tones: a frequency sweep, stereo channel selection
 - DOOM (v1 shareware, the WAD supplied on the SD card) via a prboom port,
@@ -251,7 +251,7 @@ Each collection is its own top-level folder, laid out
 /Music/…         Music
 /Audiobooks/…    Audiobooks
 /RadioPlays/…    Radio Plays
-/dialhard/        indexes and cached covers (written by the device)
+/drehklang/        indexes and cached covers (written by the device)
 ```
 
 A collection whose folder is missing simply shows up empty; hide it in
@@ -261,13 +261,13 @@ session — never at boot, so the device is usable the moment it powers on.
 
 ## License
 
-DialHard is licensed under **GPL-3.0-or-later** — see [LICENSE](LICENSE).
+Drehklang is licensed under **GPL-3.0-or-later** — see [LICENSE](LICENSE).
 
 That follows from the audio library: ESP32-audioI2S is GPL-3.0, so
 firmware linking it is covered as a whole. [THIRD-PARTY.md](THIRD-PARTY.md)
 lists every component and its licence, and explains where M4A/AAC decoding
 comes from (the Helix-derived decoder inside that same library) and how
-its patent situation looks — DialHard ships no decoder of its own.
+its patent situation looks — Drehklang ships no decoder of its own.
 
 ## Starting a new session here
 

@@ -9,7 +9,7 @@
 #include "CoverArtCache.h"
 #include "SdCoverWriter.h"  // CoverFileHeader, coverCachePathFor()
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // Reads back a cover cached by SdCoverWriter -- used by the Now Playing
 // screen at render time. Plain file read, no JPEG decoding involved
@@ -45,4 +45,4 @@ class SdCoverReader : public library::CoverArtReader {
   }
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

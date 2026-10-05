@@ -65,7 +65,7 @@ namespace {
 // cache is persisted, both come from its profile now
 // (lib/collection/CollectionProfile.h) rather than from one pair of
 // constants here -- see decision 2, ADR 0004 and ADR 0018.
-constexpr const char *kCacheDir = "/dialhard";
+constexpr const char *kCacheDir = "/drehklang";
 
 std::vector<uint8_t> readIndexCacheFile(const char *cachePath) {
   std::vector<uint8_t> bytes;
@@ -80,7 +80,7 @@ std::vector<uint8_t> readIndexCacheFile(const char *cachePath) {
 void writeIndexCacheFile(const char *cachePath,
                         const std::vector<uint8_t> &bytes) {
   // The SD_MMC/FATFS layer refuses to create a file inside a directory
-  // that doesn't exist yet -- every cache path's parent ("/dialhard") is
+  // that doesn't exist yet -- every cache path's parent ("/drehklang") is
   // never created anywhere else, so without this every single boot
   // silently failed to persist the cache and re-did the full scan from
   // scratch forever. mkdir() on an already-existing dir is a harmless
@@ -103,13 +103,13 @@ void writeIndexCacheFile(const char *cachePath,
 // ScreenManager's own listener do this) so cover-art caching stays a
 // scan-level concern independent of whatever's showing progress on
 // screen.
-class CoverArtScanListener : public dialhard::library::ScanProgressListener {
+class CoverArtScanListener : public drehklang::library::ScanProgressListener {
  public:
-  CoverArtScanListener(dialhard::library::ScanProgressListener *inner,
-                        dialhard::library::DirectoryReader &dirReader,
-                        dialhard::library::FileOpener &opener,
-                        dialhard::library::JpegDecoder &decoder,
-                        dialhard::library::CoverWriter &writer)
+  CoverArtScanListener(drehklang::library::ScanProgressListener *inner,
+                        drehklang::library::DirectoryReader &dirReader,
+                        drehklang::library::FileOpener &opener,
+                        drehklang::library::JpegDecoder &decoder,
+                        drehklang::library::CoverWriter &writer)
       : inner_(inner),
         dirReader_(dirReader),
         opener_(opener),
@@ -121,40 +121,40 @@ class CoverArtScanListener : public dialhard::library::ScanProgressListener {
   }
 
   void onFileResult(const std::string &path, bool opened,
-                     const dialhard::library::TagResult &tags) override {
+                     const drehklang::library::TagResult &tags) override {
     if (inner_) inner_->onFileResult(path, opened, tags);
   }
 
   void onNewAlbum(const std::string &albumFolderPath,
-                   dialhard::library::RawFile &file,
-                   const dialhard::library::TagResult &tags) override {
+                   drehklang::library::RawFile &file,
+                   const drehklang::library::TagResult &tags) override {
     Serial.printf("[cover] onNewAlbum folder=%s picture.present=%d\n",
                   albumFolderPath.c_str(), tags.picture.present);
-    dialhard::library::CoverArtCache::ensureCoverCached(
+    drehklang::library::CoverArtCache::ensureCoverCached(
         albumFolderPath, file, tags, dirReader_, opener_, decoder_, writer_);
     if (inner_) inner_->onNewAlbum(albumFolderPath, file, tags);
   }
 
  private:
-  dialhard::library::ScanProgressListener *inner_;
-  dialhard::library::DirectoryReader &dirReader_;
-  dialhard::library::FileOpener &opener_;
-  dialhard::library::JpegDecoder &decoder_;
-  dialhard::library::CoverWriter &writer_;
+  drehklang::library::ScanProgressListener *inner_;
+  drehklang::library::DirectoryReader &dirReader_;
+  drehklang::library::FileOpener &opener_;
+  drehklang::library::JpegDecoder &decoder_;
+  drehklang::library::CoverWriter &writer_;
 };
 
-dialhard::library::LibraryIndex loadOrBuildLibraryIndex(
-    const char *cachePath, dialhard::drivers::SdFileLister &lister,
-    dialhard::library::FileOpener &opener,
-    dialhard::library::DirectoryReader &coverDirReader,
-    dialhard::library::JpegDecoder &coverDecoder,
-    dialhard::library::CoverWriter &coverWriter,
-    dialhard::library::ScanProgressListener *progress) {
-  using dialhard::library::IndexCache;
-  using dialhard::library::LibraryIndex;
-  using dialhard::library::LibrarySignature;
-  using dialhard::library::LibraryScanner;
-  using dialhard::library::computeSignature;
+drehklang::library::LibraryIndex loadOrBuildLibraryIndex(
+    const char *cachePath, drehklang::drivers::SdFileLister &lister,
+    drehklang::library::FileOpener &opener,
+    drehklang::library::DirectoryReader &coverDirReader,
+    drehklang::library::JpegDecoder &coverDecoder,
+    drehklang::library::CoverWriter &coverWriter,
+    drehklang::library::ScanProgressListener *progress) {
+  using drehklang::library::IndexCache;
+  using drehklang::library::LibraryIndex;
+  using drehklang::library::LibrarySignature;
+  using drehklang::library::LibraryScanner;
+  using drehklang::library::computeSignature;
 
   LibrarySignature currentSignature = computeSignature(lister);
 
@@ -184,18 +184,18 @@ dialhard::library::LibraryIndex loadOrBuildLibraryIndex(
 // there. Bundled so adding a collection is one table row in
 // CollectionProfile.h plus one element here, not another set of globals.
 struct CollectionState {
-  explicit CollectionState(const dialhard::collection::CollectionProfile &p)
+  explicit CollectionState(const drehklang::collection::CollectionProfile &p)
       : profile(p), lister(p.rootPath) {}
 
-  const dialhard::collection::CollectionProfile &profile;
-  dialhard::drivers::SdFileLister lister;
-  dialhard::library::LibraryIndex index;
+  const drehklang::collection::CollectionProfile &profile;
+  drehklang::drivers::SdFileLister lister;
+  drehklang::library::LibraryIndex index;
 };
 
-CollectionState g_collectionState[dialhard::collection::kCollectionCount] = {
-    CollectionState(dialhard::collection::kCollections[0]),
-    CollectionState(dialhard::collection::kCollections[1]),
-    CollectionState(dialhard::collection::kCollections[2]),
+CollectionState g_collectionState[drehklang::collection::kCollectionCount] = {
+    CollectionState(drehklang::collection::kCollections[0]),
+    CollectionState(drehklang::collection::kCollections[1]),
+    CollectionState(drehklang::collection::kCollections[2]),
 };
 
 // Concrete CollectionSet: wraps the SD-backed listers/opener (file-scope
@@ -203,78 +203,78 @@ CollectionState g_collectionState[dialhard::collection::kCollectionCount] = {
 // existing signature-check-then-scan logic on demand, from Settings'
 // Rescan rows rather than at boot -- see AGENTS.md. Defined out-of-line
 // below, once g_fileOpener and friends exist.
-class SdCollectionSet : public dialhard::collection::CollectionSet {
+class SdCollectionSet : public drehklang::collection::CollectionSet {
  public:
-  dialhard::library::LibraryIndex &index(
-      dialhard::collection::CollectionId id) override {
-    return g_collectionState[dialhard::collection::indexOf(id)].index;
+  drehklang::library::LibraryIndex &index(
+      drehklang::collection::CollectionId id) override {
+    return g_collectionState[drehklang::collection::indexOf(id)].index;
   }
 
-  void rescan(dialhard::collection::CollectionId id,
-              dialhard::library::ScanProgressListener *progress) override;
+  void rescan(drehklang::collection::CollectionId id,
+              drehklang::library::ScanProgressListener *progress) override;
 };
 
-dialhard::drivers::SdFileOpener g_fileOpener;
+drehklang::drivers::SdFileOpener g_fileOpener;
 SdCollectionSet g_collections;
-dialhard::drivers::SdDirectoryReader g_directoryReader;
-dialhard::drivers::SdCoverWriter g_coverWriter;
-dialhard::drivers::SdCoverReader g_coverReader;
-dialhard::drivers::JpegDecAdapter g_jpegDecoder;
-dialhard::drivers::GpioEncoderDriver g_encoder(dialhard::drivers::kEncoderPinA,
-                                               dialhard::drivers::kEncoderPinB);
-dialhard::drivers::NvsKeyValueStore g_nvsStore;
-dialhard::playback::VolumePersistence g_volume(g_nvsStore);
-dialhard::drivers::Esp32AudioI2SDriver g_audioDriver;
+drehklang::drivers::SdDirectoryReader g_directoryReader;
+drehklang::drivers::SdCoverWriter g_coverWriter;
+drehklang::drivers::SdCoverReader g_coverReader;
+drehklang::drivers::JpegDecAdapter g_jpegDecoder;
+drehklang::drivers::GpioEncoderDriver g_encoder(drehklang::drivers::kEncoderPinA,
+                                               drehklang::drivers::kEncoderPinB);
+drehklang::drivers::NvsKeyValueStore g_nvsStore;
+drehklang::playback::VolumePersistence g_volume(g_nvsStore);
+drehklang::drivers::Esp32AudioI2SDriver g_audioDriver;
 // A game's blips (ADR 0022): mixed into whatever is playing, and pushed to
 // the DAC by its own task when nothing is.
-dialhard::drivers::ToneOutput g_toneOutput;
+drehklang::drivers::ToneOutput g_toneOutput;
 // The tone generator (ADR 0024): its settings and whether it sounds. The
 // sound itself goes through g_toneOutput's task.
-dialhard::signal::ToneSession g_toneSession(g_toneOutput, g_nvsStore);
-dialhard::playback::PlaybackStateMachine g_playback(g_audioDriver, g_volume);
-dialhard::playback::Shuttle g_shuttle(g_playback);
-dialhard::navigation::TabController g_tabs;
-dialhard::power::BrightnessSetting g_brightness(g_nvsStore);
-dialhard::power::SleepTimer g_sleepTimer;
-dialhard::input::TouchCalibrationFlow g_touchCalibration(g_nvsStore);
-dialhard::drivers::UsbMscStorage g_usbStorage;
-dialhard::usbdrive::UsbDriveSession g_usbDrive(g_usbStorage);
+drehklang::signal::ToneSession g_toneSession(g_toneOutput, g_nvsStore);
+drehklang::playback::PlaybackStateMachine g_playback(g_audioDriver, g_volume);
+drehklang::playback::Shuttle g_shuttle(g_playback);
+drehklang::navigation::TabController g_tabs;
+drehklang::power::BrightnessSetting g_brightness(g_nvsStore);
+drehklang::power::SleepTimer g_sleepTimer;
+drehklang::input::TouchCalibrationFlow g_touchCalibration(g_nvsStore);
+drehklang::drivers::UsbMscStorage g_usbStorage;
+drehklang::usbdrive::UsbDriveSession g_usbDrive(g_usbStorage);
 
-dialhard::drivers::St77916Driver g_display;
-dialhard::drivers::Cst816Driver g_touch;
-dialhard::ui::LvglGlue g_lvglGlue;
-dialhard::power::IdleTimer g_idleTimer;
-dialhard::power::LockController g_lockController;
-dialhard::ui_widgets::MessageArea g_messageArea;
+drehklang::drivers::St77916Driver g_display;
+drehklang::drivers::Cst816Driver g_touch;
+drehklang::ui::LvglGlue g_lvglGlue;
+drehklang::power::IdleTimer g_idleTimer;
+drehklang::power::LockController g_lockController;
+drehklang::ui_widgets::MessageArea g_messageArea;
 // Per-title positions for spoken word (ADR 0018). Separate from the
 // session resume: that restores the one thing that was playing when the
 // power went, this remembers where several titles were left.
-dialhard::resume::Bookmarks g_bookmarks;
-dialhard::ui::ScreenManager g_screenManager(
+drehklang::resume::Bookmarks g_bookmarks;
+drehklang::ui::ScreenManager g_screenManager(
     g_tabs, g_collections, g_directoryReader, g_playback, g_shuttle,
     g_lockController, g_coverReader, g_fileOpener, g_jpegDecoder,
     g_coverWriter, g_nvsStore, g_brightness, g_sleepTimer, g_touchCalibration,
     g_usbDrive, g_messageArea, g_bookmarks);
-dialhard::ui::LockOverlay g_lockOverlay(g_lockController);
-dialhard::drivers::BatteryAdcDriver g_batteryAdc;
-dialhard::power::BatteryMonitor g_batteryMonitor;
-dialhard::ui::BatteryIndicator g_batteryIndicator(g_batteryMonitor);
-dialhard::input::InputRouter g_inputRouter(g_tabs, g_playback, g_shuttle,
+drehklang::ui::LockOverlay g_lockOverlay(g_lockController);
+drehklang::drivers::BatteryAdcDriver g_batteryAdc;
+drehklang::power::BatteryMonitor g_batteryMonitor;
+drehklang::ui::BatteryIndicator g_batteryIndicator(g_batteryMonitor);
+drehklang::input::InputRouter g_inputRouter(g_tabs, g_playback, g_shuttle,
                                           g_brightness, g_sleepTimer,
                                           g_touchCalibration, g_screenManager);
-dialhard::input::GestureRecognizer g_gestureRecognizer;
+drehklang::input::GestureRecognizer g_gestureRecognizer;
 
 bool sdFileExists(const std::string &path) { return SD_MMC.exists(path.c_str()); }
 
 // Where the device was before power went away (ADR 0012). Music restores
 // before navigation, which drops Now Playing if no queue came back.
-dialhard::resume::PlaybackResumeSource g_playbackResume(g_playback, g_collections,
+drehklang::resume::PlaybackResumeSource g_playbackResume(g_playback, g_collections,
                                                        &sdFileExists);
-dialhard::resume::NavigationResumeSource g_navigationResume(g_tabs, g_collections,
+drehklang::resume::NavigationResumeSource g_navigationResume(g_tabs, g_collections,
                                                            g_playback);
-dialhard::resume::BookmarkKeeper g_bookmarkKeeper(g_bookmarks, g_nvsStore,
+drehklang::resume::BookmarkKeeper g_bookmarkKeeper(g_bookmarks, g_nvsStore,
                                                 g_collections, g_playback);
-dialhard::resume::ResumeScheduler g_resumeScheduler(
+drehklang::resume::ResumeScheduler g_resumeScheduler(
     g_nvsStore, {&g_playbackResume, &g_navigationResume});
 
 bool g_wasPlaying = false;
@@ -290,9 +290,9 @@ uint32_t g_lastBatteryUpdateMs = 0;
 // loop() iteration like touch/encoder input does.
 constexpr uint32_t kBatteryUpdateIntervalMs = 5000;
 
-void SdCollectionSet::rescan(dialhard::collection::CollectionId id,
-                             dialhard::library::ScanProgressListener *progress) {
-  CollectionState &state = g_collectionState[dialhard::collection::indexOf(id)];
+void SdCollectionSet::rescan(drehklang::collection::CollectionId id,
+                             drehklang::library::ScanProgressListener *progress) {
+  CollectionState &state = g_collectionState[drehklang::collection::indexOf(id)];
   state.index = loadOrBuildLibraryIndex(state.profile.cachePath, state.lister,
                                         g_fileOpener, g_directoryReader,
                                         g_jpegDecoder, g_coverWriter, progress);
@@ -302,20 +302,20 @@ void SdCollectionSet::rescan(dialhard::collection::CollectionId id,
 // sleep until a touch. The fade has already brought the output to 0.
 [[noreturn]] void enterSleepTimerDeepSleep(uint32_t now) {
   Serial.println("[sleep] timer expired -- entering deep sleep");
-  if (g_playback.state() == dialhard::playback::PlaybackState::Playing) {
+  if (g_playback.state() == drehklang::playback::PlaybackState::Playing) {
     g_playback.togglePlayPause(now);
   }
   g_toneSession.stop();
   g_resumeScheduler.saveNow(now);
   g_bookmarkKeeper.saveNow(now);
   // Volume and brightness changes still inside their save debounce.
-  g_playback.tick(now + dialhard::playback::PlaybackStateMachine::kVolumeSaveDebounceMs);
-  g_brightness.tick(now + dialhard::power::BrightnessSetting::kSaveDebounceMs);
+  g_playback.tick(now + drehklang::playback::PlaybackStateMachine::kVolumeSaveDebounceMs);
+  g_brightness.tick(now + drehklang::power::BrightnessSetting::kSaveDebounceMs);
   g_display.setBacklight(0);
   if (g_display.gfx()) g_display.gfx()->displayOff();
   g_touch.armWakeOnTouch();
   Serial.flush();
-  dialhard::drivers::enterDeepSleepUntilTouch();
+  drehklang::drivers::enterDeepSleepUntilTouch();
 }
 
 }  // namespace
@@ -333,13 +333,13 @@ void setup() {
   // buffer explicitly, so it isn't affected by the line above.
   g_usbStorage.begin();
   Serial.begin(115200);
-  Serial.printf("DialHard %s starting\n", dialhard::kVersion);
+  Serial.printf("Drehklang %s starting\n", drehklang::kVersion);
   if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
     Serial.println("[sleep] woke from deep sleep by touch");
   }
   // Before anything below loads volume, settings or the resume record.
-  dialhard::drivers::migrateLegacyNvsNamespace(
-      dialhard::drivers::NvsKeyValueStore::kNamespace);
+  drehklang::drivers::migrateLegacyNvsNamespaces(
+      drehklang::drivers::NvsKeyValueStore::kNamespace);
 
   g_encoder.begin();
   g_batteryAdc.begin();
@@ -381,8 +381,8 @@ void setup() {
     bootScreen = lv_obj_create(nullptr);
     lv_scr_load(bootScreen);
     lv_obj_t *title = lv_label_create(bootScreen);
-    lv_label_set_text(title, "DialHard");
-    lv_obj_set_style_text_font(title, &dialhard_text_font_20, 0);
+    lv_label_set_text(title, "Drehklang");
+    lv_obj_set_style_text_font(title, &drehklang_text_font_20, 0);
     lv_obj_align(title, LV_ALIGN_CENTER, 0, -30);
     bootLabel = lv_label_create(bootScreen);
     lv_label_set_text(bootLabel, "Starting...");
@@ -391,14 +391,14 @@ void setup() {
     lv_timer_handler();  // Flush immediately so something appears right away.
   }
 
-  if (!dialhard::drivers::initSdCard()) {
+  if (!drehklang::drivers::initSdCard()) {
     Serial.println("SD card init FAILED -- check wiring/pinout in device.md");
     if (bootLabel) {
       lv_label_set_text(bootLabel, "SD card init FAILED");
       lv_timer_handler();
     }
   } else {
-    dialhard::drivers::migrateLegacyCacheDir(kCacheDir);
+    drehklang::drivers::migrateLegacyCacheDir(kCacheDir);
     // Boot no longer scans the SD card at all -- just loads whatever index
     // each collection last cached (a small file read each, no directory
     // walk), so the device is usable immediately. Change detection/full
@@ -408,8 +408,8 @@ void setup() {
     // just starts empty -- see AGENTS.md.
     for (CollectionState &state : g_collectionState) {
       std::vector<uint8_t> cacheBytes = readIndexCacheFile(state.profile.cachePath);
-      dialhard::library::LibrarySignature ignoredSignature;
-      if (!cacheBytes.empty() && dialhard::library::IndexCache::decode(
+      drehklang::library::LibrarySignature ignoredSignature;
+      if (!cacheBytes.empty() && drehklang::library::IndexCache::decode(
                                      cacheBytes, state.index, ignoredSignature)) {
         Serial.printf("%s: %u artists, %u albums, %u tracks (from cache)\n",
                        state.profile.label,
@@ -459,8 +459,8 @@ void setup() {
     g_batteryIndicator.begin();
     g_batteryIndicator.update(g_batteryAdc.readMilliVolts());
     // Last on the top layer: messages show above everything (MessageArea.h).
-    g_messageArea.begin(dialhard::ui::theme::ink(), dialhard::ui::theme::surface(),
-                        dialhard::drivers::kLcdHorRes);
+    g_messageArea.begin(drehklang::ui::theme::ink(), drehklang::ui::theme::surface(),
+                        drehklang::drivers::kLcdHorRes);
     if (bootScreen) lv_obj_del(bootScreen);
   }
 }
@@ -504,7 +504,7 @@ void pollSerialCommands() {
         // Screenshots and INFO write a lot; not while the USB drive is
         // busy (UsbMscStorage::exporting()), where that would hang.
         if (strcmp(buf, "SCREENSHOT") == 0) {
-          if (!dialhard::drivers::UsbMscStorage::exporting()) {
+          if (!drehklang::drivers::UsbMscStorage::exporting()) {
             g_lvglGlue.writeScreenshotToSerial();
           }
         } else if (sscanf(buf, "SWIPE %d %d %d %d", &x, &y, &toX, &toY) == 4) {
@@ -522,7 +522,7 @@ void pollSerialCommands() {
           g_injectedTapStartMs = millis();
           g_injectedTapUntilMs = g_injectedTapStartMs + kInjectedTapMs;
         } else if (strcmp(buf, "INFO") == 0 &&
-                   !dialhard::drivers::UsbMscStorage::exporting()) {
+                   !drehklang::drivers::UsbMscStorage::exporting()) {
           // A reset reason of 4 is a panic: read the core dump (AGENTS.md).
           Serial.printf("[info] up %lus, reset reason %d, internal free %u, "
                         "loop stack left %u\n",
@@ -545,8 +545,8 @@ void pollSerialCommands() {
   }
 }
 
-#ifdef DIALHARD_LOOP_WDT
-// Diagnostic build only (PLATFORMIO_BUILD_FLAGS=-DDIALHARD_LOOP_WDT): turns
+#ifdef DREHKLANG_LOOP_WDT
+// Diagnostic build only (PLATFORMIO_BUILD_FLAGS=-DDREHKLANG_LOOP_WDT): turns
 // a hung loop() into a panic, so the crash's core dump names the call it
 // hung in (scripts/read-coredump.sh). That is how the USB CDC write spin
 // was found twice (AGENTS.md).
@@ -570,7 +570,7 @@ void armLoopWatchdog() {
 #endif
 
 void loop() {
-#ifdef DIALHARD_LOOP_WDT
+#ifdef DREHKLANG_LOOP_WDT
   armLoopWatchdog();
   esp_task_wdt_reset();
 #endif
@@ -592,10 +592,10 @@ void loop() {
   // consumers slightly different coordinates (real capacitive touch
   // jitters between reads), which could make a single tap also register
   // as a swipe -- see LvglGlue.h.
-  dialhard::input::TouchSample touchSample{};
+  drehklang::input::TouchSample touchSample{};
   g_touch.poll(touchSample);
   // Kept raw for Settings > Touch calibration, which fits from raw points.
-  const dialhard::input::TouchSample rawTouchSample = touchSample;
+  const drehklang::input::TouchSample rawTouchSample = touchSample;
   touchSample = g_touchCalibration.active().apply(rawTouchSample);
   if (g_injectedTapUntilMs != 0) {
     const uint32_t nowMs = millis();
@@ -613,7 +613,7 @@ void loop() {
     }
   }
 
-#ifdef DIALHARD_TOUCH_DEBUG
+#ifdef DREHKLANG_TOUCH_DEBUG
   {
     static uint32_t lastLoopMs = 0, maxLoopMs = 0, windowStartMs = 0;
     static uint32_t downAtMs = 0;
@@ -675,16 +675,16 @@ void loop() {
   // Sleep timer (ADR 0015). During its fade a touch or (with the display
   // on) a turn means someone is still awake: cancel, and let that input do
   // nothing else. Not while locked -- that's a pocket.
-  dialhard::power::SleepPhase sleepPhase = g_sleepTimer.tick(now);
-  if (sleepPhase == dialhard::power::SleepPhase::Fading) {
-    constexpr dialhard::ui_widgets::MessageAnchor kCenter{
-        dialhard::drivers::kLcdHorRes / 2, dialhard::drivers::kLcdVerRes / 2};
+  drehklang::power::SleepPhase sleepPhase = g_sleepTimer.tick(now);
+  if (sleepPhase == drehklang::power::SleepPhase::Fading) {
+    constexpr drehklang::ui_widgets::MessageAnchor kCenter{
+        drehklang::drivers::kLcdHorRes / 2, drehklang::drivers::kLcdVerRes / 2};
     bool stillAwake = !g_lockController.isLocked() &&
                       (touchDownEdge || (displayOn && encoderDelta != 0));
     if (stillAwake) {
       Serial.println("[sleep] cancelled during fade");
       g_sleepTimer.cancel();
-      g_playback.setOutputGain(dialhard::power::SleepTimer::kUnityGain);
+      g_playback.setOutputGain(drehklang::power::SleepTimer::kUnityGain);
       g_sleepFading = false;
       if (touchDownEdge) g_swallowingWakeTouch = true;
       encoderDelta = 0;
@@ -700,12 +700,12 @@ void loop() {
       }
       g_playback.setOutputGain(g_sleepTimer.fadeGain(now));
     }
-  } else if (sleepPhase == dialhard::power::SleepPhase::Expired) {
+  } else if (sleepPhase == drehklang::power::SleepPhase::Expired) {
     enterSleepTimerDeepSleep(now);
   } else if (g_sleepFading) {
     // Turned off or re-set on the Sleep screen mid-fade.
     g_sleepFading = false;
-    g_playback.setOutputGain(dialhard::power::SleepTimer::kUnityGain);
+    g_playback.setOutputGain(drehklang::power::SleepTimer::kUnityGain);
   }
 
   if (g_swallowingWakeTouch) {
@@ -714,7 +714,7 @@ void loop() {
     // Calibration taps go to the calibrator only: LVGL sees no touch (so
     // nothing underneath clicks) and no gesture can pop the screen.
     g_touchCalibration.feedRaw(rawTouchSample, now);
-    g_lvglGlue.feedTouch(dialhard::input::TouchSample{});
+    g_lvglGlue.feedTouch(drehklang::input::TouchSample{});
   } else {
     g_lvglGlue.feedTouch(touchSample);
     // Sideways drift while turning the knob during a shuttle hold
@@ -730,7 +730,7 @@ void loop() {
       if (gesture && !g_screenManager.swipeStartsOnControl(gesture->startX,
                                                            gesture->startY)) {
         g_inputRouter.onGesture(*gesture);
-        if (gesture->type == dialhard::input::GestureType::SwipeLeftToRight) {
+        if (gesture->type == drehklang::input::GestureType::SwipeLeftToRight) {
           g_screenManager.render();
         }
       }
@@ -776,7 +776,7 @@ void loop() {
   if (g_shuttle.isHeld() &&
       (!touchSample.pressed || !displayOn || g_lockController.isLocked() ||
        g_tabs.activeStack().current().kind !=
-           dialhard::navigation::ScreenKind::NowPlaying)) {
+           drehklang::navigation::ScreenKind::NowPlaying)) {
     g_shuttle.release(now);
   }
   g_shuttle.tick(now);
@@ -791,7 +791,7 @@ void loop() {
     g_lastBatteryUpdateMs = now;
     uint32_t batteryMilliVolts = g_batteryAdc.readMilliVolts();
     // Never while the USB drive is busy -- see UsbMscStorage::exporting().
-    if (!dialhard::drivers::UsbMscStorage::exporting()) {
+    if (!drehklang::drivers::UsbMscStorage::exporting()) {
       Serial.printf("[battery] %u mV\n", batteryMilliVolts);
     }
     g_batteryIndicator.update(batteryMilliVolts);
@@ -831,7 +831,7 @@ void loop() {
   // against the installed ESP32-audioI2S version's actual pause behavior
   // once on hardware.
   bool isPlayingNow =
-      g_playback.state() == dialhard::playback::PlaybackState::Playing;
+      g_playback.state() == drehklang::playback::PlaybackState::Playing;
   if (g_wasPlaying && isPlayingNow && !g_audioDriver.isRunning()) {
     g_playback.onTrackFinished(millis());
     g_screenManager.render();

@@ -5,7 +5,7 @@
 
 #include "KeyValueStore.h"
 
-namespace dialhard::power {
+namespace drehklang::power {
 
 // The display-brightness setting (ADR 0010): a level from kMinLevel to
 // kMaxLevel (shown as 10%..100%), adjusted by the encoder on the
@@ -72,4 +72,4 @@ class BrightnessSetting {
   uint32_t lastChangeMs_ = 0;
 };
 
-}  // namespace dialhard::power
+}  // namespace drehklang::power

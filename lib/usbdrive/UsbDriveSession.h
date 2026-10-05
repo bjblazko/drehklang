@@ -4,7 +4,7 @@
 
 #include "UsbStorage.h"
 
-namespace dialhard::usbdrive {
+namespace drehklang::usbdrive {
 
 // Why the last session ended.
 enum class UsbDriveEnd { None, Ejected, HostGone, Done };
@@ -87,4 +87,4 @@ class UsbDriveSession {
   UsbDriveEnd lastEnd_ = UsbDriveEnd::None;
 };
 
-}  // namespace dialhard::usbdrive
+}  // namespace drehklang::usbdrive

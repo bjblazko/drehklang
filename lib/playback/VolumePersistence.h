@@ -4,7 +4,7 @@
 
 #include "KeyValueStore.h"
 
-namespace dialhard::playback {
+namespace drehklang::playback {
 
 // Loads/saves a single persisted volume level so a physical volume knob
 // doesn't reset to a default every boot (decision 9, ADR 0004). Writes
@@ -30,4 +30,4 @@ class VolumePersistence {
   KeyValueStore &store_;
 };
 
-}  // namespace dialhard::playback
+}  // namespace drehklang::playback

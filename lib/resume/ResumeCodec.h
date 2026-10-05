@@ -5,7 +5,7 @@
 
 #include "ResumeRecord.h"
 
-namespace dialhard::resume {
+namespace drehklang::resume {
 
 // Binary form of a ResumeRecord (ADR 0012):
 //
@@ -41,4 +41,4 @@ class ResumeCodec {
   static uint32_t crc32(const uint8_t *data, std::size_t length);
 };
 
-}  // namespace dialhard::resume
+}  // namespace drehklang::resume

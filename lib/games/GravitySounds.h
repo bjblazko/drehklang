@@ -5,7 +5,7 @@
 #include "GravityGame.h"
 #include "ToneGenerator.h"
 
-namespace dialhard::games {
+namespace drehklang::games {
 
 // Gravity's sounds (ADR 0023).
 //
@@ -46,4 +46,4 @@ constexpr GravityBlip blipFor(GravityGame::Sound sound) {
   }
 }
 
-}  // namespace dialhard::games
+}  // namespace drehklang::games

@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace dialhard::games {
+namespace drehklang::games {
 
 struct TerrainPoint {
   int16_t x;
@@ -184,4 +184,4 @@ class GravityTerrain {
   uint32_t state_ = 1;
 };
 
-}  // namespace dialhard::games
+}  // namespace drehklang::games

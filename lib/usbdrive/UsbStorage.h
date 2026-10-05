@@ -1,6 +1,6 @@
 #pragma once
 
-namespace dialhard::usbdrive {
+namespace drehklang::usbdrive {
 
 // The SD card as a USB mass storage device. Implemented over TinyUSB on
 // the device (lib/drivers-usb/UsbMscStorage.h), faked in host tests.
@@ -19,4 +19,4 @@ class UsbStorage {
   virtual bool takeEjectRequest() = 0;
 };
 
-}  // namespace dialhard::usbdrive
+}  // namespace drehklang::usbdrive

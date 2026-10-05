@@ -2,7 +2,7 @@
 
 #include "UsbStorage.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // The SD card as a TinyUSB mass storage LUN (ADR 0016). Sectors go
 // straight between USB and the card (sdmmc_read/write_sectors), bypassing
@@ -39,4 +39,4 @@ class UsbMscStorage : public usbdrive::UsbStorage {
   static bool exporting();
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

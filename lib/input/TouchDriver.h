@@ -2,7 +2,7 @@
 
 #include "GestureRecognizer.h"
 
-namespace dialhard::input {
+namespace drehklang::input {
 
 // Hardware-facing surface for the touch controller. Concrete adapter
 // (Cst816Driver, lib/drivers-touch/ -- not yet implemented, see ADR 0004
@@ -15,4 +15,4 @@ class TouchDriver {
   virtual bool poll(TouchSample &out) = 0;
 };
 
-}  // namespace dialhard::input
+}  // namespace drehklang::input

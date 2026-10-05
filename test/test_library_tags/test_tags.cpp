@@ -9,11 +9,11 @@
 #include "TagReader.h"
 #include "VorbisCommentParser.h"
 
-using dialhard::library::Id3v2Parser;
-using dialhard::library::RiffInfoParser;
-using dialhard::library::TagReader;
-using dialhard::library::TagResult;
-using dialhard::library::VorbisCommentParser;
+using drehklang::library::Id3v2Parser;
+using drehklang::library::RiffInfoParser;
+using drehklang::library::TagReader;
+using drehklang::library::TagResult;
+using drehklang::library::VorbisCommentParser;
 
 void setUp() {}
 void tearDown() {}
@@ -349,7 +349,7 @@ void test_vorbis_comment_parses_fields() {
     buf.insert(buf.end(), s.begin(), s.end());
   };
 
-  std::string vendor = "DialHard test encoder";
+  std::string vendor = "Drehklang test encoder";
   appendU32LE(static_cast<uint32_t>(vendor.size()));
   buf.insert(buf.end(), vendor.begin(), vendor.end());
 

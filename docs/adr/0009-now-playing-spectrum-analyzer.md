@@ -63,7 +63,7 @@ instead of freezing (honest, #6).
 ## Verified on real hardware (2026-09-14)
 
 - Worst-case analyzer + canvas stamp time ~2.0 ms per frame (logged with
-  `-DDIALHARD_SPECTRUM_DEBUG`), well under the 5 ms budget.
+  `-DDREHKLANG_SPECTRUM_DEBUG`), well under the 5 ms budget.
 - No audible stutter while animating.
 - Bands track bass/treble correctly, volume changes don't change bar
   height, pause decays to zero, the unlit grey reads on the panel.

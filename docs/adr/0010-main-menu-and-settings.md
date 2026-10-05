@@ -7,7 +7,7 @@ the music roots, and moves the library rescan out of the Library header.
 
 ## Context
 
-DialHard booted straight into the Library, and README's backlog had a
+Drehklang booted straight into the Library, and README's backlog had a
 settings screen waiting for "a home/main-menu screen to hang it off". The
 menu needs to grow later (more destinations), the first real setting is
 display brightness, and the device has only a touch screen and a

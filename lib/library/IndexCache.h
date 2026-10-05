@@ -5,7 +5,7 @@
 
 #include "LibraryScanner.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 // Cheap fingerprint of the SD card's current audio files, used to decide
 // whether the cached index still matches reality without re-parsing any
@@ -26,7 +26,7 @@ struct LibrarySignature {
 LibrarySignature computeSignature(FileLister &lister);
 
 // Encodes/decodes a LibraryIndex + its LibrarySignature to/from the
-// binary /dialhard/library.idx format. Operates on plain byte buffers
+// binary /drehklang/library.idx format. Operates on plain byte buffers
 // (not a file interface) so the format itself is host-testable without
 // mocking file I/O -- actual persistence to SD is a thin concern for the
 // caller (main.cpp / a driver adapter).
@@ -42,4 +42,4 @@ class IndexCache {
                       LibrarySignature &signature);
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

@@ -3,7 +3,7 @@
 #include <array>
 #include <cstring>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -91,4 +91,4 @@ uint32_t Mp3Duration::readSeconds(RawFile &file) {
   return 0;
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

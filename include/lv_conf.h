@@ -59,7 +59,7 @@
 #define LV_MEM_CUSTOM 0
 #if LV_MEM_CUSTOM == 0
     /*Size of the memory available for `lv_mem_alloc()` in bytes (>= 2kB)*/
-    /*DialHard: 2 MB in PSRAM (see LV_MEM_POOL_ALLOC). Every list row is a
+    /*Drehklang: 2 MB in PSRAM (see LV_MEM_POOL_ALLOC). Every list row is a
      *real LVGL object, so the former 96 KB internal-RAM pool capped a
      *library screen (artists, a big album or folder) at a few hundred rows.*/
     #define LV_MEM_SIZE (2048U * 1024U)          /*[bytes]*/
@@ -417,10 +417,10 @@
 /*Optionally declare custom fonts here.
  *You can use these fonts as default font too and they will be available globally.
  *E.g. #define LV_FONT_CUSTOM_DECLARE   LV_FONT_DECLARE(my_font_1) LV_FONT_DECLARE(my_font_2)*/
-#define LV_FONT_CUSTOM_DECLARE   LV_FONT_DECLARE(dialhard_text_font_14) LV_FONT_DECLARE(dialhard_text_font_16) LV_FONT_DECLARE(dialhard_text_font_20) LV_FONT_DECLARE(dialhard_text_font_28)
+#define LV_FONT_CUSTOM_DECLARE   LV_FONT_DECLARE(drehklang_text_font_14) LV_FONT_DECLARE(drehklang_text_font_16) LV_FONT_DECLARE(drehklang_text_font_20) LV_FONT_DECLARE(drehklang_text_font_28)
 
 /*Always set a default font*/
-#define LV_FONT_DEFAULT &dialhard_text_font_16
+#define LV_FONT_DEFAULT &drehklang_text_font_16
 
 /*Enable handling large font and/or fonts with a lot of characters.
  *The limit depends on the font size, font face and bpp.

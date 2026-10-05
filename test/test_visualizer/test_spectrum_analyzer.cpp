@@ -6,7 +6,7 @@
 
 #include "SpectrumAnalyzer.h"
 
-using dialhard::visualizer::SpectrumAnalyzer;
+using drehklang::visualizer::SpectrumAnalyzer;
 
 void setUp() {}
 void tearDown() {}

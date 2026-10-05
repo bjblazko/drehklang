@@ -85,5 +85,5 @@ apart (22 px gaps), at y=96 — unchanged whether the mini-bar shows.
   ADR 0018: the row becomes a carousel.)*
 - The CST816 wake settings come from its datasheet. Confirmed on the
   device 2026-09-15: fade, cancel, deep sleep, wake by touch and resume
-  all work. Build with `-DDIALHARD_SLEEP_DEBUG` for a 1-minute preset to
+  all work. Build with `-DDREHKLANG_SLEEP_DEBUG` for a 1-minute preset to
   try it again.

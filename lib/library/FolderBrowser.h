@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 struct FolderEntry {
   std::string name;  // Just the entry's own name, not a full path.
@@ -30,4 +30,4 @@ class FolderBrowser {
                                         const std::string &path);
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

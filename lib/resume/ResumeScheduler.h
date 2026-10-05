@@ -9,7 +9,7 @@
 #include "ResumeCodec.h"
 #include "ResumeSource.h"
 
-namespace dialhard::resume {
+namespace drehklang::resume {
 
 // Restores the saved ResumeRecord at boot and keeps it up to date while
 // running (ADR 0012). There is no shutdown signal, so it saves periodically,
@@ -124,4 +124,4 @@ class ResumeScheduler {
   uint32_t saveCount_ = 0;
 };
 
-}  // namespace dialhard::resume
+}  // namespace drehklang::resume

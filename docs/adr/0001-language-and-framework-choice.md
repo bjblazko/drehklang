@@ -6,7 +6,7 @@ Accepted — 2026-09-11
 
 ## Context
 
-`DialHard` targets a Waveshare ESP32-S3-Knob-Touch-LCD-1.8 (see
+`Drehklang` targets a Waveshare ESP32-S3-Knob-Touch-LCD-1.8 (see
 [`device.md`](../../device.md)): an ESP32-S3R8 primary MCU with 8MB PSRAM,
 a 360×360 IPS touch LCD (ST77916 + CST816), a PCM5100A I2S DAC, and a
 rotary encoder.

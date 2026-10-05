@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace dialhard::power {
+namespace drehklang::power {
 
 // Converts a Battery-ADC millivolt reading (see
 // drivers::BatteryAdcDriver) into a 0-100% charge estimate and a coarse
@@ -61,4 +61,4 @@ class BatteryMonitor {
   bool charging_ = false;
 };
 
-}  // namespace dialhard::power
+}  // namespace drehklang::power

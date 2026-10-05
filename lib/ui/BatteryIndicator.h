@@ -8,7 +8,7 @@
 #include "TextFont.h"
 #include "Theme.h"
 
-namespace dialhard::ui {
+namespace drehklang::ui {
 
 // Battery status, shown only when it matters (docs/design/ux-guidelines.md
 // §6): hidden during normal use, a red icon + percentage when the charge
@@ -45,7 +45,7 @@ class BatteryIndicator {
   // Call once, after LVGL is initialized and after LockOverlay::begin().
   void begin() {
     label_ = lv_label_create(lv_layer_top());
-    lv_obj_set_style_text_font(label_, &dialhard_text_font_14, 0);
+    lv_obj_set_style_text_font(label_, &drehklang_text_font_14, 0);
     lv_obj_set_style_bg_color(label_, theme::surface(), 0);
     lv_obj_set_style_bg_opa(label_, LV_OPA_COVER, 0);
     lv_obj_set_style_pad_hor(label_, 8, 0);
@@ -125,4 +125,4 @@ class BatteryIndicator {
   bool locked_ = false;
 };
 
-}  // namespace dialhard::ui
+}  // namespace drehklang::ui

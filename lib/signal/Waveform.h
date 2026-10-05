@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace dialhard::signal {
+namespace drehklang::signal {
 
 // What the tone generator can play (ADR 0024). Stored in NVS by value, so
 // append-only.
@@ -29,4 +29,4 @@ struct OscillatorParams {
   NoiseColor noise = NoiseColor::White;
 };
 
-}  // namespace dialhard::signal
+}  // namespace drehklang::signal

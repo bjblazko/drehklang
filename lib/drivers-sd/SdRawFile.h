@@ -4,7 +4,7 @@
 
 #include "RawFile.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // Thin RawFile adapter over an already-opened Arduino fs::File. The only
 // place this project reads raw bytes from an SD-resident file for tag
@@ -22,4 +22,4 @@ class SdRawFile : public library::RawFile {
   fs::File file_;
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

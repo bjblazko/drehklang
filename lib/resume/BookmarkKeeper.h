@@ -9,7 +9,7 @@
 #include "CoverArtCache.h"
 #include "PlaybackStateMachine.h"
 
-namespace dialhard::resume {
+namespace drehklang::resume {
 
 // Keeps Bookmarks current while a spoken-word title plays, and persists
 // them (ADR 0018).
@@ -97,4 +97,4 @@ class BookmarkKeeper {
   uint32_t lastSaveMs_ = 0;
 };
 
-}  // namespace dialhard::resume
+}  // namespace drehklang::resume

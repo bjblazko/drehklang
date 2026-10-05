@@ -3,7 +3,7 @@
 #include <array>
 #include <lvgl.h>
 
-namespace dialhard::ui_widgets {
+namespace drehklang::ui_widgets {
 
 // Table Tennis's score (ADR 0022), drawn the way the 1972 original draws
 // it: that
@@ -127,4 +127,4 @@ class SegmentDigits {
   int value_ = -1;
 };
 
-}  // namespace dialhard::ui_widgets
+}  // namespace drehklang::ui_widgets

@@ -11,7 +11,7 @@
 #include "GestureRecognizer.h"
 #include "TouchCalibration.h"
 
-namespace dialhard::input {
+namespace drehklang::input {
 
 // Collects one raw tap per on-screen target and fits a TouchCalibration
 // from them. Pure logic over raw CST816 samples and an explicit clock.
@@ -231,4 +231,4 @@ class TouchCalibrationFlow {
   uint32_t verifyDeadlineMs_ = 0;
 };
 
-}  // namespace dialhard::input
+}  // namespace drehklang::input

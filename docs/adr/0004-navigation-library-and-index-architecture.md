@@ -84,7 +84,7 @@ the user just wants to see what's on the card.
 ### Index cache: persisted on SD, cheap staleness check on boot
 
 The Library-mode index is built once by a full tag-parsing scan, then
-persisted to `/dialhard/library.idx` (magic, format version, a staleness
+persisted to `/drehklang/library.idx` (magic, format version, a staleness
 signature, flat artist/album/track tables). On subsequent boots, a
 cheap stat-only pass (file count + XOR of `size ^ mtime` across all
 audio files) is compared against the cached signature; a match loads the
@@ -305,7 +305,7 @@ each one only visible by actually tapping through the UI on hardware:
   10px extended click area (`LvglButtonHelpers.h`). Note: the CST816
   NACKs every I2C read while untouched, so a failed read genuinely means
   "not pressed" -- don't "fix" it by holding the previous state. The
-  diagnostics stay in the code behind `-DDIALHARD_TOUCH_DEBUG`. The
+  diagnostics stay in the code behind `-DDREHKLANG_TOUCH_DEBUG`. The
   `CALIB` serial crosshair command used for the fit was later replaced by
   Settings > Touch calibration, which fits and saves on the device
   (ADR 0010).

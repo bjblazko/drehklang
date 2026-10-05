@@ -6,11 +6,11 @@
 
 #include "ToneSettings.h"
 
-using dialhard::playback::KeyValueStore;
-using dialhard::signal::NoiseColor;
-using dialhard::signal::ToneParam;
-using dialhard::signal::ToneSettings;
-using dialhard::signal::Waveform;
+using drehklang::playback::KeyValueStore;
+using drehklang::signal::NoiseColor;
+using drehklang::signal::ToneParam;
+using drehklang::signal::ToneSettings;
+using drehklang::signal::Waveform;
 
 void setUp() {}
 void tearDown() {}

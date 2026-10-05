@@ -8,7 +8,7 @@
 
 #include "Waveform.h"
 
-namespace dialhard::signal {
+namespace drehklang::signal {
 
 // The tone generator's voice (ADR 0024). Pure logic: the audio task calls
 // render() with a buffer and a rate, and nothing here knows about I2S.
@@ -215,4 +215,4 @@ class Oscillator {
   bool running_ = false;
 };
 
-}  // namespace dialhard::signal
+}  // namespace drehklang::signal

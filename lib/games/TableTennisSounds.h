@@ -4,7 +4,7 @@
 
 #include "TableTennisGame.h"
 
-namespace dialhard::games {
+namespace drehklang::games {
 
 // Table Tennis's three blips (ADR 0022).
 //
@@ -43,4 +43,4 @@ constexpr Blip blipFor(TableTennisGame::Sound sound) {
   }
 }
 
-}  // namespace dialhard::games
+}  // namespace drehklang::games

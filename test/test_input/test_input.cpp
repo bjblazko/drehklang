@@ -16,31 +16,31 @@
 #include "GeneratorControl.h"
 #include "ToneSession.h"
 
-using dialhard::input::CalibrationOutcome;
-using dialhard::input::CalibrationPhase;
-using dialhard::input::TouchCalibrationFlow;
-using dialhard::input::TouchCalibrator;
-using dialhard::resume::BlobStore;
-using dialhard::input::GestureRecognizer;
-using dialhard::input::GestureType;
-using dialhard::input::InputRouter;
-using dialhard::input::KnobSink;
-using dialhard::input::TouchCalibration;
-using dialhard::input::TouchLatch;
-using dialhard::input::TouchSample;
-using dialhard::navigation::Screen;
-using dialhard::navigation::ScreenKind;
-using dialhard::navigation::TabController;
-using dialhard::power::BrightnessSetting;
-using dialhard::power::SleepTimer;
-using dialhard::playback::KeyValueStore;
-using dialhard::playback::PlaybackDriver;
-using dialhard::playback::PlaybackStateMachine;
-using dialhard::playback::Shuttle;
-using dialhard::playback::VolumePersistence;
-using dialhard::signal::GeneratorOutput;
-using dialhard::signal::OscillatorParams;
-using dialhard::signal::ToneSession;
+using drehklang::input::CalibrationOutcome;
+using drehklang::input::CalibrationPhase;
+using drehklang::input::TouchCalibrationFlow;
+using drehklang::input::TouchCalibrator;
+using drehklang::resume::BlobStore;
+using drehklang::input::GestureRecognizer;
+using drehklang::input::GestureType;
+using drehklang::input::InputRouter;
+using drehklang::input::KnobSink;
+using drehklang::input::TouchCalibration;
+using drehklang::input::TouchLatch;
+using drehklang::input::TouchSample;
+using drehklang::navigation::Screen;
+using drehklang::navigation::ScreenKind;
+using drehklang::navigation::TabController;
+using drehklang::power::BrightnessSetting;
+using drehklang::power::SleepTimer;
+using drehklang::playback::KeyValueStore;
+using drehklang::playback::PlaybackDriver;
+using drehklang::playback::PlaybackStateMachine;
+using drehklang::playback::Shuttle;
+using drehklang::playback::VolumePersistence;
+using drehklang::signal::GeneratorOutput;
+using drehklang::signal::OscillatorParams;
+using drehklang::signal::ToneSession;
 
 void setUp() {}
 void tearDown() {}
@@ -60,7 +60,7 @@ class FakeDriver : public PlaybackDriver {
   void setOutputGain(uint16_t) override {}
   bool isRunning() override { return true; }
   uint32_t durationSeconds() override { return 0; }
-  dialhard::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
+  drehklang::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
     return {};
   }
   void loop() override {}
@@ -141,7 +141,7 @@ void test_encoder_scrolls_list_on_browse_screen() {
   VolumePersistence volume(store);
   PlaybackStateMachine playback(driver, volume);
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);  // Library/Artists.
+  tabs.openCollection(drehklang::collection::CollectionId::Music);  // Library/Artists.
   RecordingListSink sink;
   BrightnessSetting brightness(store);
   Shuttle shuttle(playback);
@@ -284,7 +284,7 @@ void test_swipe_pops_when_possible() {
   VolumePersistence volume(store);
   PlaybackStateMachine playback(driver, volume);
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   tabs.activeStack().push(Screen{ScreenKind::Albums, {}});
   RecordingListSink sink;
   BrightnessSetting brightness(store);
@@ -306,7 +306,7 @@ void test_swipe_switches_tab_at_root() {
   VolumePersistence volume(store);
   PlaybackStateMachine playback(driver, volume);
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   RecordingListSink sink;
   BrightnessSetting brightness(store);
   Shuttle shuttle(playback);
@@ -327,7 +327,7 @@ void test_tap_is_not_routed_by_input_router() {
   VolumePersistence volume(store);
   PlaybackStateMachine playback(driver, volume);
   TabController tabs;
-  tabs.openCollection(dialhard::collection::CollectionId::Music);
+  tabs.openCollection(drehklang::collection::CollectionId::Music);
   RecordingListSink sink;
   BrightnessSetting brightness(store);
   Shuttle shuttle(playback);

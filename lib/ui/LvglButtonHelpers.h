@@ -4,7 +4,7 @@
 
 #include "Theme.h"
 
-namespace dialhard::ui {
+namespace drehklang::ui {
 
 // The three button roles from docs/design/ux-guidelines.md §3a -- every
 // button in the app is exactly one of these.
@@ -98,4 +98,4 @@ inline lv_obj_t *makeHoldButton(lv_obj_t *parent, const char *symbolOrGlyph,
   return btn;
 }
 
-}  // namespace dialhard::ui
+}  // namespace drehklang::ui

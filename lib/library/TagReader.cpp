@@ -10,7 +10,7 @@
 #include "Utf8.h"
 #include "VorbisCommentParser.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -194,4 +194,4 @@ TagResult TagReader::read(RawFile &file, const std::string &filePath) {
   return result;
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

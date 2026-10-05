@@ -2,7 +2,7 @@
 
 #include <lvgl.h>
 
-namespace dialhard::ui_widgets {
+namespace drehklang::ui_widgets {
 
 // Thin, reusable wrapper around LVGL's native lv_arc, styled to hug an
 // arc of the round display's bezel edge rather than sit as a
@@ -93,4 +93,4 @@ class EdgeArc {
   lv_obj_t *arc_ = nullptr;
 };
 
-}  // namespace dialhard::ui_widgets
+}  // namespace drehklang::ui_widgets

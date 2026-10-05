@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -79,4 +79,4 @@ void SquareResampler::resample(const uint16_t *src, uint16_t width,
   }
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

@@ -33,4 +33,4 @@ supersedes the old one (and the old one is marked "Superseded by NNNN").
 | [0022](0022-games-menu-and-table-tennis.md) | A Games menu, and Table Tennis | Accepted |
 | [0023](0023-gravity.md) | Gravity, and drawing a game in lines | Accepted (extends 0022) |
 | [0024](0024-tone-generator.md) | Tones, a tone generator, and the shared signal layer | Accepted (extends 0018, 0022) |
-| [0025](0025-rename-to-dialhard.md) | Renaming the product to DialHard | Accepted (amends 0012, 0018) |
+| [0025](0025-rename-to-drehklang.md) | Renaming the product to Drehklang | Accepted (amends 0012, 0018) |

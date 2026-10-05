@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace dialhard::input {
+namespace drehklang::input {
 
 // Hardware-facing surface for the rotary encoder. Concrete adapter
 // (GpioEncoderDriver, lib/drivers-encoder/) decodes GPIO7/GPIO8
@@ -16,4 +16,4 @@ class EncoderDriver {
   virtual int16_t readDelta() = 0;
 };
 
-}  // namespace dialhard::input
+}  // namespace drehklang::input

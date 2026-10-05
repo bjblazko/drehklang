@@ -7,7 +7,7 @@
 #include "LibraryScanner.h"
 #include "SdRawFile.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // Opens files on the SD card for tag reading during a library scan.
 // Uses SD_MMC (4-wire SDMMC, per device.md's pinout) rather than the SPI
@@ -23,4 +23,4 @@ class SdFileOpener : public library::FileOpener {
   }
 };
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

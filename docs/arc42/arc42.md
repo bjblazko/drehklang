@@ -1,4 +1,4 @@
-# DialHard — Architecture Documentation (arc42)
+# Drehklang — Architecture Documentation (arc42)
 
 Following the [arc42](https://arc42.org) template. Sections that don't
 make sense to fill yet (because the thing they describe doesn't exist as
@@ -13,7 +13,7 @@ likely to want one.
 
 ## 1. Introduction and Goals
 
-`DialHard` is offline audio player firmware for a Waveshare
+`Drehklang` is offline audio player firmware for a Waveshare
 ESP32-S3-Knob-Touch-LCD-1.8 board. It plays audio stored on an SD card
 through the board's 3.5mm audio jack, controlled via the rotary encoder
 and touch display.
@@ -51,7 +51,7 @@ The SD card holds only raw audio files, one top-level folder per
 collection (`/Music`, `/Audiobooks`, `/RadioPlays`) and whatever layout
 the user already has underneath. Everything the firmware derives from
 that — each collection's tag-based Artist/Album/Track index and its own
-on-disk cache under `/dialhard/` — is **derived state**, not
+on-disk cache under `/drehklang/` — is **derived state**, not
 authoritative: it can always be rebuilt from the card's actual files.
 Rebuilding is on demand (Settings > Rescan, or after a USB drive
 session), never at boot, so the device is usable the moment it powers on
@@ -62,8 +62,8 @@ session), never at boot, so the device is usable the moment it powers on
 ```mermaid
 flowchart LR
     SD[("SD card\n(/Music, /Audiobooks,\n/RadioPlays)")]
-    FW["DialHard firmware\n(ESP32-S3R8)"]
-    Cache[("/dialhard/*.idx\n(one derived cache\nper collection)")]
+    FW["Drehklang firmware\n(ESP32-S3R8)"]
+    Cache[("/drehklang/*.idx\n(one derived cache\nper collection)")]
     User(("User"))
     Jack(["3.5mm audio jack"])
 
@@ -172,7 +172,7 @@ flowchart TB
   exact duration and `mdat` range, ADR 0016), `scan` (`FileLister`
   interface, `LibraryScanner`, `FolderBrowser` for live Files-mode
   listing, `AudioFileTypes` for the one shared extension check),
-  `index` (`IndexCache` — the `/dialhard/*.idx` format and
+  `index` (`IndexCache` — the `/drehklang/*.idx` format and
   staleness-signature check; the format carries no root identity, so one
   collection's cache is simply the file it was written to), plus
   `SquareResampler` behind the cover pipeline. Everything here works on
@@ -234,7 +234,7 @@ sequenceDiagram
     participant Res as ResumeScheduler
 
     loop each collection
-        Main->>Cache: decode(/dialhard/<collection>.idx)
+        Main->>Cache: decode(/drehklang/<collection>.idx)
         Cache-->>Main: LibraryIndex (or empty)
     end
     Main->>Marks: begin() -- per-title positions

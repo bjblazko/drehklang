@@ -5,7 +5,7 @@
 
 #include "SquareResampler.h"
 
-using dialhard::library::SquareResampler;
+using drehklang::library::SquareResampler;
 
 void setUp() {}
 void tearDown() {}

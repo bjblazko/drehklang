@@ -2,7 +2,7 @@
 
 #include "MenuVisibility.h"
 
-using dialhard::navigation::MenuVisibility;
+using drehklang::navigation::MenuVisibility;
 using ToggleResult = MenuVisibility::ToggleResult;
 
 void setUp() {}

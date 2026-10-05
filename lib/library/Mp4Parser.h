@@ -6,7 +6,7 @@
 #include "RawFile.h"
 #include "TagResult.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 // What the player needs from an MP4/M4A file besides the audio itself.
 struct Mp4Info {
@@ -32,4 +32,4 @@ class Mp4Parser {
   static Mp4Info parse(RawFile &file);
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

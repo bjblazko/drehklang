@@ -19,7 +19,7 @@
 **Code and tests**
 - Logic lives in host-testable headers under `lib/`. Callers pass timestamps (`nowMs`); logic never reads a clock itself (ADR 0003).
 - Every call into `Audio` in `Esp32AudioI2SDriver` takes `mutex_` via `MutexGuard` (ADR 0006).
-- Namespace `dialhard::…`. Match the surrounding comment style: explain *why*, and cite ADRs and the dates of hardware findings.
+- Namespace `drehklang::…`. Match the surrounding comment style: explain *why*, and cite ADRs and the dates of hardware findings.
 - Host tests: `pio test -e native` (a single suite: `pio test -e native -f <suite>`).
 - Firmware build: `pio run -e esp32-s3`.
 - Flash only via the `flash-device` skill.
@@ -219,7 +219,7 @@ In `lib/playback/PlaybackStateMachine.h`, add `#include <cctype>` to the include
   }
 
   // Whether the current track can be shuttled: ESP32-audioI2S only seeks
-  // within MP3 and WAV of the formats DialHard plays (not Ogg). By
+  // within MP3 and WAV of the formats Drehklang plays (not Ogg). By
   // extension, so it's known before a cued track is loaded.
   bool canSeek() const {
     if (state_ == PlaybackState::Stopped || queue_.empty()) return false;
@@ -294,7 +294,7 @@ Claude-Session: https://claude.ai/code/session_01UAtxf3DVXm8T7XxgwCecB1"
   - `durationSeconds()`
   - `currentPath()`
 - Produces:
-  - `class dialhard::playback::Shuttle`, constructed as `explicit Shuttle(PlaybackStateMachine &)`
+  - `class drehklang::playback::Shuttle`, constructed as `explicit Shuttle(PlaybackStateMachine &)`
   - `static constexpr int8_t kMaxStep = 5;`
   - `static constexpr uint32_t kCycleMs = 300;`
   - `static constexpr uint32_t kEndMarginMs = 1000;`
@@ -318,12 +318,12 @@ Create `test/test_shuttle/test_shuttle.cpp`:
 #include "PlaybackStateMachine.h"
 #include "Shuttle.h"
 
-using dialhard::playback::KeyValueStore;
-using dialhard::playback::PlaybackDriver;
-using dialhard::playback::PlaybackState;
-using dialhard::playback::PlaybackStateMachine;
-using dialhard::playback::Shuttle;
-using dialhard::playback::VolumePersistence;
+using drehklang::playback::KeyValueStore;
+using drehklang::playback::PlaybackDriver;
+using drehklang::playback::PlaybackState;
+using drehklang::playback::PlaybackStateMachine;
+using drehklang::playback::Shuttle;
+using drehklang::playback::VolumePersistence;
 
 void setUp() {}
 void tearDown() {}
@@ -345,7 +345,7 @@ class FakeDriver : public PlaybackDriver {
   void setVolume(uint8_t) override {}
   bool isRunning() override { return true; }
   uint32_t durationSeconds() override { return duration; }
-  dialhard::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
+  drehklang::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
     return {};
   }
   void loop() override {}
@@ -558,7 +558,7 @@ Create `lib/playback/Shuttle.h`:
 
 #include "PlaybackStateMachine.h"
 
-namespace dialhard::playback {
+namespace drehklang::playback {
 
 // Jog/shuttle on Now Playing (ADR 0013): while the time pill is held, knob
 // detents set a speed step (±kMaxStep, speed 1 << |step|) and the track is
@@ -683,7 +683,7 @@ class Shuttle {
   std::string path_;
 };
 
-}  // namespace dialhard::playback
+}  // namespace drehklang::playback
 ```
 
 - [ ] **Step 4: Run the tests and confirm they pass**
@@ -721,7 +721,7 @@ Claude-Session: https://claude.ai/code/session_01UAtxf3DVXm8T7XxgwCecB1"
 - [ ] **Step 1: Update every existing construction, then write the failing test**
 
 In `test/test_input/test_input.cpp`:
-- Add `#include "Shuttle.h"` and `using dialhard::playback::Shuttle;`.
+- Add `#include "Shuttle.h"` and `using drehklang::playback::Shuttle;`.
 - Replace every `InputRouter router(tabs, playback, brightness, sink);` with the two lines below:
 
 ```cpp
@@ -1095,13 +1095,13 @@ Make sure `<cstdlib>` is included in `ScreenManager.cpp` for `std::abs`; add it 
 Globals: add `#include "Shuttle.h"` next to the other `lib/playback` includes. After `g_playback`:
 
 ```cpp
-dialhard::playback::Shuttle g_shuttle(g_playback);
+drehklang::playback::Shuttle g_shuttle(g_playback);
 ```
 
 Pass `g_shuttle` to `ScreenManager` right after `g_playback`, and to `InputRouter`:
 
 ```cpp
-dialhard::input::InputRouter g_inputRouter(g_tabs, g_playback, g_shuttle,
+drehklang::input::InputRouter g_inputRouter(g_tabs, g_playback, g_shuttle,
                                           g_brightness, g_screenManager);
 ```
 
@@ -1125,7 +1125,7 @@ Directly after `g_screenManager.tickVolumeHud(now);`:
   if (g_shuttle.isHeld() &&
       (!touchSample.pressed || !displayOn || g_lockController.isLocked() ||
        g_tabs.activeStack().current().kind !=
-           dialhard::navigation::ScreenKind::NowPlaying)) {
+           drehklang::navigation::ScreenKind::NowPlaying)) {
     g_shuttle.release(now);
   }
   g_shuttle.tick(now);

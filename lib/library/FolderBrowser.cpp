@@ -5,7 +5,7 @@
 
 #include "AudioFileTypes.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 namespace {
 
@@ -39,4 +39,4 @@ std::vector<FolderEntry> FolderBrowser::list(DirectoryReader &reader,
   return filtered;
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

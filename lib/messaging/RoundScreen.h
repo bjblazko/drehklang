@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace dialhard::messaging {
+namespace drehklang::messaging {
 
 // Widest a horizontally centered box spanning rows [top, top + height) can
 // be while staying inside a round screen of `diameter` px, minus `margin`
@@ -19,4 +19,4 @@ inline int visibleWidthAt(int top, int height, int diameter, int margin) {
   return width > 0 ? width : 0;
 }
 
-}  // namespace dialhard::messaging
+}  // namespace drehklang::messaging

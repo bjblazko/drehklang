@@ -5,7 +5,7 @@
 
 #include "LibraryScanner.h"
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 // File paths for each shuffle/playback scope (ADR 0011), in the same order
 // the list screens show them. Relies on ids being indices into the index's
@@ -66,4 +66,4 @@ class PlaylistBuilder {
   }
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

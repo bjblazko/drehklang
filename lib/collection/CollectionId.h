@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace dialhard::collection {
+namespace drehklang::collection {
 
-// The audio collections the device browses. DialHard used to be a music
+// The audio collections the device browses. Drehklang used to be a music
 // player with one library rooted at "/Music"; a collection is that same
 // player parameterised by a root folder and a small behaviour profile, so
 // spoken-word material lives beside music instead of inside it -- see
@@ -30,4 +30,4 @@ constexpr bool isValidCollection(uint8_t value) {
   return value < kCollectionCount;
 }
 
-}  // namespace dialhard::collection
+}  // namespace drehklang::collection

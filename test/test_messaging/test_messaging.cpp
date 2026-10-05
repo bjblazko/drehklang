@@ -3,9 +3,9 @@
 #include "MessageTimer.h"
 #include "RoundScreen.h"
 
-using dialhard::messaging::MessageScope;
-using dialhard::messaging::MessageTimer;
-using dialhard::messaging::visibleWidthAt;
+using drehklang::messaging::MessageScope;
+using drehklang::messaging::MessageTimer;
+using drehklang::messaging::visibleWidthAt;
 
 void setUp() {}
 void tearDown() {}

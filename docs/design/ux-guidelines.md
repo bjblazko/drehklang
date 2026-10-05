@@ -1,6 +1,6 @@
 # UX/UI Design Guidelines
 
-This is the canonical reference for DialHard's UX/UI design philosophy,
+This is the canonical reference for Drehklang's UX/UI design philosophy,
 visual language, and interaction flows — the "why" behind the screens.
 Architecture and implementation decisions (which classes, which files,
 what was verified on real hardware, what's still open) continue to live
@@ -10,7 +10,7 @@ detail.
 ## 1. Purpose
 
 Before writing UI code or making a layout call, this document should
-already answer "does DialHard already have a stance on this?" It exists so
+already answer "does Drehklang already have a stance on this?" It exists so
 that design intent isn't only discoverable by reading ADR prose written
 for a specific decision, or by tracing rationale through source comments.
 
@@ -20,7 +20,7 @@ yet implemented*.
 
 ## 2. Design Philosophy — Dieter Rams' Ten Principles
 
-DialHard's UI decisions are read through Dieter Rams' ten principles of
+Drehklang's UI decisions are read through Dieter Rams' ten principles of
 good design. Each is listed with a short note on how it shows up in the
 product.
 
@@ -29,7 +29,7 @@ product.
    because this board has no click button at all, not because it's a
    trend (§5, §6).
 2. **Good design makes a product useful.** Every screen decision starts
-   from the two real usage contexts DialHard is actually used in: on a
+   from the two real usage contexts Drehklang is actually used in: on a
    table, and in a pocket while playing (§6).
 3. **Good design is aesthetic.** Visual quality is not an afterthought —
    one palette (§3) and one typographic scale, shape vocabulary and
@@ -143,7 +143,7 @@ on a monitor.
    restraint — is why they differ (§6).
 4. **No noise** — neutrals stay matte/desaturated; no shadows or
    gradients.
-5. **The brand mark carries no signal colour either.** Home's "DialHard"
+5. **The brand mark carries no signal colour either.** Home's "Drehklang"
    wordmark sits in an `ink` capsule, dial and lettering both in
    `surface` — the badge is the two neutrals and nothing else. A coloured
    bullet was tried first and was wrong for exactly the reason rule 2

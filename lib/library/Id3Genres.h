@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <string>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 // The numbered genre list ID3v1 defined (0-79) plus the Winamp
 // extensions everything since has followed (80-191). Three tag formats
@@ -86,4 +86,4 @@ inline std::string resolveId3GenreText(const std::string &text) {
   return text;
 }
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

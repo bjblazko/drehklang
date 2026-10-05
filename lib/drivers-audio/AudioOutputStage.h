@@ -8,7 +8,7 @@
 #include "PlaybackDriver.h"
 #include "ToneGenerator.h"
 
-namespace dialhard::drivers {
+namespace drehklang::drivers {
 
 // Where every sample leaves for the DAC, whichever decoder produced it
 // (ADR 0017). Owns the volume step, the sleep timer's output gain and the
@@ -31,7 +31,7 @@ class AudioOutputStage {
   // only records what was heard.
   void noteMonoSample(int16_t mono);
 
-  // DialHard's own decoders: applies volume and output gain, records the
+  // Drehklang's own decoders: applies volume and output gain, records the
   // samples and writes them to the I2S port the library installed.
   // Blocks until the DMA buffers take the frames; false on an I2S error.
   bool writeFrames(const int16_t *interleaved, size_t frames);
@@ -107,4 +107,4 @@ class AudioOutputStage {
 // One instance; the weak audio_process_i2s() hook has no other way in.
 AudioOutputStage &audioOutputStage();
 
-}  // namespace dialhard::drivers
+}  // namespace drehklang::drivers

@@ -5,7 +5,7 @@
 
 #include "TableTennisGame.h"
 
-using dialhard::games::TableTennisGame;
+using drehklang::games::TableTennisGame;
 using Phase = TableTennisGame::Phase;
 using Sound = TableTennisGame::Sound;
 

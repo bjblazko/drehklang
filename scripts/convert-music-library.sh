@@ -81,7 +81,7 @@ while IFS= read -r -d '' src_file; do
     # padding by a few ms, not the audio itself) but the embedded cover
     # picture forced to baseline JPEG (-codec:v mjpeg). Needed because
     # most real-world embedded album art is Progressive JPEG, which
-    # DialHard's on-device decoder (TJpg_Decoder) can't decode at all --
+    # Drehklang's on-device decoder (TJpg_Decoder) can't decode at all --
     # see AGENTS.md. -map 0:v? makes the picture stream optional so
     # files with no embedded art still convert instead of erroring.
     if ffmpeg -nostdin -y -loglevel error -i "$src_file" \

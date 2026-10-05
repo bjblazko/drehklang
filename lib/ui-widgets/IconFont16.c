@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Size: 16 px
  * Bpp: 4
- * Opts: --font MaterialSymbolsOutlined.ttf --range 0xE020,0xE01F --size 16 --bpp 4 --no-compress --format lvgl --lv-include lvgl.h --lv-font-name dialhard_icon_font_16 -o IconFont16.c
+ * Opts: --font MaterialSymbolsOutlined.ttf --range 0xE020,0xE01F --size 16 --bpp 4 --no-compress --format lvgl --lv-include lvgl.h --lv-font-name drehklang_icon_font_16 -o IconFont16.c
  *
  * Generated 2026-09-15 via lv_font_conv (npm) from the same Google
  * Material Symbols Outlined variable font as IconFont.c/IconFont48.c
@@ -13,7 +13,7 @@
  * prev/next, easily confused with the transport buttons right next to
  * this pill, so a real double-triangle fast-wind glyph is used instead.
  *
- * `.fallback = &dialhard_text_font_14` below lets the pill mix these
+ * `.fallback = &drehklang_text_font_14` below lets the pill mix these
  * glyphs with plain digits/"x" in one label -- this font only carries
  * the two icon codepoints, everything else (LVGL 8.3 supports
  * lv_font_t.fallback) falls through to the project's own text font
@@ -24,18 +24,18 @@
  *
  * Hand-edited after generation: .line_height/.base_line below were
  * changed from lv_font_conv's own output (8 / -4, sized to this font's
- * two short-and-wide glyphs) to dialhard_text_font_14's values (16 / 3).
+ * two short-and-wide glyphs) to drehklang_text_font_14's values (16 / 3).
  * LVGL 8.3 sizes and vertically places every glyph in a label using only
  * the label's *primary* font's line metrics, even for glyphs actually
  * drawn from a `.fallback` font (lv_label.c's self-sizing, and
  * lv_draw_sw_letter.c's per-glyph placement) -- with this font's own
  * (much shorter) metrics left in place, the pill's label box/clip area
  * came out ~8px tall while 14pt digits still drew into it, clipping
- * them. This font is always the pill's primary font (dialhard_text_font_14
+ * them. This font is always the pill's primary font (drehklang_text_font_14
  * is only its `.fallback`), so matching that font's own
  * line_height/base_line here is what makes the shared label size
  * correctly for both. Keep in sync with TextFont14.c's own
- * .line_height/.base_line if this font (or dialhard_text_font_14) is ever
+ * .line_height/.base_line if this font (or drehklang_text_font_14) is ever
  * regenerated.
  *
  * Also hand-edited: both glyphs' .ofs_y changed from 4 to 1. With the
@@ -51,11 +51,11 @@
 #include "lvgl.h"
 #endif
 
-#ifndef DIALHARD_ICON_FONT_16
-#define DIALHARD_ICON_FONT_16 1
+#ifndef DREHKLANG_ICON_FONT_16
+#define DREHKLANG_ICON_FONT_16 1
 #endif
 
-#if DIALHARD_ICON_FONT_16
+#if DREHKLANG_ICON_FONT_16
 
 /*-----------------
  *    BITMAPS
@@ -146,16 +146,16 @@ static lv_font_fmt_txt_dsc_t font_dsc = {
 
 /*Initialize a public general font descriptor*/
 #if LVGL_VERSION_MAJOR >= 8
-const lv_font_t dialhard_icon_font_16 = {
+const lv_font_t drehklang_icon_font_16 = {
 #else
-lv_font_t dialhard_icon_font_16 = {
+lv_font_t drehklang_icon_font_16 = {
 #endif
     .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt,    /*Function pointer to get glyph's data*/
     .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,    /*Function pointer to get glyph's bitmap*/
-    // Hand-set to dialhard_text_font_14's own line_height/base_line (not
+    // Hand-set to drehklang_text_font_14's own line_height/base_line (not
     // this font's generated 8/-4) -- labels size/position every glyph by
     // the primary font's metrics, never the fallback's, and this font is
-    // always primary over the dialhard_text_font_14 fallback. See header
+    // always primary over the drehklang_text_font_14 fallback. See header
     // comment.
     .line_height = 16,          /*The maximum line height required by the font*/
     .base_line = 3,             /*Baseline measured from the bottom of the line*/
@@ -168,12 +168,12 @@ lv_font_t dialhard_icon_font_16 = {
 #endif
     .dsc = &font_dsc,          /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
 #if LV_VERSION_CHECK(8, 2, 0) || LVGL_VERSION_MAJOR >= 9
-    .fallback = &dialhard_text_font_14,
+    .fallback = &drehklang_text_font_14,
 #endif
     .user_data = NULL,
 };
 
 
 
-#endif /*#if DIALHARD_ICON_FONT_16*/
+#endif /*#if DREHKLANG_ICON_FONT_16*/
 

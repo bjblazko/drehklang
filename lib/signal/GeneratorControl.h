@@ -7,7 +7,7 @@
 
 #include "Waveform.h"
 
-namespace dialhard::signal {
+namespace drehklang::signal {
 
 // The rate the generator claims the DAC at (ADR 0024): high enough for a
 // 20 kHz tone, and one the PCM5100A takes natively.
@@ -69,4 +69,4 @@ class GeneratorControl {
   std::atomic<bool> running_{false};
 };
 
-}  // namespace dialhard::signal
+}  // namespace drehklang::signal

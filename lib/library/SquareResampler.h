@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace dialhard::library {
+namespace drehklang::library {
 
 // Center-crops an RGB565 image to a square and scales it to outSize x
 // outSize: an area average when shrinking (no aliasing on detailed covers),
@@ -15,4 +15,4 @@ class SquareResampler {
                        uint16_t outSize, std::vector<uint16_t> *out);
 };
 
-}  // namespace dialhard::library
+}  // namespace drehklang::library

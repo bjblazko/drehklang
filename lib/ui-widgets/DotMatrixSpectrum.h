@@ -5,7 +5,7 @@
 #include <array>
 #include <cstdint>
 
-namespace dialhard::ui_widgets {
+namespace drehklang::ui_widgets {
 
 // The Now Playing spectrum (ADR 0009): a 12x12 grid of round dots filling
 // the 96x96 cover slot, lit from the bottom like an LED level meter. Drawn
@@ -101,4 +101,4 @@ class DotMatrixSpectrum {
   Stamp unlitStamp_{};
 };
 
-}  // namespace dialhard::ui_widgets
+}  // namespace drehklang::ui_widgets
