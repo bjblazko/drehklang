@@ -1,11 +1,14 @@
 #include "BtSource.h"
 
+#include <Arduino.h>
+
 #include <esp_a2dp_api.h>
 #include <esp_avrc_api.h>
 #include <esp_bt.h>
 #include <esp_bt_main.h>
 #include <esp_gap_bt_api.h>
 
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 
@@ -90,25 +93,39 @@ bool BtSource::nextEvent(BtSourceEvent &out) {
   return xQueueReceive(events_, &out, 0) == pdTRUE;
 }
 
-void BtSource::startScan() {
+bool BtSource::startScan() {
   // Scanning from here on, not from DISC_STATE_CHANGED: the STATE sent right
   // after SCAN_START must not already say the scan is over.
-  if (esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, kInquiryLength, 0) == ESP_OK) {
-    scanning_.store(true);
+  if (esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, kInquiryLength, 0) != ESP_OK) {
+    return false;
   }
+  scanning_.store(true);
+  return true;
 }
 
 void BtSource::stopScan() { esp_bt_gap_cancel_discovery(); }
 
-void BtSource::connect(const btlink::Address &address) {
-  btlink::Address copy = address;
+bool BtSource::connect(const btlink::Address &address) {
+  peer_ = address;
+  connectingSince_.store(millis());
   link_.store(btlink::LinkState::Connecting);
-  esp_a2d_source_connect(copy.data());
+  const esp_err_t result = esp_a2d_source_connect(peer_.data());
+  if (result == ESP_OK) return true;
+  link_.store(btlink::LinkState::Idle);
+  log("connect refused: %s", esp_err_to_name(result));
+  return false;
+}
+
+void BtSource::abandonConnect() {
+  if (link_.load() != btlink::LinkState::Connecting) return;
+  log("connect never answered, giving up");
+  link_.store(btlink::LinkState::Idle);
 }
 
 void BtSource::disconnect() {
   if (link_.load() == btlink::LinkState::Idle) return;
-  esp_a2d_source_disconnect(connected_.data());
+  btlink::Address copy = peer_;
+  esp_a2d_source_disconnect(copy.data());
 }
 
 void BtSource::removeBond(const btlink::Address &address) {
@@ -119,6 +136,15 @@ void BtSource::removeBond(const btlink::Address &address) {
 void BtSource::startMedia() { esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_CHECK_SRC_RDY); }
 
 void BtSource::post(const BtSourceEvent &event) { xQueueSend(events_, &event, 0); }
+
+void BtSource::log(const char *format, ...) {
+  BtSourceEvent line{BtSourceEvent::Kind::Log};
+  va_list args;
+  va_start(args, format);
+  vsnprintf(line.text, sizeof(line.text), format, args);
+  va_end(args);
+  g_self->post(line);
+}
 
 void BtSource::onGap(int event, void *raw) {
   auto *param = static_cast<esp_bt_gap_cb_param_t *>(raw);
@@ -146,13 +172,29 @@ void BtSource::onGap(int event, void *raw) {
     case ESP_BT_GAP_DISC_STATE_CHANGED_EVT:
       g_self->scanning_.store(param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STARTED);
       break;
+    case ESP_BT_GAP_AUTH_CMPL_EVT:
+      log("auth %s: status %d", reinterpret_cast<const char *>(param->auth_cmpl.device_name),
+          static_cast<int>(param->auth_cmpl.stat));
+      break;
+    case ESP_BT_GAP_ACL_CONN_CMPL_STAT_EVT:
+      log("acl connected: status %d", static_cast<int>(param->acl_conn_cmpl_stat.stat));
+      break;
+    case ESP_BT_GAP_ACL_DISCONN_CMPL_STAT_EVT:
+      log("acl disconnected: reason 0x%02x", static_cast<int>(param->acl_disconn_cmpl_stat.reason));
+      break;
+    case ESP_BT_GAP_KEY_REQ_EVT:
+    case ESP_BT_GAP_KEY_NOTIF_EVT:
+      log("pairing asks for a passkey (event %d)", event);
+      break;
     case ESP_BT_GAP_PIN_REQ_EVT: {
+      log("pin requested");
       // Legacy pairing: the PIN headphones nearly always use.
       esp_bt_pin_code_t pin = {'0', '0', '0', '0'};
       esp_bt_gap_pin_reply(param->pin_req.bda, true, 4, pin);
       break;
     }
     case ESP_BT_GAP_CFM_REQ_EVT:
+      log("ssp confirm %lu", static_cast<unsigned long>(param->cfm_req.num_val));
       esp_bt_gap_ssp_confirm_reply(param->cfm_req.bda, true);
       break;
     default:
@@ -165,8 +207,10 @@ void BtSource::onA2dp(int event, void *raw) {
   switch (static_cast<esp_a2d_cb_event_t>(event)) {
     case ESP_A2D_CONNECTION_STATE_EVT: {
       const auto state = param->conn_stat.state;
+      log("a2dp state %d, reason %d", static_cast<int>(state),
+          static_cast<int>(param->conn_stat.disc_rsn));
       if (state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
-        toAddress(param->conn_stat.remote_bda, g_self->connected_);
+        toAddress(param->conn_stat.remote_bda, g_self->peer_);
         g_self->link_.store(btlink::LinkState::Connected);
         BtSourceEvent connected{BtSourceEvent::Kind::Connected};
         g_self->post(connected);
@@ -175,11 +219,19 @@ void BtSource::onA2dp(int event, void *raw) {
         BtSourceEvent gone{BtSourceEvent::Kind::Disconnected};
         g_self->post(gone);
       } else if (state == ESP_A2D_CONNECTION_STATE_CONNECTING) {
+        if (g_self->link_.load() != btlink::LinkState::Connecting) {
+          g_self->connectingSince_.store(millis());
+        }
         g_self->link_.store(btlink::LinkState::Connecting);
       }
       break;
     }
+    case ESP_A2D_AUDIO_STATE_EVT:
+      log("a2dp audio state %d", static_cast<int>(param->audio_stat.state));
+      break;
     case ESP_A2D_MEDIA_CTRL_ACK_EVT:
+      log("media ctrl %d ack %d", static_cast<int>(param->media_ctrl_stat.cmd),
+          static_cast<int>(param->media_ctrl_stat.status));
       // The stream stays started while connected: some headphones switch
       // themselves off after a few minutes of a suspended stream.
       if (param->media_ctrl_stat.cmd == ESP_A2D_MEDIA_CTRL_CHECK_SRC_RDY &&

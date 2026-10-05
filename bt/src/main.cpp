@@ -33,6 +33,12 @@ constexpr int kDacUnmutePin = 32;
 constexpr uint32_t kStateIntervalMs = 1000;
 constexpr uint32_t kStatsIntervalMs = 5000;
 constexpr uint32_t kReconnectIntervalMs = 10000;
+// A connection attempt Bluedroid never reports back on is given up after
+// this, so the retry can start again (found 2026-10-05: a pairing that
+// stayed "Connecting" until the chip restarted). Well past Bluedroid's own
+// timeouts (authentication takes up to ~30 s): at 20 s it cut into a
+// pairing still in progress, and the second connect left A2DP stuck.
+constexpr uint32_t kConnectTimeoutMs = 60000;
 
 bool g_enabled = false;
 uint32_t g_lastStateMs = 0;
@@ -60,6 +66,7 @@ void sendStats() {
 
 void connectToPeer(uint32_t nowMs) {
   g_lastConnectMs = nowMs;
+  Serial.printf("[bt] connecting to %s\n", g_peer.name().c_str());
   g_source.connect(g_peer.address());
 }
 
@@ -71,6 +78,10 @@ void onPair(const btlink::Packet &packet, uint32_t nowMs) {
     g_source.disconnect();
     g_source.removeBond(g_peer.address());
   }
+  // Pairing from the search always pairs afresh. Headphones in pairing
+  // mode have dropped their old key; using ours made authentication fail
+  // after 30 s (found 2026-10-05 with Marshall Major V).
+  g_source.removeBond(m.address);
   g_peer.save(m.address, m.name);
   if (g_enabled) connectToPeer(nowMs);
 }
@@ -92,7 +103,11 @@ void onControl(const btlink::Packet &packet, uint32_t nowMs) {
       }
       break;
     case btlink::PacketType::ScanStart:
-      if (g_enabled) g_source.startScan();
+      if (g_enabled) {
+        const bool started = g_source.startScan();
+        Serial.printf("[bt] scan %s (link %d)\n", started ? "started" : "refused",
+                      static_cast<int>(g_source.link()));
+      }
       break;
     case btlink::PacketType::ScanStop:
       g_source.stopScan();
@@ -134,6 +149,9 @@ void onSourceEvent(const bt::BtSourceEvent &event) {
       Serial.println("[bt] disconnected");
       sendState();
       break;
+    case bt::BtSourceEvent::Kind::Log:
+      Serial.printf("[bt] %s\n", event.text);
+      break;
   }
 }
 
@@ -168,6 +186,12 @@ void loop() {
                   static_cast<unsigned long>(g_link.crcErrors()),
                   static_cast<unsigned long>(g_link.lostPackets()),
                   static_cast<unsigned long>(g_stream.dropped()));
+  }
+  // millis(), not `now`: a connect started in this very loop() is newer
+  // than `now`, and the difference would wrap to a huge value.
+  if (g_source.link() == btlink::LinkState::Connecting &&
+      millis() - g_source.connectingSinceMs() >= kConnectTimeoutMs) {
+    g_source.abandonConnect();
   }
   if (g_enabled && g_peer.has() && g_source.link() == btlink::LinkState::Idle &&
       now - g_lastConnectMs >= kReconnectIntervalMs) {
