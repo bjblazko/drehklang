@@ -24,6 +24,12 @@ bt::LinkUart g_link(g_stream);
 bt::BtSource g_source(g_stream);
 bt::PeerStore g_peer;
 
+// IO32 drives the PCM5100A's XSMT (soft mute, active low). Left floating,
+// the DAC stays muted and the jack is silent -- the factory image drove it
+// high (found on the device 2026-10-05: no sound with this firmware, with
+// either S3 build).
+constexpr int kDacUnmutePin = 32;
+
 constexpr uint32_t kStateIntervalMs = 1000;
 constexpr uint32_t kStatsIntervalMs = 5000;
 constexpr uint32_t kReconnectIntervalMs = 10000;
@@ -134,6 +140,8 @@ void onSourceEvent(const bt::BtSourceEvent &event) {
 }  // namespace
 
 void setup() {
+  pinMode(kDacUnmutePin, OUTPUT);
+  digitalWrite(kDacUnmutePin, HIGH);
   Serial.begin(115200);
   g_peer.begin();
   g_link.begin();

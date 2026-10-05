@@ -113,6 +113,8 @@ duplicating it.
   empty. The link between the chips is S3 GPIO48 (TX) / GPIO38 (RX) at
   3 Mbaud, and both ends must lower the RX FIFO threshold to 64 or bytes
   get lost (device.md, ADR 0027). `scripts/flash-bt-mcu.sh` flashes it.
+  **Whatever runs on the U4WDH must drive its IO32 high** -- it is the
+  DAC's XSMT, and floating it mutes the jack for both chips (2026-10-05).
 - **ESP32-audioI2S's own messages are silent by default.** To see them,
   set `-DCORE_DEBUG_LEVEL=3` (instead of 0) and add `-DAUDIO_LOG` in
   `[env:esp32-s3]`'s `build_flags` temporarily: `Esp32AudioI2SDriver.cpp`

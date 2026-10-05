@@ -109,7 +109,9 @@ pages `2_ESP32S3-R8`, `3_ESP32-CHIP`, `5_DAC`), read 2026-10-05:
   pulled high, and in that state the S3 reaches the DAC (audio has always
   played). Which level selects which side is not confirmed yet; measure
   before relying on it. The ESP32-U4WDH's IO32 drives the DAC's
-  XSMT (soft mute).
+  XSMT (soft mute, active low), and **the jack is silent unless the
+  U4WDH drives IO32 high**: the factory image did, and any other firmware
+  there must too (found 2026-10-05; `bt/src/main.cpp` does it first thing).
 - **The chips share a UART:** ESP32 IO18 (TX) to S3 GPIO38 (RX), and S3
   GPIO48 (TX) to ESP32 IO23 (RX). There are no flow-control lines.
   Measured 2026-10-05 with a pin probe and a throughput test: 3 Mbaud
