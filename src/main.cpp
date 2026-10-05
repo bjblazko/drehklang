@@ -467,6 +467,7 @@ void setup() {
   if (displayOk) {
     g_screenManager.setBlipPlayer(g_toneOutput);
     g_screenManager.setToneSession(g_toneSession);
+    g_screenManager.setBluetooth(g_btController);
     g_screenManager.setScopeSource(g_toneOutput);
     g_screenManager.begin();
     // Created after the first screen so it's above it on LVGL's top
@@ -834,6 +835,8 @@ void loop() {
   while (g_btLink.receive(btPacket)) g_btController.onPacket(btPacket, now);
   g_btController.tick(now);
   g_btTap.setForwarding(g_btController.forwardAudio());
+  g_screenManager.tickBluetooth(now);
+  g_batteryIndicator.setBluetoothConnected(g_btController.forwardAudio());
   g_playback.tick(now);
   g_resumeScheduler.tick(now);
   g_bookmarkKeeper.tick(now);

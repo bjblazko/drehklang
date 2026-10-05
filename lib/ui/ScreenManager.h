@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "BrightnessSetting.h"
+#include "BtController.h"
 #include "CoverArtCache.h"
 #include "DotMatrixSpectrum.h"
 #include "EdgeArc.h"
@@ -187,6 +188,15 @@ class ScreenManager : public input::KnobSink {
   // What the scope draws: the samples that actually reached the DAC.
   void setScopeSource(signal::SampleSource &source) { scopeSource_ = &source; }
 
+  // Bluetooth headphones (ADR 0027). Optional: without a controller
+  // Settings shows no Bluetooth row content and the button does nothing.
+  void setBluetooth(bluetooth::BtController &bt) { bluetooth_ = &bt; }
+
+  // Messages for connect/disconnect, the headphone button, the search's
+  // lifetime, and redraws when what the Bluetooth screens show changed.
+  // Call every loop().
+  void tickBluetooth(uint32_t nowMs);
+
   // Cheap redraw of the value and chips after a knob turn -- a no-op on
   // every other screen. Call after any encoder tick.
   void updateToneGeneratorDisplay();
@@ -279,6 +289,31 @@ class ScreenManager : public input::KnobSink {
   // see runRescan()'s comment in ScreenManager.cpp.
   void runRescan(collection::CollectionId id);
   void runRescanAll();
+  // ScreenManagerBluetooth.cpp (ADR 0027).
+  void appendBluetoothRows(std::vector<std::pair<std::string, int>> &items) const;
+  void appendBluetoothSearchRows(std::vector<std::pair<std::string, int>> &items) const;
+  std::string bluetoothRowValue(int itemId) const;
+  std::string bluetoothSettingsValue() const;
+  const char *bluetoothEmptyText() const;
+  std::string bluetoothSearchCaption() const;
+  void onBluetoothRow(int itemId);
+  void onBluetoothSearchRow(int itemId);
+  void openBluetoothSearch();
+  void showBluetoothEvent(bluetooth::BtEvent event, uint32_t nowMs);
+  void onHeadphoneButton(bluetooth::BtEvent event);
+  bool touchHeld() const;
+  // Bluetooth screen row ids. The rows come and go with the state, so a
+  // click is dispatched by id, never by position.
+  static constexpr int kBtToggleRow = 0;
+  static constexpr int kBtDeviceRow = 1;
+  static constexpr int kBtFindRow = 2;
+  static constexpr int kBtForgetRow = 3;
+  // The search's first row; results use their index.
+  static constexpr int kBtSearchAgainItemId = -4;
+  bluetooth::BtController *bluetooth_ = nullptr;
+  uint32_t shownBtRevision_ = 0;
+  bool shownBtScanning_ = false;
+  bool btSearchOpen_ = false;
   // Settings > Main menu (ADR 0018): which destinations Home shows.
   void appendMenuVisibilityRows(
       std::vector<std::pair<std::string, int>> &items) const;
@@ -294,12 +329,14 @@ class ScreenManager : public input::KnobSink {
   void moveHomeSelection(int delta);
 
   // One Settings row. A table rather than a chain of index comparisons,
-  // so adding a row never silently renumbers the ones after it.
+  // so adding a row never silently renumbers the ones after it. `value`
+  // is the plain text the row ends in, or nullptr for none.
   struct SettingsRow {
     const char *label;
     void (*open)(ScreenManager &self);
+    std::string (*value)(const ScreenManager &self) = nullptr;
   };
-  static constexpr int kSettingsRowCount = 6;
+  static constexpr int kSettingsRowCount = 7;
   static const SettingsRow kSettingsRows[kSettingsRowCount];
   // Music's browse axes (ADR 0021): which shelf the Library tab is
   // rooted on, remembered across reboots.
@@ -647,6 +684,8 @@ class ScreenManager : public input::KnobSink {
   struct ItemContext {
     ScreenManager *self;
     int index;
+    // The row's id as the list was built with it (items[i].second).
+    int itemId = 0;
     library::TrackId trackId;
     library::AlbumId albumId;
     bool isFolder;

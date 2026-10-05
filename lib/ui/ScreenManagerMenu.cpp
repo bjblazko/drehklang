@@ -245,6 +245,9 @@ const ScreenManager::SettingsRow
          [](ScreenManager &self) {
            self.tabs_.activeStack().push(Screen{ScreenKind::Brightness, {}});
            self.render();
+         },
+         [](const ScreenManager &self) {
+           return std::to_string(self.brightness_.percent()) + "%";
          }},
         {"Touch calibration",
          [](ScreenManager &self) {
@@ -265,6 +268,12 @@ const ScreenManager::SettingsRow
            self.render();
          }},
         {"USB drive", [](ScreenManager &self) { self.startUsbDrive(); }},
+        {"Bluetooth",
+         [](ScreenManager &self) {
+           self.tabs_.activeStack().push(Screen{ScreenKind::Bluetooth, {}});
+           self.render();
+         },
+         [](const ScreenManager &self) { return self.bluetoothSettingsValue(); }},
         {"About", [](ScreenManager &self) { self.openAbout(); }},
 };
 

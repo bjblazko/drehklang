@@ -290,6 +290,12 @@ void ScreenManager::render() {
       case ScreenKind::MenuVisibility:
         appendMenuVisibilityRows(items);
         break;
+      case ScreenKind::Bluetooth:
+        appendBluetoothRows(items);
+        break;
+      case ScreenKind::BluetoothSearch:
+        appendBluetoothSearchRows(items);
+        break;
       case ScreenKind::AlbumsFlat:
         // Every album, or one year's, or one genre's -- shelfAlbums()
         // reads the filter off the screen.
@@ -481,9 +487,9 @@ void ScreenManager::renderList(
       }
     }
 
-    // The Brightness row ends in its current value, styled like the album
-    // year: a plain secondary fact, not a badge.
-    char valueText[8] = {0};
+    // A row may end in its current value (Settings' rows, the Bluetooth
+    // screen's), styled like the album year: a plain secondary fact, not
+    // a badge.
     std::string secondaryText;
     const char *secondary = nullptr;
     if (current.kind == ScreenKind::AlbumsFlat ||
@@ -499,10 +505,15 @@ void ScreenManager::renderList(
     } else if (current.kind == ScreenKind::Licences) {
       // The licence, as the quiet trailing fact a row's value is.
       secondary = about::kCredits[items[i].second].licence;
-    } else if (current.kind == ScreenKind::Settings && items[i].second == 0) {
-      snprintf(valueText, sizeof(valueText), "%u%%",
-               static_cast<unsigned>(brightness_.percent()));
-      secondary = valueText;
+    } else if (current.kind == ScreenKind::Settings &&
+               kSettingsRows[items[i].second].value != nullptr) {
+      // A row's current value, as its row in the table says (Brightness's
+      // percentage, Bluetooth's headphones).
+      secondaryText = kSettingsRows[items[i].second].value(*this);
+      secondary = secondaryText.c_str();
+    } else if (current.kind == ScreenKind::Bluetooth) {
+      secondaryText = bluetoothRowValue(items[i].second);
+      if (!secondaryText.empty()) secondary = secondaryText.c_str();
     }
     if (secondary) {
       lv_obj_t *valueLabel = lv_label_create(btn);
@@ -520,6 +531,7 @@ void ScreenManager::renderList(
     ctx->isShuffle = items[i].second == kShuffleItemId;
     ctx->isContinue = items[i].second == kContinueItemId;
     ctx->isBrowseAxis = items[i].second == kBrowseAxisItemId;
+    ctx->itemId = items[i].second;
     // Index into the screen's data (artists, albums, tracks), not the row
     // -- so a leading Shuffle or Continue row doesn't shift everything.
     ctx->index = static_cast<int>(i) - (leadingRows > 0 ? leadingRows : 0);
@@ -594,6 +606,7 @@ std::vector<std::string> ScreenManager::letterKeysFor(
 // one worth acting on -- indexes are built on demand, never at boot, so
 // an empty shelf right after a firmware update means exactly that.
 const char *ScreenManager::emptyListText(const navigation::Screen &screen) const {
+  if (screen.kind == ScreenKind::Bluetooth) return bluetoothEmptyText();
   if (screen.kind == ScreenKind::Folder) return "Empty folder";
   if (library().tracks.empty()) return "Nothing scanned yet\nSettings > Rescan";
   switch (screen.kind) {
@@ -732,6 +745,10 @@ std::string ScreenManager::captionTextFor(
       return "Rescan";
     case ScreenKind::MenuVisibility:
       return "Main menu";
+    case ScreenKind::Bluetooth:
+      return "Bluetooth";
+    case ScreenKind::BluetoothSearch:
+      return bluetoothSearchCaption();
     case ScreenKind::Games:
       return "Games";
     case ScreenKind::Licences:
@@ -1795,6 +1812,12 @@ void ScreenManager::onListItemClicked(lv_event_t *e) {
       break;
     case ScreenKind::MenuVisibility:
       self->toggleMenuEntryVisible(ctx->index);
+      break;
+    case ScreenKind::Bluetooth:
+      self->onBluetoothRow(ctx->itemId);
+      break;
+    case ScreenKind::BluetoothSearch:
+      self->onBluetoothSearchRow(ctx->itemId);
       break;
     case ScreenKind::BrowseAxis:
       self->openBrowseAxis(ctx->index);

@@ -62,6 +62,10 @@ enum class ScreenKind {
   LicenceDetail,
   // Settings > About, also opened by tapping the wordmark on Home.
   About,
+  // Settings > Bluetooth and its search (ADR 0027). Appended like
+  // everything above; past NowPlaying, so a resume never lands on them.
+  Bluetooth,
+  BluetoothSearch,
 };
 
 // Parameters a screen needs to render itself. Only the fields relevant

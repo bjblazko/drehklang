@@ -69,6 +69,15 @@ class BatteryIndicator {
     render();
   }
 
+  // A quiet Bluetooth glyph beside the battery on the lock screen while
+  // headphones are connected (ADR 0027) -- status shown where it is looked
+  // for, nowhere else (ux-guidelines §6).
+  void setBluetoothConnected(bool connected) {
+    if (connected == bluetooth_) return;
+    bluetooth_ = connected;
+    render();
+  }
+
  private:
   void render() {
     using Level = power::BatteryMonitor::Level;
@@ -98,7 +107,8 @@ class BatteryIndicator {
         lv_obj_add_flag(label_, LV_OBJ_FLAG_HIDDEN);
         return;
       }
-      lv_label_set_text(label_, LV_SYMBOL_CHARGE "  Charging");
+      lv_label_set_text(label_, bluetooth_ ? LV_SYMBOL_BLUETOOTH "  " LV_SYMBOL_CHARGE "  Charging"
+                                           : LV_SYMBOL_CHARGE "  Charging");
       lv_obj_set_style_text_color(label_, theme::structure(), 0);
       lv_obj_align(label_, LV_ALIGN_TOP_MID, 0, kLockedY);
       lv_obj_clear_flag(label_, LV_OBJ_FLAG_HIDDEN);
@@ -110,8 +120,9 @@ class BatteryIndicator {
       lv_obj_add_flag(label_, LV_OBJ_FLAG_HIDDEN);
       return;
     }
-    char text[24];
-    snprintf(text, sizeof(text), "%s  %d%%", symbol, percent);
+    char text[32];
+    snprintf(text, sizeof(text), "%s%s  %d%%",
+             locked_ && bluetooth_ ? LV_SYMBOL_BLUETOOTH "  " : "", symbol, percent);
     lv_label_set_text(label_, text);
     // Red only when low -- otherwise neutral, even on the lock screen.
     lv_obj_set_style_text_color(label_,
@@ -123,6 +134,7 @@ class BatteryIndicator {
   power::BatteryMonitor &monitor_;
   lv_obj_t *label_ = nullptr;
   bool locked_ = false;
+  bool bluetooth_ = false;
 };
 
 }  // namespace drehklang::ui
