@@ -43,6 +43,17 @@ inline size_t utf8Prefix(const std::string &text, size_t maxBytes) {
   return n;
 }
 
+// A name as Bluetooth reports it (EIR or remote name, up to 248 bytes,
+// not terminated) into `out`, which has room for kMaxNameBytes + 1: cut at
+// a character boundary and terminated. A raw cut at 32 bytes could end in
+// half an emoji, and the half would then travel and be stored.
+inline void copyName(const uint8_t *raw, size_t length, char *out) {
+  const std::string name(reinterpret_cast<const char *>(raw), length);
+  const size_t n = utf8Prefix(name, kMaxNameBytes);
+  for (size_t i = 0; i < n; ++i) out[i] = name[i];
+  out[n] = '\0';
+}
+
 namespace detail {
 
 inline size_t putName(uint8_t *out, const std::string &name) {

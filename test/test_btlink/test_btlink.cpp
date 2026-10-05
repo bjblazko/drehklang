@@ -171,6 +171,23 @@ void test_a_name_running_past_the_payload_is_rejected() {
   TEST_ASSERT_FALSE(decodeState(truncated, got));
 }
 
+void test_copy_name_cuts_a_raw_name_at_a_character_boundary() {
+  // A 40-byte name as Bluetooth reports it: 30 ASCII bytes, then a 4-byte
+  // emoji straddling the 32-byte limit.
+  const std::string raw = std::string(30, 'k') + "\xF0\x9F\x8E\xA7" + " Pro Max";
+  char out[kMaxNameBytes + 1];
+  copyName(reinterpret_cast<const uint8_t *>(raw.data()), raw.size(), out);
+  TEST_ASSERT_EQUAL(30, std::strlen(out));
+  TEST_ASSERT_EQUAL_STRING(std::string(30, 'k').c_str(), out);
+}
+
+void test_copy_name_keeps_a_short_name_whole() {
+  const char raw[] = "Buds";
+  char out[kMaxNameBytes + 1];
+  copyName(reinterpret_cast<const uint8_t *>(raw), 4, out);
+  TEST_ASSERT_EQUAL_STRING("Buds", out);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_crc_matches_the_ccitt_false_check_value);
@@ -183,5 +200,7 @@ int main() {
   RUN_TEST(test_long_name_is_cut_at_a_character_boundary);
   RUN_TEST(test_scan_result_pair_and_stats_round_trip);
   RUN_TEST(test_a_name_running_past_the_payload_is_rejected);
+  RUN_TEST(test_copy_name_cuts_a_raw_name_at_a_character_boundary);
+  RUN_TEST(test_copy_name_keeps_a_short_name_whole);
   return UNITY_END();
 }

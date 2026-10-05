@@ -19,7 +19,8 @@ constexpr uint8_t kInquiryLength = 8;
 void toAddress(const uint8_t *bda, btlink::Address &out) { std::memcpy(out.data(), bda, 6); }
 
 // The name from a discovery result: the full or short EIR name, then the
-// BDNAME property, then the address.
+// BDNAME property, then the address. `out` has room for kMaxNameBytes + 1;
+// names are cut at a character boundary (btlink::copyName).
 void nameOf(esp_bt_gap_cb_param_t *param, char *out, size_t size) {
   out[0] = '\0';
   for (int i = 0; i < param->disc_res.num_prop; ++i) {
@@ -32,13 +33,12 @@ void nameOf(esp_bt_gap_cb_param_t *param, char *out, size_t size) {
         name = esp_bt_gap_resolve_eir_data(eir, ESP_BT_EIR_TYPE_SHORT_LOCAL_NAME, &length);
       }
       if (name != nullptr) {
-        const size_t n = length < size - 1 ? length : size - 1;
-        std::memcpy(out, name, n);
-        out[n] = '\0';
+        btlink::copyName(name, length, out);
         return;
       }
     } else if (prop.type == ESP_BT_GAP_DEV_PROP_BDNAME) {
-      snprintf(out, size, "%.*s", prop.len, static_cast<char *>(prop.val));
+      const auto *raw = static_cast<const char *>(prop.val);
+      btlink::copyName(reinterpret_cast<const uint8_t *>(raw), strnlen(raw, prop.len), out);
       return;
     }
   }
