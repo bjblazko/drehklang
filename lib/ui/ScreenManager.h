@@ -235,6 +235,10 @@ class ScreenManager : public input::KnobSink {
   void renderBrightness();
   void renderSleepTimer();
   void renderLicenceDetail();
+  void renderAbout();
+  void openAbout();
+  static void onAboutLicencesClicked(lv_event_t *e);
+  static void onWordmarkClicked(lv_event_t *e);
   void renderTouchCalibration();
   // ScreenManagerGames.cpp.
   void renderTableTennis();

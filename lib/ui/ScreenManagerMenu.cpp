@@ -265,11 +265,7 @@ const ScreenManager::SettingsRow
            self.render();
          }},
         {"USB drive", [](ScreenManager &self) { self.startUsbDrive(); }},
-        {"Licences",
-         [](ScreenManager &self) {
-           self.tabs_.activeStack().push(Screen{ScreenKind::Licences, {}});
-           self.render();
-         }},
+        {"About", [](ScreenManager &self) { self.openAbout(); }},
 };
 
 
@@ -436,7 +432,11 @@ void ScreenManager::renderWordmark() {
   lv_obj_set_style_bg_opa(badge, LV_OPA_COVER, 0);
   lv_obj_set_style_bg_color(badge, theme::ink(), 0);
   lv_obj_clear_flag(badge, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_clear_flag(badge, LV_OBJ_FLAG_CLICKABLE);
+  // Tapping the name opens About. 26px tall, so the hit area reaches
+  // further than the drawn capsule, to the 44px a finger needs.
+  lv_obj_add_flag(badge, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_set_ext_click_area(badge, 10);
+  lv_obj_add_event_cb(badge, &ScreenManager::onWordmarkClicked, LV_EVENT_CLICKED, this);
 
   lv_obj_t *dial = lv_obj_create(badge);
   lv_obj_set_size(dial, kDialSize, kDialSize);
@@ -632,46 +632,50 @@ void ScreenManager::updateBrightnessDisplay() {
   lv_label_set_text(brightnessLabel_, text);
 }
 
-// One component's page under Settings > Licences (ADR 0026): what it is,
-// what it does here, its licence and any notice that licence requires
-// word for word. Row 0 is Drehklang itself, which also says what leaves
-// the device -- nothing, as it has no network. Text only; the column
-// scrolls by touch when a long notice needs it.
-void ScreenManager::renderLicenceDetail() {
-  // Inside the round glass: a 240 px column, below the caption.
+namespace {
+
+// A centred, wrapping column of text lines inside the round glass, below
+// the caption -- the About page and a licence page. Scrolls by touch when
+// its text is longer than it.
+lv_obj_t *makeTextColumn(lv_obj_t *parent, lv_coord_t height, lv_coord_t centreY) {
   constexpr lv_coord_t kColumnWidth = 240;
-  constexpr lv_coord_t kColumnHeight = 230;
-  constexpr lv_coord_t kColumnY = 20;
   constexpr lv_coord_t kRowGap = 8;
-
-  const uint16_t row = tabs_.activeStack().current().params.row;
-  about::Credit own{"Drehklang", kVersion, about::kNoWarranty, about::kOwnLicence,
-                    about::kOwnHome, "Nothing leaves the device.", nullptr};
-  const about::Credit &credit =
-      row == 0 || row > about::kCreditCount ? own : about::kCredits[row - 1];
-
-  lv_obj_t *column = lv_obj_create(screen_);
+  lv_obj_t *column = lv_obj_create(parent);
   lv_obj_remove_style_all(column);
-  lv_obj_set_size(column, kColumnWidth, kColumnHeight);
-  lv_obj_align(column, LV_ALIGN_CENTER, 0, kColumnY);
+  lv_obj_set_size(column, kColumnWidth, height);
+  lv_obj_align(column, LV_ALIGN_CENTER, 0, centreY);
   lv_obj_set_flex_flow(column, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(column, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
                         LV_FLEX_ALIGN_CENTER);
   lv_obj_set_style_pad_row(column, kRowGap, 0);
   lv_obj_set_scroll_dir(column, LV_DIR_VER);
   lv_obj_set_scrollbar_mode(column, LV_SCROLLBAR_MODE_OFF);
+  return column;
+}
 
-  auto addText = [column](const char *text, const lv_font_t *font, lv_color_t color) {
-    lv_obj_t *label = lv_label_create(column);
-    lv_obj_set_width(label, LV_PCT(100));
-    lv_obj_set_style_text_font(label, font, 0);
-    lv_obj_set_style_text_color(label, color, 0);
-    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
-    lv_label_set_text(label, text);
-  };
+void addColumnText(lv_obj_t *column, const char *text, const lv_font_t *font,
+                   lv_color_t color) {
+  lv_obj_t *label = lv_label_create(column);
+  lv_obj_set_width(label, LV_PCT(100));
+  lv_obj_set_style_text_font(label, font, 0);
+  lv_obj_set_style_text_color(label, color, 0);
+  lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+  lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+  lv_label_set_text(label, text);
+}
 
-  addText(credit.name, &drehklang_text_font_20, theme::ink());
+}  // namespace
+
+// One component's page under Settings > About > Licences (ADR 0026): what
+// it is, what it does here, its licence and any notice that licence
+// requires word for word.
+void ScreenManager::renderLicenceDetail() {
+  const uint16_t row = tabs_.activeStack().current().params.row;
+  if (row >= about::kCreditCount) return;
+  const about::Credit &credit = about::kCredits[row];
+
+  lv_obj_t *column = makeTextColumn(screen_, 230, 20);
+  addColumnText(column, credit.name, &drehklang_text_font_20, theme::ink());
   char versionLine[64];
   if (credit.version[0] != '\0') {
     snprintf(versionLine, sizeof(versionLine), "%s  \xC2\xB7  %s", credit.version,
@@ -679,10 +683,53 @@ void ScreenManager::renderLicenceDetail() {
   } else {
     snprintf(versionLine, sizeof(versionLine), "%s", credit.licence);
   }
-  addText(versionLine, &drehklang_text_font_14, theme::structure());
-  addText(credit.use, &drehklang_text_font_14, theme::ink());
-  if (credit.notice) addText(credit.notice, &drehklang_text_font_14, theme::structure());
-  addText(credit.home, &drehklang_text_font_14, theme::structure());
+  addColumnText(column, versionLine, &drehklang_text_font_14, theme::structure());
+  addColumnText(column, credit.use, &drehklang_text_font_14, theme::ink());
+  if (credit.notice) {
+    addColumnText(column, credit.notice, &drehklang_text_font_14, theme::structure());
+  }
+  addColumnText(column, credit.home, &drehklang_text_font_14, theme::structure());
+}
+
+// Settings > About, and a tap on the wordmark on Home: who makes Drehklang,
+// where its source is, its licence and that nothing leaves the device.
+// The one button opens the components' licences -- Secondary, not accent:
+// it is the way on, not what this page is for.
+void ScreenManager::renderAbout() {
+  constexpr lv_coord_t kLicencesSize = 80;
+  constexpr lv_coord_t kLicencesY = 110;
+
+  lv_obj_t *column = makeTextColumn(screen_, 170, -25);
+  addColumnText(column, "Drehklang", &drehklang_text_font_20, theme::ink());
+  addColumnText(column, kVersion, &drehklang_text_font_14, theme::structure());
+  char byLine[48];
+  snprintf(byLine, sizeof(byLine), "by %s", about::kAuthor);
+  addColumnText(column, byLine, &drehklang_text_font_14, theme::ink());
+  addColumnText(column, about::kOwnHome, &drehklang_text_font_14, theme::structure());
+  char licenceLine[96];
+  snprintf(licenceLine, sizeof(licenceLine), "%s. %s", about::kOwnLicence,
+           about::kNoWarranty);
+  addColumnText(column, licenceLine, &drehklang_text_font_14, theme::structure());
+  addColumnText(column, about::kPrivacy, &drehklang_text_font_14, theme::structure());
+
+  makeIconButton(screen_, "Licences", kLicencesSize, kLicencesSize, LV_ALIGN_CENTER, 0,
+                 kLicencesY, &ScreenManager::onAboutLicencesClicked, this,
+                 ButtonRole::Secondary, &drehklang_text_font_14);
+}
+
+void ScreenManager::openAbout() {
+  tabs_.activeStack().push(Screen{ScreenKind::About, {}});
+  render();
+}
+
+void ScreenManager::onAboutLicencesClicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenManager *>(lv_event_get_user_data(e));
+  self->tabs_.activeStack().push(Screen{ScreenKind::Licences, {}});
+  self->render();
+}
+
+void ScreenManager::onWordmarkClicked(lv_event_t *e) {
+  static_cast<ScreenManager *>(lv_event_get_user_data(e))->openAbout();
 }
 
 void ScreenManager::renderSleepTimer() {

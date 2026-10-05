@@ -123,9 +123,12 @@ part are kept.
 - **`CORE_DEBUG_LEVEL`** is defined in `build_flags`. The library's log
   macros need it, and PlatformIO does not set it.
 
-### Licences on the device
+### About and licences on the device
 
-Settings > Licences lists Drehklang and every component with its licence.
+Settings > About (also opened by tapping the wordmark on Home) shows the
+version, the author (Timo Böwing), github.com/bjblazko/drehklang, the
+licence with the no-warranty sentence, and that nothing leaves the
+device. Its Licences button lists every component with its licence.
 Each component opens a page with its version, its use, its website and
 any notice its licence requires word for word, for example FAAD2's "Code
 from FAAD2 is copyright (c) Nero AG, www.nero.com". The full licence
@@ -168,3 +171,25 @@ texts are in `licenses/`. `test_credits` fails when:
 - Any other legacy ESP-IDF 4 driver header (`driver/i2s.h`,
   `driver/i2c.h`) brought in later will abort at boot. The new core links
   the new drivers itself.
+
+## Where this leaves the roadmap (2026-10-05)
+
+Phase 1 of the platform plan is done and verified on the device: MP3, M4A,
+Ogg and WAV play, shuttle and resume; Tones and games hand the DAC over
+and back. Next, each in its own session:
+
+1. **Bluetooth headphones** (A2DP source, headphone buttons via AVRCP,
+   auto-reconnect). Only the second chip, the ESP32-U4WDH, has Classic
+   Bluetooth: a second firmware there, fed PCM by the S3 over the shared
+   UART (device.md, "The second chip and the audio switch"). The S3 side
+   becomes another DAC owner behind `playback::DacArbiter`, fed from the
+   same `audio_process_i2s` hook (`continueI2S = false` swallows the
+   samples). Start with a design spec: the link's framing and flow
+   control (there are no RTS/CTS lines; 44.1 kHz stereo needs at least
+   1.77 Mbaud), pairing UI, button mapping, what the jack does meanwhile,
+   and flashing the second chip (factory image in `hardware-backups/`).
+2. **WiFi** (web radio; podcasts downloaded to SD). Decide HE-AAC first
+   (above), and fit the internal-RAM budget: ~31 KB free while playing.
+3. Opus and 24-bit FLAC: the library decodes both; the library scan
+   (`lib/library/AudioFileTypes.h`) does not list Opus yet.
+

@@ -68,8 +68,10 @@ screens described below.
   else since [ADR 0026](docs/adr/0026-arduino-esp32-3-and-upstream-audioi2s.md).
   Embedded Ogg cover art (`METADATA_BLOCK_PICTURE`) isn't read; a folder
   `cover.jpg` still works.
-- Settings > Licences lists every component the firmware is built from,
-  with its licence and required notices (full texts in `licenses/`).
+- Settings > About (or a tap on the Drehklang wordmark on Home) shows the
+  version, the author and the source address; its Licences button lists
+  every component the firmware is built from, with its licence and
+  required notices (full texts in `licenses/`).
 - Tones, a tone generator: sine, square (duty), saw (rising → triangle →
   falling) and noise (brown, pink, white, blue, violet), 20 Hz – 20 kHz, level in dBFS independent of the
   volume, out of the 3.5 mm jack at 48 kHz. Chips pick what the knob
@@ -144,10 +146,16 @@ Settings > USB drive, at about 0.8 MB/s writing and 0.9 MB/s reading
 (the ESP32-S3 has USB full speed only, whose practical ceiling is
 ~1.2 MB/s). That is roughly 2 minutes per album, or 9 hours for 26 GB.
 
+## Planned next
+
+- Bluetooth headphone output, through the board's second chip (the
+  ESP32-S3 has no Classic Bluetooth) — see ADR 0026's roadmap and
+  device.md
+- Wi-Fi: internet radio, and podcasts downloaded to the SD card
+
 ## Explicitly out of scope for now
 
-- Bluetooth headphone output
-- Wi-Fi-based features (time/date sync, weather, podcasts, internet radio)
+- Other Wi-Fi features (time/date sync, weather)
 - 24-bit FLAC and Opus: the decoder library plays both since ADR 0026,
   but the library scan doesn't list Opus files yet and neither has been
   checked on the device

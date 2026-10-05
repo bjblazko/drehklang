@@ -60,6 +60,8 @@ enum class ScreenKind {
   // everything above; past NowPlaying, so a resume never lands on them.
   Licences,
   LicenceDetail,
+  // Settings > About, also opened by tapping the wordmark on Home.
+  About,
 };
 
 // Parameters a screen needs to render itself. Only the fields relevant
@@ -81,8 +83,8 @@ struct ScreenParams {
   // pushing screen's value along, so a whole browse stack stays inside
   // one collection.
   collection::CollectionId collection = collection::CollectionId::Music;
-  // A row of a static table the screen shows -- LicenceDetail's component
-  // (0 is Drehklang itself, then about::kCredits in order).
+  // A row of a static table the screen shows -- LicenceDetail's component,
+  // an index into about::kCredits.
   uint16_t row = 0;
 };
 

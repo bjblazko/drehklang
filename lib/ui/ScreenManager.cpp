@@ -195,6 +195,8 @@ void ScreenManager::render() {
     renderToneGenerator();
   } else if (current.kind == ScreenKind::LicenceDetail) {
     renderLicenceDetail();
+  } else if (current.kind == ScreenKind::About) {
+    renderAbout();
   } else if (current.kind == ScreenKind::UsbDrive) {
     // Modal: no back button or caption. Done, eject or unplug end it.
     renderUsbDrive();
@@ -321,11 +323,10 @@ void ScreenManager::render() {
         }
         break;
       case ScreenKind::Licences:
-        // Drehklang itself first, then what it is built from: the row is
-        // ScreenParams::row of the page it opens.
-        items.emplace_back("Drehklang", 0);
+        // What Drehklang is built from; its own licence is on About, the
+        // page this list is opened from. The row is the credit's index.
         for (size_t i = 0; i < about::kCreditCount; ++i) {
-          items.emplace_back(about::kCredits[i].name, static_cast<int>(i + 1));
+          items.emplace_back(about::kCredits[i].name, static_cast<int>(i));
         }
         break;
       case ScreenKind::Games:
@@ -497,8 +498,7 @@ void ScreenManager::renderList(
       secondary = menuVisibilityValue(items[i].second);
     } else if (current.kind == ScreenKind::Licences) {
       // The licence, as the quiet trailing fact a row's value is.
-      const int row = items[i].second;
-      secondary = row == 0 ? about::kOwnLicence : about::kCredits[row - 1].licence;
+      secondary = about::kCredits[items[i].second].licence;
     } else if (current.kind == ScreenKind::Settings && items[i].second == 0) {
       snprintf(valueText, sizeof(valueText), "%u%%",
                static_cast<unsigned>(brightness_.percent()));
@@ -737,6 +737,8 @@ std::string ScreenManager::captionTextFor(
     case ScreenKind::Licences:
     case ScreenKind::LicenceDetail:
       return "Licences";
+    case ScreenKind::About:
+      return "About";
     case ScreenKind::ToneGenerator:
       return "Tones";
     case ScreenKind::Brightness:
@@ -1798,7 +1800,7 @@ void ScreenManager::onListItemClicked(lv_event_t *e) {
       self->openBrowseAxis(ctx->index);
       break;
     case ScreenKind::Licences:
-      if (ctx->index >= 0 && ctx->index <= static_cast<int>(about::kCreditCount)) {
+      if (ctx->index >= 0 && ctx->index < static_cast<int>(about::kCreditCount)) {
         navigation::ScreenParams params;
         params.row = static_cast<uint16_t>(ctx->index);
         self->tabs_.activeStack().push(Screen{ScreenKind::LicenceDetail, params});

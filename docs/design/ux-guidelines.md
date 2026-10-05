@@ -242,6 +242,8 @@ Full architecture: [ADR 0004](../adr/0004-navigation-library-and-index-architect
 - **Home is the one screen with the wordmark.** It has no caption, title
   or back button, and it is the screen the device boots into — so it is
   where the product gets to say its name, and the only screen that does.
+  Tapping the wordmark opens About, the same page as Settings > About: a
+  name says who made something, so that is where the question leads.
 - **The device boots into the main menu** — a carousel of large round
   tiles (icon + label): Music, Audiobooks, Radio Plays, Settings, Sleep,
   Games, Tones
@@ -270,7 +272,12 @@ Full architecture: [ADR 0004](../adr/0004-navigation-library-and-index-architect
 - **Settings is a list; each setting has its own screen** when it's set by
   the knob. A row ends in its current value as plain text. Brightness
   applies live while turning, with no confirm step. Maintenance actions
-  (Rescan library) live here, not in content headers.
+  (Rescan library) live here, not in content headers. The last row is
+  About: the version, the author, the source address, the licence, the
+  no-warranty sentence and what leaves the device (nothing). Its one
+  button, a Secondary circle, opens Licences: one row per component,
+  ending in its licence, each opening a page with the notice that licence
+  requires (ADR 0026).
 - **Two swipeable browse tabs per collection** — Library (tag-based
   Artist → Album → Track) and Files (folder browse within that
   collection's own root) — rather than a separate picker screen. A swipe
