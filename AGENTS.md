@@ -106,6 +106,13 @@ duplicating it.
   to another owner's channel, so there is no shared sample rate to restore
   any more. Opening a game or starting a tone pauses music first; keep
   that, or a blip silences a track the UI still shows as playing.
+- **Talking to the second chip (ESP32-U4WDH).** Its UART0 is the CH340
+  side of the cable (flip the USB-C plug; `/dev/cu.usbserial-*`). Opening
+  that port with pyserial's defaults asserts RTS and **holds the chip in
+  reset** -- set `dtr = rts = False` before `open()`, or the log stays
+  empty. The link between the chips is S3 GPIO48 (TX) / GPIO38 (RX) at
+  3 Mbaud, and both ends must lower the RX FIFO threshold to 64 or bytes
+  get lost (device.md, ADR 0027). `scripts/flash-bt-mcu.sh` flashes it.
 - **ESP32-audioI2S's own messages are silent by default.** To see them,
   set `-DCORE_DEBUG_LEVEL=3` (instead of 0) and add `-DAUDIO_LOG` in
   `[env:esp32-s3]`'s `build_flags` temporarily: `Esp32AudioI2SDriver.cpp`

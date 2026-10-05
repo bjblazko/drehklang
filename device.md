@@ -88,7 +88,7 @@ successful flash before trusting blindly.
 | | DOUT | 41 |
 | Other | Battery ADC | 1 (confirmed via live serial probe 2026-09-13 — plausible, stable ~2400mV reading with battery attached; see [ADR 0007](docs/adr/0007-battery-indicator.md)) |
 | | Mic (PDM) | CLK 45, DATA 46 |
-| | Inter-MCU UART (to the ESP32-U4WDH) | TX 38, RX 48 (schematic `ESP32S3_TX`/`ESP32S3_RX`; 43/44 are the S3's own UART0, an earlier mistake here) |
+| | Inter-MCU UART (to the ESP32-U4WDH) | **TX 48, RX 38** (measured 2026-10-05: the U4WDH's TX arrives on GPIO38; the schematic's `ESP32S3_TX`/`ESP32S3_RX` are named from the other chip's side. 43/44 are the S3's own UART0) |
 | | DAC source switch (CH445P `I2S_SWITCH_IN`) | 0 |
 
 Waveshare's own official Arduino demo for this board (mirrored in the
@@ -110,8 +110,16 @@ pages `2_ESP32S3-R8`, `3_ESP32-CHIP`, `5_DAC`), read 2026-10-05:
   played). Which level selects which side is not confirmed yet; measure
   before relying on it. The ESP32-U4WDH's IO32 drives the DAC's
   XSMT (soft mute).
-- **The chips share a UART:** S3 GPIO38 (TX) to ESP32 IO23 (RX), and
-  ESP32 IO18 (TX) to S3 GPIO48 (RX). There are no flow-control lines.
+- **The chips share a UART:** ESP32 IO18 (TX) to S3 GPIO38 (RX), and S3
+  GPIO48 (TX) to ESP32 IO23 (RX). There are no flow-control lines.
+  Measured 2026-10-05 with a pin probe and a throughput test: 3 Mbaud
+  both ways, saturated for 10 minutes, no errors -- once both receivers
+  lower their RX FIFO threshold to 64 bytes
+  (`uart_set_rx_full_threshold`). At the driver's default (120 of 128
+  bytes) the ESP32 dropped bytes at 3 Mbaud. The link works with the
+  USB-C cable either way round.
+- **The ESP32-U4WDH is dual core, 240 MHz** (esptool: "ESP32-U4WDH
+  (revision v3.1)", 2026-10-05).
 - **The ESP32-U4WDH's knob** is on IO19/IO22 (`EC2_A`/`EC2_B`). Its UART0
   goes to the CH340, and that is how it is flashed.
 - The ESP32-U4WDH is a classic ESP32 with **Bluetooth Classic** (A2DP,

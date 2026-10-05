@@ -12,9 +12,12 @@ second chip, the ESP32-U4WDH, has Classic Bluetooth (A2DP, AVRCP). It gets a
 firmware of its own, and the S3 feeds it PCM over the UART the two chips
 share (device.md, "The second chip and the audio switch"):
 
-- S3 GPIO38 (TX) → U4WDH IO23 (RX)
-- U4WDH IO18 (TX) → S3 GPIO48 (RX)
+- S3 GPIO48 (TX) → U4WDH IO23 (RX)
+- U4WDH IO18 (TX) → S3 GPIO38 (RX)
 - no RTS/CTS lines
+
+Measured on 2026-10-05: 3 Mbaud works both ways once both receivers
+lower their RX FIFO threshold to 64 bytes (device.md).
 
 ## What the user gets
 
@@ -77,7 +80,7 @@ UI text is English, like the rest of the device. Settings stays a list
 ```
           ‹                     back
       Bluetooth                 caption
-  Bluetooth             On      tap toggles; value `confirm` green when on
+  Bluetooth             On      tap toggles; On/Off as plain text, like Main menu's
   WH-1000XM4     Connected      paired device and its state:
                                 Connected / Connecting… / Not in range
   Find headphones          ›    opens the search
@@ -98,8 +101,7 @@ UI text is English, like the rest of the device. Settings stays a list
 - It scans for 10 s and lists devices by signal strength, strongest first.
 - The caption reads `Searching…` while scanning and `N found` afterwards.
 - The first row is `Search again`, which is greyed out while a scan runs.
-- With nothing found, the screen shows `No headphones found. Is pairing
-  mode on?` under `Search again`.
+- With nothing found, a message says `None found. Pairing mode on?`.
 - **Pairing:**
   - Tapping a device pairs it and returns to the Bluetooth screen, with
     the message `Connecting to <name>`.
@@ -161,7 +163,8 @@ Pure C++, no Arduino. Namespace `drehklang::btlink`.
 
 **Audio** (S3 → BT):
 
-- 1 byte rate code: 22 050, 44 100 or 48 000 Hz.
+- The sample rate as u32 LE, so any source rate gets through (a 32 kHz
+  MP3, a 96 kHz FLAC).
 - Then 256 stereo frames of 16-bit little-endian PCM, 1024 bytes.
 - At 48 kHz that is about 188 packets/s. With framing it comes to
   1.95 Mbaud at 8N1, which leaves about 35 % headroom at 3 Mbaud.
@@ -184,7 +187,7 @@ Pure C++, no Arduino. Namespace `drehklang::btlink`.
 | `HELLO` | protocol version u8 |
 | `STATE` | state u8 (off, idle, scanning, connecting, connected), paired address (6 bytes), paired name (u8 length + UTF-8, at most 32 bytes); sent on every change and once a second, as the heartbeat |
 | `SCAN_RESULT` | address, RSSI i8, name (u8 length + UTF-8); one packet per device found |
-| `BUTTON` | button u8 (Play/Pause only, for now) |
+| `BUTTON` | button u8: 1 = Play, 2 = Pause. Kept apart: a toggle would undo a press the headphones repeat |
 | `STATS` | underruns u32, CRC errors u32, packets lost u32; every 5 s |
 
 **The receiver:**
@@ -213,8 +216,8 @@ host-tested.
 
 **`BtLink`** (driver, `lib/drivers-bluetooth/`):
 
-- Runs its own FreeRTOS task on core 0 on UART1 at 3 Mbaud, with GPIO38
-  as TX and GPIO48 as RX.
+- Runs its own FreeRTOS task on core 0 on UART1 at 3 Mbaud, with GPIO48
+  as TX and GPIO38 as RX, RX FIFO threshold 64.
 - Cuts the ring into audio packets, sends queued control packets between
   them, and feeds received bytes to a `PacketReader`.
 - Internal RAM: a 2 KB UART TX buffer, a 1 KB RX buffer and a 3 KB task
@@ -225,8 +228,10 @@ host-tested.
 
 **`BtController`** (main loop, host-tested):
 
-- States: `Off`, `FirmwareMissing`, `FirmwareOutdated`, `NotAnswering`,
-  `Idle`, `Scanning`, `Connecting`, `Connected`.
+- States: `Starting` (the first 3 s, before any answer), `Off`,
+  `FirmwareMissing`, `FirmwareOutdated`, `NotAnswering`, `Idle`,
+  `Connecting`, `Connected`. Scanning is a flag beside the state, because
+  a scan can run while connected.
 - **Handshake:**
   - After boot it sends `HELLO` every 500 ms.
   - No answer within 3 s → `FirmwareMissing`.
@@ -339,7 +344,7 @@ host-tested.
 - `BtAudioTap`:
   - 32 → 16-bit conversion
   - drops when full or gated off
-  - carries the rate code
+  - carries the rate
 - `BtController`:
   - handshake timeout leads to `FirmwareMissing`
   - a version mismatch leads to `FirmwareOutdated`
@@ -350,9 +355,13 @@ host-tested.
 
 ## Verification on the device
 
-In this order. The first one can stop the design.
+In this order.
 
-1. **Baud test.** A throwaway sketch on each chip sends 3 Mbaud of
+0. With the U4WDH running anything but its factory image, music still
+   reaches the jack. The U4WDH's IO32 drives the DAC's XSMT; if the jack
+   is silent, the BT firmware must drive IO32 high.
+1. **Baud test. Done 2026-10-05:** 10 minutes at 3 Mbaud, both directions
+   saturated, no errors (with the RX threshold at 64). What was planned: A throwaway sketch on each chip sends 3 Mbaud of
    counter packets across GPIO38/48 ↔ IO23/IO18, and the test counts CRC
    errors over 10 minutes. The goal is zero. If 3 Mbaud fails, try
    2 Mbaud (1.95 Mbaud is needed at 48 kHz). If both fail, go back to
