@@ -147,7 +147,8 @@ texts are in `licenses/`. `test_credits` fails when:
   binary or a flashed device is passed on. **Before the first binary
   release, or at the WiFi radio phase (where HE-AAC streams are common),
   whichever comes first, decide:** keep it after a proper check, or turn
-  SBR/PS off with a documented build patch.
+  SBR/PS off with a documented build patch. What a first check found is
+  in "HE-AAC patent check" below.
 - Every format the library decodes can now shuttle (ADR 0013): MP3, M4A,
   WAV, FLAC, Ogg, Opus. Each still needs checking on the device.
 - The library allocates about 0.75 MB of PSRAM for buffers while `Audio`
@@ -171,6 +172,48 @@ texts are in `licenses/`. `test_credits` fails when:
 - Any other legacy ESP-IDF 4 driver header (`driver/i2s.h`,
   `driver/i2c.h`) brought in later will abort at boot. The new core links
   the new drivers itself.
+
+## HE-AAC patent check (2026-10-05)
+
+A quick desk check of public sources, not the pool's own patent list and
+not legal advice.
+
+- **The pool is active.** Via Licensing Alliance licenses AAC-LC, HE-AAC,
+  HE-AAC v2, xHE-AAC and more, in five-year terms. Makers of end-user
+  products containing an encoder or a decoder need a licence; distributing
+  content needs none. Fees: a one-time $15,000 ($1,000 for small entities)
+  plus $0.98 per unit in the first tier. Open-source or free distribution
+  is not mentioned. The program page lists no expiry dates.
+- **Patent status, from secondary sources:**
+  - AAC-LC: the US patents have expired. Fedora ships an AAC package
+    with LC only for that reason.
+  - HE-AAC v1 (SBR): reported that the last decoding patents expired in
+    2023. Individual German SBR patents show as "Expired - Lifetime" on
+    Google Patents.
+  - HE-AAC v2 (PS): one Philips PS patent (India) expired in 2023. The
+    rest are reported to run about three years past v1, so to around
+    2026.
+  - xHE-AAC: encumbered until about 2031. This library does not decode
+    it.
+  - One source also gives 2028 for "AAC baseline technologies"; the
+    public picture is not consistent.
+- **What it means here:**
+  - Private use is exempt (§ 11 Nr. 1 PatG), and the public source
+    repository is low risk.
+  - It matters only for binaries or flashed devices given to others. Then
+    AAC-LC is clear and HE-AAC v1 is probably clear, while HE-AAC v2 may
+    still be covered until about the end of 2026.
+- **Plan:** nothing until the first binary release. Then either disable
+  PS with a small build patch, keeping SBR (v2 streams then play in mono,
+  everything else unchanged; the cautious route, close to Fedora's), or
+  release after the end of 2026 having asked Via LA for its patent list.
+  Only that list is authoritative.
+
+Sources: via-la.com/licensing-programs/aac; Wikipedia ("Via-LA",
+"High-Efficiency Advanced Audio Coding", "Fraunhofer FDK AAC"); Mozilla
+Connect, "Native AAC-LC decoding (patents expired)"; SCC Online, "Patent
+Pools in Action: Via Licensing Alliance" (2026-02-13); Hydrogenaudio,
+"List of AAC related patents"; Google Patents DE60013785T2.
 
 ## Where this leaves the roadmap (2026-10-05)
 
