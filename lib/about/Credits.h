@@ -66,7 +66,8 @@ inline constexpr const char *kAuthor = "Timo B\xC3\xB6wing";
 inline constexpr const char *kOwnLicence = "GPL-3.0-or-later";
 inline constexpr const char *kOwnHome = "github.com/bjblazko/drehklang";
 inline constexpr const char *kNoWarranty = "Free software, without any warranty.";
-// True as long as the firmware has no network at all.
-inline constexpr const char *kPrivacy = "Nothing leaves the device.";
+// True as long as the firmware has no network at all. With Bluetooth on,
+// the sound goes to the paired headphones (ADR 0027), so it says so.
+inline constexpr const char *kPrivacy = "Nothing leaves the device but sound for your headphones.";
 
 }  // namespace drehklang::about

@@ -27,6 +27,11 @@ three in step).
 | [Font Awesome 5 Free](https://fontawesome.com) (bundled by LVGL as `scripts/built_in_font/FontAwesome5-Solid+Brands+Regular.woff`) | The `LV_SYMBOL_*` icon glyphs embedded in `lib/ui-widgets/TextFont*.c` (same codepoint range as LVGL's own built-in Montserrat fonts) | CC-BY-4.0 (icons) / OFL-1.1 (font) | Font Awesome by Fonticons, Inc. |
 | [Unity](https://github.com/ThrowTheSwitch/Unity) | Host-side unit tests only (not shipped) | MIT | |
 
+The Bluetooth firmware links Espressif's binary-only Bluetooth controller
+and radio libraries (`libbtdm_app`, `libbtbb`, `libphy`, `libcoexist`, part
+of ESP-IDF); its own files carry an additional permission for that, see
+[LINKING-EXCEPTION.md](LINKING-EXCEPTION.md).
+
 GPL-3.0-or-later for Drehklang is not a free choice: ESP32-audioI2S is
 GPL-3.0, so any distributed firmware linking it is covered as a whole.
 

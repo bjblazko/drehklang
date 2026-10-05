@@ -366,6 +366,9 @@ session — never at boot, so the device is usable the moment it powers on.
 ## License
 
 Drehklang is licensed under **GPL-3.0-or-later** — see [LICENSE](LICENSE).
+The Bluetooth firmware (`bt/`, `lib/btlink/`, `lib/btaudio/`) carries an
+additional permission to link Espressif's binary-only Bluetooth libraries
+— see [LINKING-EXCEPTION.md](LINKING-EXCEPTION.md).
 
 That follows from the audio library: ESP32-audioI2S is GPL-3.0, so
 firmware linking it is covered as a whole. [THIRD-PARTY.md](THIRD-PARTY.md)

@@ -717,9 +717,12 @@ void ScreenManager::renderLicenceDetail() {
 // it is the way on, not what this page is for.
 void ScreenManager::renderAbout() {
   constexpr lv_coord_t kLicencesSize = 80;
-  constexpr lv_coord_t kLicencesY = 110;
+  // Clear of the column's last line, which wraps to two since About says
+  // where sound goes with Bluetooth on (ADR 0027).
+  constexpr lv_coord_t kLicencesY = 122;
 
-  lv_obj_t *column = makeTextColumn(screen_, 170, -25);
+  // 190 tall, top edge where it always was: the privacy line wraps to two.
+  lv_obj_t *column = makeTextColumn(screen_, 190, -15);
   addColumnText(column, "Drehklang", &drehklang_text_font_20, theme::ink());
   addColumnText(column, kVersion, &drehklang_text_font_14, theme::structure());
   char byLine[48];

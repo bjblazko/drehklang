@@ -200,6 +200,19 @@ found:
 
 ## Open
 
+- **Legal check (2026-10-05) before merging.**
+  - **Licence:** the Bluetooth firmware links Espressif's binary-only
+    libraries, so its files carry a GPL section 7 linking permission
+    (LINKING-EXCEPTION.md).
+  - **Still open for the first binary release:** the S3 firmware links the
+    same kind of libraries together with ESP32-audioI2S (decide together
+    with HE-AAC, ADR 0026), and Bluetooth qualification for devices passed
+    on, since the patent and trademark licences of the Bluetooth SIG cover
+    qualified products. The lock screen keeps the Bluetooth logo glyph;
+    that is fine for a private repository, and it is to be checked again
+    at that point.
+  - **About** now says that sound goes to the headphones.
+
 - **Delay on the headphones in games.** Sound reaches the headphones
   ~300 ms after the jack:
   - Bluetooth itself (SBC and the headphones' buffer) accounts for
