@@ -3,6 +3,9 @@
 #include <Arduino.h>
 #include <freertos/task.h>
 
+#include <algorithm>
+#include <iterator>
+
 #include "AudioGain.h"
 #include "AudioHooks.h"
 #include "AudioOutputStage.h"
@@ -111,7 +114,7 @@ void ToneOutput::taskLoop() {
     // the last thing the DAC hears is silence rather than a cut.
     const bool generating = control_.running() || !oscillator_.idle();
     if (!generating && !tone_.active()) {
-      vTaskDelay(pdMS_TO_TICKS(kPollMs));
+      if (!feedBluetoothSilence()) vTaskDelay(pdMS_TO_TICKS(kPollMs));
       continue;
     }
     const uint32_t rate = generating ? signal::kGeneratorSampleRate : kBlipSampleRate;
@@ -155,6 +158,26 @@ bool ToneOutput::writeChunk(uint32_t rate) {
   }
   // Bluetooth gets what the jack gets (ADR 0027).
   if (auto *tap = bluetoothTap()) tap->pushStereo16(chunk_, kChunkFrames * 2, rate);
+  return true;
+}
+
+// With headphones connected, silence between sounds keeps the stream to
+// them running while this owns the DAC. The U4WDH only plays from a
+// half-full buffer, so a lone 24 ms paddle blip would wait there until
+// enough of them had piled up, and then come all at once (ADR 0027,
+// found on the device 2026-10-05). The channel write paces this like any
+// other chunk. False when there is nothing to keep fed.
+bool ToneOutput::feedBluetoothSilence() {
+  auto *tap = bluetoothTap();
+  if (tap == nullptr || !tap->forwarding()) return false;
+  std::fill(std::begin(chunk_), std::end(chunk_), 0);
+  Lock lock(mutex_);
+  if (channel_ == nullptr) return false;
+  size_t written = 0;
+  if (i2s_channel_write(channel_, chunk_, sizeof(chunk_), &written, kWriteTimeout) != ESP_OK) {
+    return false;
+  }
+  tap->pushStereo16(chunk_, kChunkFrames * 2, channelRate_);
   return true;
 }
 

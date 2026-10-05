@@ -68,6 +68,7 @@ class ToneOutput : public games::BlipPlayer,
   bool openChannel(uint32_t rate);
   void closeChannel();
   bool writeChunk(uint32_t rate);
+  bool feedBluetoothSilence();
   [[noreturn]] void taskLoop();
   static void taskTrampoline(void *self);
 
