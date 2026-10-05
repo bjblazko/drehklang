@@ -15,11 +15,14 @@
 
 #include "AudioGain.h"
 #include "AudioOutputStage.h"
+#include "AudioTap.h"
 
 namespace drehklang::drivers {
 namespace {
 std::atomic<bool> g_holdOutput{false};
 std::atomic<bool> g_producedSinceHold{false};
+std::atomic<drehklang::bluetooth::AudioTap *> g_bluetoothTap{nullptr};
+std::atomic<uint32_t> g_decoderRate{44100};
 }  // namespace
 
 void setHoldOutput(bool hold) {
@@ -30,6 +33,16 @@ void setHoldOutput(bool hold) {
 bool decoderProducedSinceHold() { return g_producedSinceHold.load(std::memory_order_relaxed); }
 
 bool holdingOutput() { return g_holdOutput.load(std::memory_order_relaxed); }
+
+void setBluetoothTap(bluetooth::AudioTap *tap) {
+  g_bluetoothTap.store(tap, std::memory_order_release);
+}
+
+bluetooth::AudioTap *bluetoothTap() { return g_bluetoothTap.load(std::memory_order_acquire); }
+
+void setDecoderRate(uint32_t rate) { g_decoderRate.store(rate, std::memory_order_relaxed); }
+
+uint32_t decoderRate() { return g_decoderRate.load(std::memory_order_relaxed); }
 
 }  // namespace drehklang::drivers
 
@@ -43,8 +56,9 @@ void audio_process_raw_samples(int32_t *samples, int16_t words) {
   drehklang::drivers::audioOutputStage().noteStereo32(samples, static_cast<size_t>(words));
 }
 
-// After the volume: the sleep timer's fade (ADR 0015), and silence while a
-// resume position is still being applied.
+// After the volume: the sleep timer's fade (ADR 0015), silence while a
+// resume position is still being applied, and a copy for Bluetooth
+// headphones -- exactly what the jack gets (ADR 0027).
 void audio_process_i2s(int32_t *samples, int16_t words, bool *continueI2S) {
   *continueI2S = true;
   if (drehklang::drivers::holdingOutput()) {
@@ -52,8 +66,12 @@ void audio_process_i2s(int32_t *samples, int16_t words, bool *continueI2S) {
     return;
   }
   const uint16_t gain = drehklang::drivers::audioOutputStage().outputGain();
-  if (gain >= drehklang::playback::AudioGain::kUnityOutputGain) return;
-  for (int16_t i = 0; i < words; ++i) {
-    samples[i] = drehklang::playback::AudioGain::applyOutputGain(samples[i], gain);
+  if (gain < drehklang::playback::AudioGain::kUnityOutputGain) {
+    for (int16_t i = 0; i < words; ++i) {
+      samples[i] = drehklang::playback::AudioGain::applyOutputGain(samples[i], gain);
+    }
+  }
+  if (auto *tap = drehklang::drivers::bluetoothTap()) {
+    tap->pushStereo32(samples, static_cast<size_t>(words), drehklang::drivers::decoderRate());
   }
 }

@@ -8,10 +8,14 @@
 
 #include <cstring>
 
+#include "AudioHooks.h"
+#include "AudioTap.h"
 #include "BatteryAdcDriver.h"
 #include "BatteryIndicator.h"
 #include "BatteryMonitor.h"
 #include "BrightnessSetting.h"
+#include "BtController.h"
+#include "BtLink.h"
 #include "CoverArtCache.h"
 #include "DeepSleep.h"
 #include "Cst816Driver.h"
@@ -37,6 +41,7 @@
 #include "NavigationResumeSource.h"
 #include "NvsKeyValueStore.h"
 #include "NvsNamespaceMigration.h"
+#include "PcmRing.h"
 #include "PlaybackStateMachine.h"
 #include "ResumeScheduler.h"
 #include "ScreenManager.h"
@@ -230,6 +235,13 @@ drehklang::playback::DacArbiter g_dac;
 drehklang::drivers::Esp32AudioI2SDriver g_audioDriver(g_dac);
 // A game's blips (ADR 0022) and the tone generator's voice (ADR 0024).
 drehklang::drivers::ToneOutput g_toneOutput(g_dac);
+// Bluetooth headphones (ADR 0027). The ring's storage comes from PSRAM in
+// setup() -- PSRAM is not up yet while globals are constructed.
+constexpr uint32_t kBtRingSamples = 8192;  // 16 KB, ~85 ms at 48 kHz.
+drehklang::btaudio::PcmRing g_btRing;
+drehklang::bluetooth::AudioTap g_btTap(g_btRing);
+drehklang::drivers::BtLink g_btLink(g_btRing, g_btTap);
+drehklang::bluetooth::BtController g_btController(g_btLink, g_nvsStore);
 // The tone generator (ADR 0024): its settings and whether it sounds. The
 // sound itself goes through g_toneOutput's task.
 drehklang::signal::ToneSession g_toneSession(g_toneOutput, g_nvsStore);
@@ -347,6 +359,12 @@ void setup() {
   g_batteryAdc.begin();
   g_audioDriver.begin();
   g_toneOutput.begin();
+  g_btRing.attach(static_cast<int16_t *>(heap_caps_calloc(
+                      kBtRingSamples, sizeof(int16_t), MALLOC_CAP_SPIRAM)),
+                  kBtRingSamples);
+  drehklang::drivers::setBluetoothTap(&g_btTap);
+  g_btLink.begin();
+  g_btController.begin(millis());
   // Must run after g_audioDriver.begin() (needs a real driver to push the
   // loaded volume into) -- see PlaybackStateMachine's constructor comment
   // for why this isn't done eagerly in the constructor itself.
@@ -537,6 +555,20 @@ void pollSerialCommands() {
           // (ADR 0022) -- the pitches are assigned by ear, so tuning them
           // means hearing them back to back.
           g_toneOutput.blip(static_cast<uint16_t>(x), 240);
+        } else if (strcmp(buf, "BT") == 0) {
+          // The Bluetooth link at a glance (ADR 0027), for checking on the
+          // device without the UI.
+          const auto &stats = g_btController.stats();
+          Serial.printf("[bt] state %d enabled %d scanning %d paired '%s' results %u "
+                        "tap rate %lu dropped %lu | U4WDH underruns %lu crc %lu lost %lu\n",
+                        static_cast<int>(g_btController.state()), g_btController.enabled(),
+                        g_btController.scanning(), g_btController.pairedName().c_str(),
+                        static_cast<unsigned>(g_btController.scanResults().size()),
+                        static_cast<unsigned long>(g_btTap.rate()),
+                        static_cast<unsigned long>(g_btTap.dropped()),
+                        static_cast<unsigned long>(stats.underruns),
+                        static_cast<unsigned long>(stats.crcErrors),
+                        static_cast<unsigned long>(stats.lostPackets));
         }
         len = 0;
       }
@@ -798,6 +830,10 @@ void loop() {
     g_batteryIndicator.update(batteryMilliVolts);
   }
 
+  static drehklang::btlink::Packet btPacket;
+  while (g_btLink.receive(btPacket)) g_btController.onPacket(btPacket, now);
+  g_btController.tick(now);
+  g_btTap.setForwarding(g_btController.forwardAudio());
   g_playback.tick(now);
   g_resumeScheduler.tick(now);
   g_bookmarkKeeper.tick(now);

@@ -4,7 +4,9 @@
 #include <freertos/task.h>
 
 #include "AudioGain.h"
+#include "AudioHooks.h"
 #include "AudioOutputStage.h"
+#include "AudioTap.h"
 #include "Esp32AudioI2SDriver.h"
 
 namespace drehklang::drivers {
@@ -148,7 +150,12 @@ bool ToneOutput::writeChunk(uint32_t rate) {
   Lock lock(mutex_);
   if (channel_ == nullptr || channelRate_ != rate) return false;
   size_t written = 0;
-  return i2s_channel_write(channel_, chunk_, sizeof(chunk_), &written, kWriteTimeout) == ESP_OK;
+  if (i2s_channel_write(channel_, chunk_, sizeof(chunk_), &written, kWriteTimeout) != ESP_OK) {
+    return false;
+  }
+  // Bluetooth gets what the jack gets (ADR 0027).
+  if (auto *tap = bluetoothTap()) tap->pushStereo16(chunk_, kChunkFrames * 2, rate);
+  return true;
 }
 
 #ifdef DREHKLANG_GENERATOR_DEBUG

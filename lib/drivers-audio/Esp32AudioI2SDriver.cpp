@@ -280,7 +280,11 @@ void Esp32AudioI2SDriver::taskLoop() {
         audio_->loop();
         applyPendingSeek();
         // Idle, the library still reports a rate nothing is clocked at.
-        if (audio_->isRunning()) sampleRate_.store(audio_->getSampleRate());
+        if (audio_->isRunning()) {
+          const uint32_t rate = audio_->getSampleRate();
+          sampleRate_.store(rate);
+          setDecoderRate(rate);  // For the Bluetooth tap (ADR 0027).
+        }
       }
     }
     // Yields to the idle task (feeds core 0's watchdog) between calls;
