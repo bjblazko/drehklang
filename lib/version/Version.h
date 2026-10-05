@@ -1,10 +1,10 @@
 #pragma once
 
-// Pure, hardware-free module — deliberately the first thing in the tree,
-// to prove the native test harness (docs/adr/0003-testing-strategy.md)
-// works end to end before any real hardware-touching code exists.
 namespace drehklang {
 
-inline constexpr const char *kVersion = "0.0.0-scaffold";
+// Shown in About and logged at boot. Set by hand: there are no binary
+// releases (ADR 0027), so this names the source state a device was built
+// from. Bump it when a change is worth telling apart on a device.
+inline constexpr const char *kVersion = "2.0.0";
 
 }  // namespace drehklang
