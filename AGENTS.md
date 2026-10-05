@@ -27,9 +27,9 @@ duplicating it.
 
 - **Spectrum frame cost**: build with `-DDREHKLANG_SPECTRUM_DEBUG` to log
   samples/rate/gain and the worst per-frame analyzer time every 90 frames
-  (~2 ms measured 2026-09-14). The driver copies ESP32-audioI2S's volume
-  table to divide gain out of the tapped samples — re-check it if the
-  library is upgraded. See ADR 0009.
+  (~2 ms measured 2026-09-14). The spectrum taps the decoder's samples
+  *before* the volume (`audio_process_raw_samples`, ADR 0026), so it has no
+  gain to divide out. See ADR 0009.
 - **This board's rotary encoder is rotation-only** (no click/push) and,
   more subtly, **is not a standard 4-state quadrature encoder** — its
   raw pin states never visit `00` (both contacts closed), only `11`
@@ -49,15 +49,12 @@ duplicating it.
   all `Serial` output to unconnected physical UART0 pins instead of the
   native USB port this board is flashed through. See `platformio.ini`'s
   comment block and ADR 0004.
-- **QSPI display must go through Arduino_GFX, not ESP-IDF's
-  `esp_lcd_panel_io_spi`.** That component's QSPI (4-line) transaction
-  support was added in a later ESP-IDF than this project's platform
-  version bundles; it compiles and returns `ESP_OK` for everything while
-  never actually driving the panel. Use `Arduino_GFX`'s
-  `Arduino_ESP32QSPI` bus class instead (implements QSPI itself against
-  `spi_master`), pinned to v1.4.9 specifically (newer releases need a
-  header this project's Arduino-ESP32 core doesn't have). See
-  `platformio.ini` and `lib/drivers-display/`.
+- **QSPI display goes through Arduino_GFX, not ESP-IDF's
+  `esp_lcd_panel_io_spi`.** On ESP-IDF 4.4 that component compiled and
+  returned `ESP_OK` for everything while never driving the panel; ESP-IDF 5
+  supports QSPI there, but the Arduino_GFX path (`Arduino_ESP32QSPI`,
+  1.6.8, with the vendored init table in `lib/drivers-display/`) is the
+  hardware-verified one. See `platformio.ini` and ADR 0026.
 - **This board's USB-serial reaches the primary ESP32-S3R8 two ways**:
   the documented CH340 path, or (confirmed working) the chip's own
   native USB-Serial-JTAG peripheral. `scripts/flash-primary-mcu.sh`
@@ -102,54 +99,30 @@ duplicating it.
   LVGL's release point depends on that (2026-09-18, ADR 0024). To drive a
   swipe without a hand on the device, send `SWIPE x1 y1 x2 y2` over
   serial.
-- **The I2S sample rate is one shared setting, and whoever writes last
-  owns it.** Game blips (22.05 kHz) and the tone generator (48 kHz) claim
-  the port while music is paused, and neither ESP32-audioI2S's
-  `pauseResume()` nor the Vorbis backend sets the track's rate again, so a
-  resumed track played at the wrong speed until `Esp32AudioI2SDriver::
-  resume()` restored it (2026-09-18). Anything new that writes to the
-  port while a track is paused relies on that. See ADR 0024.
-- **ESP32-audioI2S's own internal info/error logging (routed through the
-  `audio_info()` weak-symbol override in `Esp32AudioI2SDriver.cpp`) is
-  silent by default** even when a file plays or fails to play -- add
-  `-DAUDIO_LOG -DCORE_DEBUG_LEVEL=3` to `[env:esp32-s3]`'s `build_flags`
-  temporarily to get real diagnostic output (decode/stream state,
-  `processLocalFile()` progress, etc.) when audio playback needs
-  debugging, then remove it again once resolved -- it's not needed for
-  normal operation and adds console noise.
-- **ESP32-audioI2S 2.3.0 silently outputs at -6 dBFS even at volume
-  21/21.** `volumetable[21]/64 == 1.0`, but `Audio::playSample()` first
-  does `sample >> 1` unconditionally (EQ headroom), so half the
-  PCM5100A's output voltage went unused and the stock firmware sounded
-  louder. Fixed 2026-09-13 by the per-sample `audio_process_i2s` weak
-  hook in `Esp32AudioI2SDriver.cpp` (x2 after `Gain()`, lossless; 21/21
-  is now true 0 dBFS). Going past 0 dBFS isn't worthwhile: the PCM5100A
-  is a >=1 kOhm line driver (~2.1 mA RMS), so 32 Ohm headphones (e.g.
-  Marshall Major V) are current-limited anyway. **Weak-hook link
-  gotcha:** a weak reference never pulls an object file out of a static
-  library archive, so a hook defined in a `lib/` `.cpp` that nothing
-  else references is silently dropped (the old `audio_info` diagnostic
-  never actually linked). `Esp32AudioI2SDriver::begin()` lives in that
-  `.cpp` to force it in; verify with `xtensa-esp32s3-elf-nm
-  firmware.elf | grep audio_process_i2s`. **Earlier attempts, tried and
-  reverted (2026-09-13): boosting past unity by intercepting decoded PCM
-  in the library's `audio_process_extern` weak-symbol hook** (multiply
-  samples, clamp, `*continueI2S = true`) -- on real hardware this made
-  every track appear to finish and auto-advance within seconds with no
-  audible sound at all, even though the hook's logic looks correct
-  against the library's own documented convention. Root cause not
-  isolated before reverting (suspect timing/reentrancy inside the
-  decode loop, not the gain math itself). If revisiting a volume boost,
-  don't reuse this hook without instrumenting the decode loop itself
-  first (`-DAUDIO_LOG` alone did not explain it). **Also tried and
-  reverted: the library's own supported 3-band EQ, `setTone(6, 6, 6)`
-  (its documented max, +6dB/band)** as a safer alternative -- on real
-  hardware this produced no noticeable loudness increase at all, and
-  introduced a new, unrelated regression (audible playback started
-  noticeably later than the elapsed-time counter, i.e. after
-  `PlaybackStateMachine` had already started timing the track). Neither
-  attempt is worth pursuing further; the `audio_process_i2s` fix above
-  supersedes both.
+- **The DAC has one owner at a time** (ADR 0026): the player or the tone
+  output (blips, tone generator), each with its own I2S channel, handed over
+  by `playback::DacArbiter`. A blip or tone parks the player's track
+  (path and position kept) and the next resume reopens it. Nothing writes
+  to another owner's channel, so there is no shared sample rate to restore
+  any more. Opening a game or starting a tone pauses music first; keep
+  that, or a blip silences a track the UI still shows as playing.
+- **ESP32-audioI2S's own messages are silent by default.** To see them,
+  set `-DCORE_DEBUG_LEVEL=3` (instead of 0) and add `-DAUDIO_LOG` in
+  `[env:esp32-s3]`'s `build_flags` temporarily: `Esp32AudioI2SDriver.cpp`
+  then routes `Audio::audio_info_callback` to serial (non-blocking, lines
+  that don't fit are dropped). Remove both again afterwards.
+- **Weak-hook link gotchas (ESP32-audioI2S).** Volume 21 is 0 dBFS
+  (`AudioGain::volumeCurveDb()` is the curve the library uses). The two
+  hooks (`audio_process_raw_samples`, `audio_process_i2s`) live in
+  `lib/drivers-audio/AudioHooks.cpp`, which must **not** include
+  `<Audio.h>`: that header declares them weak, a definition after a weak
+  declaration is weak too, and the linker then keeps the library's empty
+  stubs (found 2026-10-05). The file is linked because the driver calls its
+  `setHoldOutput()`; a weak reference alone never pulls an object out of a
+  static library. Verify with `xtensa-esp32s3-elf-nm -C firmware.elf |
+  grep audio_process`: `T`, not `W`. Going past 0 dBFS isn't worthwhile:
+  the PCM5100A is a >=1 kOhm line driver, so 32 Ohm headphones are
+  current-limited anyway.
 - **A custom LVGL icon font generated by `lv_font_conv` renders
   completely invisibly (correct label sizing, zero pixels drawn) if this
   project's `lv_conf.h` (`LV_USE_FONT_COMPRESSED 0`) doesn't match the
@@ -192,19 +165,13 @@ duplicating it.
   `LV_OBJ_FLAG_SCROLLABLE` in `ScreenManager::render()` — this app has
   its own swipe-gesture handling (`GestureRecognizer`) and never wants
   built-in scroll behavior anyway.
-- **`ESP32-audioI2S` playback audibly stutters whenever `src/main.cpp`'s
-  `loop()` is busy for stretches of time** — its `Audio::loop()` is a
-  cooperative decoder that needs calling very frequently, and shared a
-  single thread with LVGL's *synchronous, blocking* display flush
-  (`LvglGlue::flushCb`). Any burst of frequent redraws (an animation,
-  fast list scrolling) starves `loop()` of CPU time between calls and
-  the I2S buffer underruns. Turning the encoder alone doesn't trigger
-  this (no extra redraws), which is a useful way to tell this apart from
-  other audio issues. Fixed in [ADR 0006](docs/adr/0006-audio-task-concurrency.md)
-  by running `Audio::loop()` on its own FreeRTOS task pinned to core 0
-  (idle otherwise — no WiFi/BT), mutex-guarded against the main thread's
-  play/pause/volume calls. If audio stutter reappears, check what's
-  producing heavy LVGL redraw activity, not the audio code itself first.
+- **`Audio::loop()` must run often, away from LVGL.** It refills the
+  decoder's input buffer from SD; the library decodes on its own task, but
+  a starved buffer still underruns. It runs on the driver's own task on
+  core 0 (ADR 0006), mutex-guarded against the main thread's calls,
+  because LVGL's display flush on the main loop blocks for long stretches
+  (animations, fast list scrolling). If audio stutter reappears, check
+  what's producing heavy LVGL redraw activity first.
 - **This specific board unit repeatedly goes into a state where it
   "runs" but a peripheral is silently dead, and only a real power cycle
   (unplug USB, wait, replug) fixes it -- a soft/RTS reset is not
@@ -316,7 +283,8 @@ duplicating it.
     `scripts/read-coredump.sh` (the core dump sits in the `coredump`
     partition) with the ELF of the crashing build.
   - **`Serial.write()` spins forever whenever the CDC endpoint can't
-    drain** (Arduino-ESP32 2.0.x `USBCDC::write` has no timeout): a host
+    drain** (Arduino-ESP32 2.0.x `USBCDC::write` has no timeout; not
+    re-checked on 3.3, so keep the rule): a host
     that holds the port open without reading, or a busy USB drive
     starving CDC. The loop freezes until the watchdog resets it -- one
     `[battery]` line during a drive copy was enough (core dump showed
@@ -354,11 +322,6 @@ duplicating it.
   - Bulk transfer over the old USB-Serial-JTAG CDC dropped bytes; TinyUSB
     CDC with an 8 KB ack per chunk was reliable but slow (0.14 MB/s) and
     stalled once after ~30 MB. Use USB drive mode for files.
-- **ESP32-audioI2S 2.3.0 calls the weak `audio_info()` hook without a null
-  check when it prints AAC codec parameters** (`Audio::showCodecParams()`)
-  -- without a definition the first decoded M4A frame jumps to address 0
-  and panics (`InstFetchProhibited`, pc 0, task `audio`). MP3 never
-  reaches that call. `Esp32AudioI2SDriver.cpp` defines the hook; keep it.
 - **USB drive on macOS**: macOS reads the entire FAT when mounting, at the
   drive's ~0.87 MB/s. 4 KB clusters on a 32 GB card (31 MB FAT) time out;
   32 KB clusters (3.9 MB) mount in ~6 s. And **a locked Mac ejects new
@@ -390,21 +353,20 @@ duplicating it.
   `heap_caps_malloc_extmem_enable(32)` first (93.9 KB internal free after
   boot, unchanged by the queue). If SD opens start failing with 257,
   check internal heap before suspecting the card. See ADR 0011.
-- **ESP32-audioI2S's positions and durations are estimates, and wrong
-  for this library.** Every MP3 here is VBR (checked 2026-09-15). The
-  library ignores the Xing/VBRI header and derives duration and byte/time
-  conversions from the average bitrate of the first ~200 frames, so the
-  shown end time started minutes too long and shrank over the first
-  seconds of each track. `library::Mp3Duration` reads the exact frame count
-  instead; `Esp32AudioI2SDriver` uses it for `durationSeconds()` and seek
-  sizes. Also: `getFilePos()` is the *reader*, a whole input buffer ahead
-  of what is heard -- subtract `inBufferFilled()` (resume, seeks). And a
-  seek (`setFilePos`) makes the library discard its input buffer and stay
-  silent until it is full again, so the buffer size is audible: the 300 KB
-  default gave ~290 ms of silence per seek, `kInputBufferBytes` (64 KB)
-  ~80 ms (measured with a sample-gap log in `audio_process_i2s`). See ADR
-  0012 and ADR 0013.
-
+- **ESP32-audioI2S's durations and time seeks are estimates, wrong for
+  VBR.** Every MP3 here is VBR (checked 2026-09-15); the library converts
+  seconds to bytes with an average bitrate. `library::Mp3Duration` and
+  `Mp4Parser` give the exact duration, and the driver seeks by byte with
+  `setAudioFilePosition()`, never `setAudioPlayTime()`.
+  `getAudioFilePosition()` already subtracts the input buffer (what is
+  heard, not what is read). A seek refills at most 64 KB before sound
+  resumes. A resume position is refused until the header is parsed, so
+  the driver applies it from its loop task and keeps the output silent
+  until then. "Accepted" is not enough: Vorbis accepts a seek before it has
+  read its setup header, and then never decodes (an Ogg resumed after the
+  tone generator raced silently through the file, 2026-10-05). The driver
+  waits for the first decoded samples (`decoderProducedSinceHold()`). See
+  ADR 0012, 0013, 0026.
 - **The player is parameterised by a "collection", not hardcoded to
   music** (ADR 0018). `lib/collection/CollectionProfile.h` is the table:
   Music `/Music`, Audiobooks `/Audiobooks`, Radio Plays `/RadioPlays`,
@@ -425,52 +387,37 @@ duplicating it.
   host-side in `pio test -e native` fails inside the firmware build with a
   baffling error pointing at Arduino.h itself, not at your code. Found
   2026-09-16 writing `navigation::MenuVisibility`.
-- **Build with `-DDREHKLANG_TONE_DEBUG` to time a game's blip** (ADR 0022):
-  it logs microseconds from `ToneOutput::blip()` to the first DAC write,
-  and whether the I2S rate had to be reclaimed. Measured 2026-09-18 that
-  path is under 2.5 ms, which is worth knowing before blaming it: a blip
-  that sounds late is far more likely to have been *triggered* late. It
-  was -- the game's sounds were gated behind its 33 ms redraw, and both
-  halves of a frame moving together made the picture look correct while
-  the ear heard the gap.
-- **ESP32-audioI2S reports a sample rate while stopped that nothing is
-  clocked at.** `Audio::getSampleRate()` returns 16000 with no song
-  playing, and the library never calls its own `I2Sstop()` (the line is
-  commented out in `Audio.cpp`), so the port keeps running at whatever
-  rate was last set. Publishing the library's idle value as "the rate the
-  DAC is clocked at" is therefore wrong: it silently overwrote the rate
-  `ToneOutput` had set for a game's blip (ADR 0022), and the square wave was
-  generated against one rate and clocked out at another. The audio task
-  now only publishes the rate while a decoder is actually producing
-  (`Audio::isRunning()` -- the library's flag, not
-  `Esp32AudioI2SDriver::isRunning()`, which takes the same mutex the task
-  already holds). Found 2026-09-18 by logging the writer's own state over
-  serial; every value involved looked correct read in isolation, which is
-  why guessing would not have found it.
-- **Ogg Vorbis: the decode task's 32 KB stack must be one contiguous block
-  of internal RAM, and stb_vorbis must never run on the main loop's stack.**
-  Two bugs found 2026-09-24 with a Herr-der-Ringe audio play (30 x 25 min
-  Ogg): (1) `VorbisBackend` created and deleted that task per track; after
-  3-4 auto-advances the largest free internal block had fallen to 32756 B
-  (< 32768 + TCB), every start failed (`largest=` in the log), and because a
-  failed start left the state machine "Playing" with a dead driver, the main
-  loop's finished-detection skipped the whole queue at one track per second.
-  The task is now created once and parked between tracks, and a failed
-  start stops playback. Baseline internal free is only ~70 KB with no Ogg
-  playing, so any new ~6 KB internal allocation can fragment it again.
-  (2) Resuming an Ogg ("Continue") called `stb_vorbis_seek()` from
-  `open()` on the loop task and overflowed its stack (core dump: stack
-  watchpoint in `inverse_mdct`); the initial seek now runs inside the
-  decode task. The files themselves were fine -- all 30 decode cleanly on
-  the host with the vendored `stb_vorbis.c`.
-- **Drehklang decodes audio two ways**: ESP32-audioI2S for MP3/M4A/WAV/FLAC,
-  and Drehklang's own stb_vorbis-based backend for Ogg Vorbis, dispatched by
-  file extension in `Esp32AudioI2SDriver`. `AudioGain` and
-  `AudioOutputStage` are what keep the two paths consistent in volume,
-  the sleep-timer fade and the spectrum. Ogg positions are sample
-  indices, not byte offsets -- opaque above `PlaybackDriver`, unlike the
-  library path's byte positions. See ADR 0017.
-
+- **One decoder library for every format** (ADR 0026): upstream
+  ESP32-audioI2S on Arduino-ESP32 3.x (pioarduino). Positions are byte
+  offsets for every format. Ogg positions stored before ADR 0026 were
+  sample indices; the resume record (v3) and bookmarks (v2) reset those
+  to the start of their part.
+- **Legacy ESP-IDF 4 drivers abort at boot on the 3.x core.** The core
+  links the new I2C and I2S drivers itself, and `driver/i2c.h` or
+  `driver/i2s.h` next to them stops the boot loop with "CONFLICT!
+  driver_ng is not allowed to be used with this old driver" (2026-10-05,
+  the touch driver). Use `Wire`, or `driver/i2s_std.h`.
+- **ESP32-audioI2S's `Audio` object must live in internal RAM.** The core
+  is built with `CONFIG_I2S_ISR_IRAM_SAFE=1`, so IDF rejects an I2S
+  callback context in PSRAM ("user context not in internal RAM",
+  `ESP_ERR_INVALID_ARG`). The library passes `this` and wraps the call in
+  `ESP_ERROR_CHECK`, so a heap-allocated `Audio` (PSRAM, because of
+  `heap_caps_malloc_extmem_enable`) panicked on every first play: the
+  screen went dark and the board rebooted to Home (2026-10-05). The driver
+  allocates it with `MALLOC_CAP_INTERNAL`, and **zeroed**
+  (`heap_caps_calloc`): the library is written for a global `Audio`, and
+  its constructor leaves state uninitialised -- from plain malloc every M4A
+  computed a nonsense header skip and ended at once, silently (found the
+  same day by buffering the library's log and dumping the file's atoms). While a track plays, internal
+  free drops from ~72 KB to ~31 KB, mostly the library's I2S DMA buffers
+  (16 x 256 frames, 32-bit stereo).
+- **The partition table is pinned** (`board_build.partitions =
+  default_16MB.csv`). pioarduino's board file switched to
+  `esp_sr_16.csv`; changing it would move NVS and lose settings and
+  resume.
+- **On the new toolchain `uint32_t` is `unsigned long`**, so
+  `std::min(uint32_value, 31u)` no longer compiles; give the type
+  explicitly (`std::min<uint32_t>`).
 ## Where things are documented (so you add to the right place)
 
 - **Pure hardware facts** (pinout, board identification, electrical

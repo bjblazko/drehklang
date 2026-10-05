@@ -1,6 +1,6 @@
 # Device: Waveshare ESP32-S3-Knob-Touch-LCD-1.8
 
-*Last modified: 2026-09-11*
+*Last modified: 2026-10-05*
 
 ## Links
 
@@ -88,13 +88,36 @@ successful flash before trusting blindly.
 | | DOUT | 41 |
 | Other | Battery ADC | 1 (confirmed via live serial probe 2026-09-13 — plausible, stable ~2400mV reading with battery attached; see [ADR 0007](docs/adr/0007-battery-indicator.md)) |
 | | Mic (PDM) | CLK 45, DATA 46 |
-| | Inter-MCU UART (out of v1 scope) | TX 43, RX 44 |
+| | Inter-MCU UART (to the ESP32-U4WDH) | TX 38, RX 48 (schematic `ESP32S3_TX`/`ESP32S3_RX`; 43/44 are the S3's own UART0, an earlier mistake here) |
+| | DAC source switch (CH445P `I2S_SWITCH_IN`) | 0 |
 
 Waveshare's own official Arduino demo for this board (mirrored in the
 same community repo) targets **LVGL v8.3.11** (RGB565 color depth,
 byte-swapped for QSPI) — Drehklang's `lib_deps` should pin the same major
 version rather than LVGL v9, to stay compatible with any ST77916 QSPI
 init/driver code ported from that demo.
+
+## The second chip and the audio switch
+
+From Waveshare's schematic (`ESP32-S3-Knob-Touch-LCD-1.8-schematic.zip`,
+pages `2_ESP32S3-R8`, `3_ESP32-CHIP`, `5_DAC`), read 2026-10-05:
+
+- **Both chips can drive the PCM5100A.** A CH445P analog switch (U18)
+  connects the DAC's BCK, DIN and LRCK either to the S3 (GPIO 39/41/40) or
+  to the ESP32-U4WDH (IO25/IO26/IO27). **S3 GPIO0** (`I2S_SWITCH_IN`)
+  selects which. Drehklang never drives it; GPIO0 is a strapping pin
+  pulled high, and in that state the S3 reaches the DAC (audio has always
+  played). Which level selects which side is not confirmed yet; measure
+  before relying on it. The ESP32-U4WDH's IO32 drives the DAC's
+  XSMT (soft mute).
+- **The chips share a UART:** S3 GPIO38 (TX) to ESP32 IO23 (RX), and
+  ESP32 IO18 (TX) to S3 GPIO48 (RX). There are no flow-control lines.
+- **The ESP32-U4WDH's knob** is on IO19/IO22 (`EC2_A`/`EC2_B`). Its UART0
+  goes to the CH340, and that is how it is flashed.
+- The ESP32-U4WDH is a classic ESP32 with **Bluetooth Classic** (A2DP,
+  AVRCP); the S3 has only BLE, and no LE Audio. Bluetooth headphones
+  therefore have to go through the ESP32-U4WDH. Its factory image is
+  backed up in `hardware-backups/` (not tracked by git).
 
 ## Hardware quirks observed
 

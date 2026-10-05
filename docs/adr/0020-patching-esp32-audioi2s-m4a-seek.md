@@ -5,6 +5,8 @@
 Accepted — 2026-09-17. Amends ADR 0001's "pinned release, unmodified"
 reading of the dependency and triggers ADR 0017's "revisit when" item 3.
 
+**Superseded by [ADR 0026](0026-arduino-esp32-3-and-upstream-audioi2s.md) (2026-10-05)**: upstream ESP32-audioI2S sets up the M4A sample table itself, and the patch script is gone.
+
 ## Context
 
 Fast-forwarding or rewinding an M4A sent the audio back to 0:00 on every

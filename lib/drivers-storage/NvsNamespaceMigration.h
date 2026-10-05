@@ -37,7 +37,8 @@ inline bool copyNvsEntry(nvs_handle_t from, nvs_handle_t to,
   return true;
 }
 
-// Consumes the iterator: nvs_entry_next() releases it at the end.
+// Consumes the iterator: nvs_entry_next() releases it at the end, and
+// nvs_release_iterator() covers an early stop.
 inline bool copyNvsNamespace(nvs_iterator_t it, nvs_handle_t from,
                              nvs_handle_t to) {
   bool ok = true;
@@ -45,8 +46,9 @@ inline bool copyNvsNamespace(nvs_iterator_t it, nvs_handle_t from,
     nvs_entry_info_t entry;
     nvs_entry_info(it, &entry);
     ok = copyNvsEntry(from, to, entry) && ok;
-    it = nvs_entry_next(it);
+    if (nvs_entry_next(&it) != ESP_OK) break;
   }
+  nvs_release_iterator(it);
   return ok && nvs_commit(to) == ESP_OK;
 }
 
@@ -54,9 +56,10 @@ inline void migrateNvsNamespace(const char *oldNamespace,
                                 const char *newNamespace) {
   // Looked up by entries rather than opened: opening read-write would
   // create the old namespace on every boot.
-  nvs_iterator_t it =
-      nvs_entry_find(NVS_DEFAULT_PART_NAME, oldNamespace, NVS_TYPE_ANY);
-  if (it == nullptr) return;
+  nvs_iterator_t it = nullptr;
+  if (nvs_entry_find(NVS_DEFAULT_PART_NAME, oldNamespace, NVS_TYPE_ANY, &it) != ESP_OK) {
+    return;
+  }
   nvs_handle_t from;
   nvs_handle_t to;
   if (nvs_open(oldNamespace, NVS_READWRITE, &from) != ESP_OK) {

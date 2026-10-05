@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "LegacyOggPosition.h"
+
 namespace drehklang::resume {
 
 // Where one spoken-word title was left: which part was playing and how far
@@ -36,7 +38,10 @@ struct Bookmark {
 class Bookmarks {
  public:
   static constexpr char kKey[] = "bookmarks";
-  static constexpr uint8_t kVersion = 1;
+  // v2 (ADR 0026) has v1's layout; only what an Ogg position means
+  // changed, so v1 still decodes, minus each Ogg part's position.
+  static constexpr uint8_t kVersion = 2;
+  static constexpr uint8_t kOggSampleVersion = 1;
   static constexpr std::size_t kMaxEntries = 12;
   static constexpr std::size_t kMaxEncodedSize = 4096;
   static constexpr std::size_t kMaxStringLength = 512;
@@ -118,7 +123,7 @@ class Bookmarks {
   bool decode(const std::vector<uint8_t> &bytes) {
     if (bytes.size() < 6) return false;
     if (bytes[0] != 'K' || bytes[1] != 'B' || bytes[2] != 'M' ||
-        bytes[3] != 'K' || bytes[4] != kVersion) {
+        bytes[3] != 'K' || (bytes[4] != kVersion && bytes[4] != kOggSampleVersion)) {
       return false;
     }
     std::size_t pos = 5;
@@ -136,6 +141,9 @@ class Bookmarks {
       }
       if (mark.titleKey.empty() || mark.trackPath.empty()) return false;
       if (mark.elapsedSeconds > kMaxElapsedSeconds) return false;
+      if (bytes[4] == kOggSampleVersion) {
+        forgetLegacyOggPosition(mark.trackPath, mark.filePosition, mark.elapsedSeconds);
+      }
       parsed.push_back(std::move(mark));
     }
     if (pos != bytes.size()) return false;

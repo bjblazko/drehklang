@@ -1,18 +1,10 @@
 #include "AudioOutputStage.h"
 
-#include <driver/i2s.h>
-
 #include <algorithm>
 
 #include "AudioGain.h"
 
 namespace drehklang::drivers {
-
-namespace {
-// The port ESP32-audioI2S installs in Audio's constructor; Drehklang's own
-// decoders write to the same one rather than installing a second driver.
-constexpr i2s_port_t kI2sPort = I2S_NUM_0;
-}  // namespace
 
 void AudioOutputStage::setOutputGain(uint16_t gain) {
   outputGain_.store(std::min<uint16_t>(gain, playback::AudioGain::kUnityOutputGain),
@@ -25,55 +17,11 @@ void AudioOutputStage::noteMonoSample(int16_t mono) {
   samplesWritten_.store(written + 1, std::memory_order_relaxed);
 }
 
-bool AudioOutputStage::writeFrames(const int16_t *interleaved, size_t frames) {
-  const uint8_t step = volumeStep();
-  const uint16_t gain = outputGain();
-  size_t done = 0;
-  while (done < frames) {
-    const size_t chunk = std::min(frames - done, kWriteChunkFrames);
-    for (size_t i = 0; i < chunk; ++i) {
-      const int16_t left =
-          playback::AudioGain::applyVolume(interleaved[(done + i) * 2], step, gain);
-      const int16_t right =
-          playback::AudioGain::applyVolume(interleaved[(done + i) * 2 + 1], step, gain);
-      // One tone sample per frame, mixed on top of the music (ADR 0022).
-      const int16_t toneSample = nextToneSample();
-      scratch_[i * 2] = mixTone(left, toneSample);
-      scratch_[i * 2 + 1] = mixTone(right, toneSample);
-      noteMonoSample(
-          static_cast<int16_t>((static_cast<int32_t>(scratch_[i * 2]) +
-                                scratch_[i * 2 + 1]) /
-                               2));
-    }
-    size_t bytesWritten = 0;
-    if (i2s_write(kI2sPort, scratch_, chunk * 2 * sizeof(int16_t), &bytesWritten,
-                  portMAX_DELAY) != ESP_OK) {
-      return false;
-    }
-    done += chunk;
+void AudioOutputStage::noteStereo32(const int32_t *interleaved, size_t words) {
+  for (size_t i = 0; i + 1 < words; i += 2) {
+    const int64_t sum = static_cast<int64_t>(interleaved[i]) + interleaved[i + 1];
+    noteMonoSample(static_cast<int16_t>(sum >> 17));  // Average, then top 16 bits.
   }
-  return true;
-}
-
-bool AudioOutputStage::writeFramesUnscaled(const int16_t *interleaved,
-                                           size_t frames) {
-  size_t done = 0;
-  while (done < frames) {
-    const size_t chunk = std::min(frames - done, kWriteChunkFrames);
-    for (size_t i = 0; i < chunk; ++i) {
-      noteMonoSample(static_cast<int16_t>(
-          (static_cast<int32_t>(interleaved[(done + i) * 2]) +
-           interleaved[(done + i) * 2 + 1]) /
-          2));
-    }
-    size_t bytesWritten = 0;
-    if (i2s_write(kI2sPort, interleaved + done * 2, chunk * 2 * sizeof(int16_t),
-                  &bytesWritten, portMAX_DELAY) != ESP_OK) {
-      return false;
-    }
-    done += chunk;
-  }
-  return true;
 }
 
 playback::SampleWindow AudioOutputStage::readRecentSamples(int16_t *dst,
@@ -90,7 +38,7 @@ playback::SampleWindow AudioOutputStage::readRecentSamples(int16_t *dst,
   playback::SampleWindow window;
   window.count = count;
   window.sampleRate = sampleRate;
-  window.gain = playback::AudioGain::linearGain(volumeStep(), outputGain());
+  window.gain = volumeStep() > 0 && outputGain() > 0 ? 1.0f : 0.0f;
   return window;
 }
 

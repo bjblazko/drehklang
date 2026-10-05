@@ -15,8 +15,8 @@ struct Rgb {
 Rgb channels(uint16_t p) { return {static_cast<uint32_t>(p >> 11), (p >> 5) & 0x3Fu, p & 0x1Fu}; }
 
 uint16_t pack(uint32_t r, uint32_t g, uint32_t b) {
-  return static_cast<uint16_t>((std::min(r, 31u) << 11) | (std::min(g, 63u) << 5) |
-                               std::min(b, 31u));
+  return static_cast<uint16_t>((std::min<uint32_t>(r, 31) << 11) | (std::min<uint32_t>(g, 63) << 5) |
+                               std::min<uint32_t>(b, 31));
 }
 
 }  // namespace
@@ -57,8 +57,8 @@ void SquareResampler::resample(const uint16_t *src, uint16_t width,
         // Bilinear, sampling at pixel centers; weights in 1/256.
         int32_t fx = static_cast<int32_t>(((2 * ox + 1) * crop * 256) / (2 * outSize)) - 128;
         int32_t fy = static_cast<int32_t>(((2 * oy + 1) * crop * 256) / (2 * outSize)) - 128;
-        fx = std::max(fx, 0);
-        fy = std::max(fy, 0);
+        fx = std::max<int32_t>(fx, 0);
+        fy = std::max<int32_t>(fy, 0);
         uint32_t x0 = std::min<uint32_t>(fx >> 8, crop - 1);
         uint32_t y0 = std::min<uint32_t>(fy >> 8, crop - 1);
         uint32_t x1 = std::min(x0 + 1, crop - 1);

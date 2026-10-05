@@ -8,6 +8,8 @@ first non-audio screen family, and a tone path through ADR 0017's two
 decode paths. Suspends one rule of the design system
 (`docs/design/ux-guidelines.md` §3) for games only.
 
+**Amended by [ADR 0026](0026-arduino-esp32-3-and-upstream-audioi2s.md) (2026-10-05)**: blips no longer play over music. Opening a game pauses it, and the tone output takes the DAC for itself.
+
 ## Context
 
 Every destination Drehklang has had so far plays something through the

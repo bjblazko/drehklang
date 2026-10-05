@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "AudioBackendKind.h"
 #include "PlayQueue.h"
 #include "PlaybackDriver.h"
 #include "VolumePersistence.h"
@@ -166,22 +165,18 @@ class PlaybackStateMachine {
     trackStartMs_ -= static_cast<uint32_t>(deltaMs);
   }
 
-  // Whether the current track can be shuttled. backendForPath() (owned by
-  // AudioBackendKind.h) is the one place that knows which decoder a path
-  // goes to; everything on Drehklang's own Vorbis path seeks by sample
-  // (ADR 0017), so it's always seekable, and this only needs to name the
-  // library codecs that seek (MP3, M4A, WAV) among the rest of the
-  // library path (e.g. FLAC, which doesn't). Known before a cued track
-  // loads, from the path alone.
+  // Whether the current track can be shuttled: the formats the decoder
+  // library seeks in by byte position (ADR 0026). Known before a cued
+  // track loads, from the path alone.
   bool canSeek() const {
     if (state_ == PlaybackState::Stopped || queue_.empty()) return false;
     const std::string &path = queue_.current();
-    if (backendForPath(path) == AudioBackendKind::Vorbis) return true;
     auto dot = path.find_last_of('.');
     if (dot == std::string::npos) return false;
     std::string ext = path.substr(dot + 1);
     for (char &c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return ext == "mp3" || ext == "m4a" || ext == "wav";
+    return ext == "mp3" || ext == "m4a" || ext == "wav" || ext == "flac" || ext == "ogg" ||
+           ext == "oga" || ext == "opus";
   }
 
   // `delta` is signed knob ticks; positive = louder.

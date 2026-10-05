@@ -52,12 +52,14 @@ class GpioEncoderDriver : public input::EncoderDriver {
   // detents without adding any delay to the counting decision itself.
   static constexpr uint32_t kRefractoryMicros = 3000;
 
-  // IRAM_ATTR: reachable from the ISR, so must not be evicted to flash
-  // (which can be temporarily inaccessible, e.g. during an SD/NVS write)
-  // while an edge could fire.
-  uint8_t IRAM_ATTR readState() const;
-  void IRAM_ATTR handleInterrupt();
-  static void IRAM_ATTR isr();
+  // Defined IRAM_ATTR in the .cpp: reachable from the ISR, so must not be
+  // evicted to flash (which can be temporarily inaccessible, e.g. during an
+  // SD/NVS write) while an edge could fire. Only on the definition:
+  // ESP-IDF 5 gives each IRAM_ATTR its own section, so marking both
+  // declaration and definition conflicts.
+  uint8_t readState() const;
+  void handleInterrupt();
+  static void isr();
 
   enum class PendingContact : uint8_t { kNone, kA, kB };
 

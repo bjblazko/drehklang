@@ -195,6 +195,26 @@ void test_decode_rejects_bad_magic_version_and_trailing_bytes() {
   TEST_ASSERT_FALSE(c.decode(bytes));
 }
 
+void test_a_v1_set_keeps_its_titles_but_forgets_ogg_positions() {
+  Bookmarks marks;
+  marks.note(mark("/RadioPlays/HdR", "/RadioPlays/HdR/07.ogg", 4000000, 600));
+  marks.note(mark("/Audiobooks/A", "/Audiobooks/A/01.mp3", 1234, 95));
+  std::vector<uint8_t> bytes = marks.encode();
+  bytes[4] = Bookmarks::kOggSampleVersion;
+
+  Bookmarks decoded;
+  TEST_ASSERT_TRUE(decoded.decode(bytes));
+  Bookmark ogg;
+  TEST_ASSERT_TRUE(decoded.lookup("/RadioPlays/HdR", ogg));
+  TEST_ASSERT_EQUAL_STRING("/RadioPlays/HdR/07.ogg", ogg.trackPath.c_str());
+  TEST_ASSERT_EQUAL_UINT32(0, ogg.filePosition);
+  TEST_ASSERT_EQUAL_UINT32(0, ogg.elapsedSeconds);
+  Bookmark mp3;
+  TEST_ASSERT_TRUE(decoded.lookup("/Audiobooks/A", mp3));
+  TEST_ASSERT_EQUAL_UINT32(1234, mp3.filePosition);
+  TEST_ASSERT_EQUAL_UINT32(95, mp3.elapsedSeconds);
+}
+
 void test_decode_rejects_an_implausible_elapsed_time() {
   Bookmarks marks;
   marks.note(mark("/Audiobooks/A", "/Audiobooks/A/01.mp3", 0,
@@ -254,5 +274,6 @@ int main(int, char **) {
   RUN_TEST(test_decode_rejects_an_implausible_elapsed_time);
   RUN_TEST(test_a_decoded_set_replaces_nothing_when_it_fails);
   RUN_TEST(test_encoding_stays_within_the_size_budget);
+  RUN_TEST(test_a_v1_set_keeps_its_titles_but_forgets_ogg_positions);
   return UNITY_END();
 }

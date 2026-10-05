@@ -4,6 +4,8 @@
 
 Accepted — 2026-09-11
 
+**Amended by [ADR 0026](0026-arduino-esp32-3-and-upstream-audioi2s.md) (2026-10-05)**: the platform is pioarduino's `platform-espressif32` (Arduino-ESP32 3.x), since official PlatformIO stops at 2.0.x, and ESP32-audioI2S is upstream schreibfaul1's again.
+
 ## Context
 
 `Drehklang` targets a Waveshare ESP32-S3-Knob-Touch-LCD-1.8 (see

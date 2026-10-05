@@ -56,6 +56,10 @@ enum class ScreenKind {
   // NowPlaying, so a resume never lands on it -- a device that woke up
   // about to make a noise would be startling.
   ToneGenerator,
+  // Settings > Licences and one component's page (ADR 0026). Appended like
+  // everything above; past NowPlaying, so a resume never lands on them.
+  Licences,
+  LicenceDetail,
 };
 
 // Parameters a screen needs to render itself. Only the fields relevant
@@ -77,6 +81,9 @@ struct ScreenParams {
   // pushing screen's value along, so a whole browse stack stays inside
   // one collection.
   collection::CollectionId collection = collection::CollectionId::Music;
+  // A row of a static table the screen shows -- LicenceDetail's component
+  // (0 is Drehklang itself, then about::kCredits in order).
+  uint16_t row = 0;
 };
 
 struct Screen {

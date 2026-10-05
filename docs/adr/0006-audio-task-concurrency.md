@@ -4,6 +4,8 @@
 
 Accepted — 2026-09-13
 
+**Amended by [ADR 0026](0026-arduino-esp32-3-and-upstream-audioi2s.md) (2026-10-05)**: upstream ESP32-audioI2S decodes on its own task; Drehklang's task now only keeps its input buffer filled (`Audio::loop()`).
+
 ## Context
 
 `ESP32-audioI2S`'s `Audio::loop()` is a cooperative decoder: it must be

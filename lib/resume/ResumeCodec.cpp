@@ -1,6 +1,7 @@
 #include "ResumeCodec.h"
 
 #include "CollectionId.h"
+#include "LegacyOggPosition.h"
 
 #include <string>
 
@@ -194,7 +195,8 @@ bool ResumeCodec::decode(const std::vector<uint8_t> &bytes, ResumeRecord &out) {
     if (magic[i] != kMagic[i]) return false;
   }
   const uint8_t *payload = bytes.data() + kHeaderSize;
-  if (version != kVersion || payloadLength != bytes.size() - kHeaderSize ||
+  if ((version != kVersion && version != kOggSampleVersion) ||
+      payloadLength != bytes.size() - kHeaderSize ||
       crc != crc32(payload, payloadLength)) {
     return false;
   }
@@ -214,6 +216,9 @@ bool ResumeCodec::decode(const std::vector<uint8_t> &bytes, ResumeRecord &out) {
     } else if (tag == kTagMusic) {
       PlaybackSnapshot music;
       if (record.music || !readMusic(body, music)) return false;
+      if (version == kOggSampleVersion) {
+        forgetLegacyOggPosition(music.trackPath, music.filePosition, music.elapsedSeconds);
+      }
       record.music = std::move(music);
     }
   }

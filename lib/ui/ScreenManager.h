@@ -234,6 +234,7 @@ class ScreenManager : public input::KnobSink {
   void renderWordmark();
   void renderBrightness();
   void renderSleepTimer();
+  void renderLicenceDetail();
   void renderTouchCalibration();
   // ScreenManagerGames.cpp.
   void renderTableTennis();
@@ -294,7 +295,7 @@ class ScreenManager : public input::KnobSink {
     const char *label;
     void (*open)(ScreenManager &self);
   };
-  static constexpr int kSettingsRowCount = 5;
+  static constexpr int kSettingsRowCount = 6;
   static const SettingsRow kSettingsRows[kSettingsRowCount];
   // Music's browse axes (ADR 0021): which shelf the Library tab is
   // rooted on, remembered across reboots.

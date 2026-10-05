@@ -224,10 +224,12 @@ drehklang::drivers::GpioEncoderDriver g_encoder(drehklang::drivers::kEncoderPinA
                                                drehklang::drivers::kEncoderPinB);
 drehklang::drivers::NvsKeyValueStore g_nvsStore;
 drehklang::playback::VolumePersistence g_volume(g_nvsStore);
-drehklang::drivers::Esp32AudioI2SDriver g_audioDriver;
-// A game's blips (ADR 0022): mixed into whatever is playing, and pushed to
-// the DAC by its own task when nothing is.
-drehklang::drivers::ToneOutput g_toneOutput;
+// The DAC has one owner at a time: the player or the tone output
+// (ADR 0026).
+drehklang::playback::DacArbiter g_dac;
+drehklang::drivers::Esp32AudioI2SDriver g_audioDriver(g_dac);
+// A game's blips (ADR 0022) and the tone generator's voice (ADR 0024).
+drehklang::drivers::ToneOutput g_toneOutput(g_dac);
 // The tone generator (ADR 0024): its settings and whether it sounds. The
 // sound itself goes through g_toneOutput's task.
 drehklang::signal::ToneSession g_toneSession(g_toneOutput, g_nvsStore);
@@ -344,7 +346,6 @@ void setup() {
   g_encoder.begin();
   g_batteryAdc.begin();
   g_audioDriver.begin();
-  // After the driver: the I2S port it installs is the one this writes to.
   g_toneOutput.begin();
   // Must run after g_audioDriver.begin() (needs a real driver to push the
   // loaded volume into) -- see PlaybackStateMachine's constructor comment

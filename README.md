@@ -64,10 +64,12 @@ screens described below.
   progressive JPEG covers decode too. Settings > USB drive exposes the
   SD card to a computer over the USB cable — see
   [ADR 0016](docs/adr/0016-native-formats-and-usb-drive.md).
-- Ogg Vorbis plays too, on Drehklang's own decode path (ESP32-audioI2S has
-  no Vorbis decoder). Embedded Ogg cover art
-  (`METADATA_BLOCK_PICTURE`) isn't read; a folder `cover.jpg` still works
-  — see [ADR 0017](docs/adr/0017-two-audio-decode-paths.md).
+- Ogg Vorbis plays too, through the same decoder library as everything
+  else since [ADR 0026](docs/adr/0026-arduino-esp32-3-and-upstream-audioi2s.md).
+  Embedded Ogg cover art (`METADATA_BLOCK_PICTURE`) isn't read; a folder
+  `cover.jpg` still works.
+- Settings > Licences lists every component the firmware is built from,
+  with its licence and required notices (full texts in `licenses/`).
 - Tones, a tone generator: sine, square (duty), saw (rising → triangle →
   falling) and noise (brown, pink, white, blue, violet), 20 Hz – 20 kHz, level in dBFS independent of the
   volume, out of the 3.5 mm jack at 48 kHz. Chips pick what the knob
@@ -146,9 +148,9 @@ Settings > USB drive, at about 0.8 MB/s writing and 0.9 MB/s reading
 
 - Bluetooth headphone output
 - Wi-Fi-based features (time/date sync, weather, podcasts, internet radio)
-- 24-bit FLAC (ESP32-audioI2S 2.3.0 refuses it)
-- A smoother jog/shuttle cue for Ogg Vorbis: winding currently plays
-  short fragments separated by silence (ADR 0017)
+- 24-bit FLAC and Opus: the decoder library plays both since ADR 0026,
+  but the library scan doesn't list Opus files yet and neither has been
+  checked on the device
 - Cover art embedded in Ogg files (`METADATA_BLOCK_PICTURE`); folder
   `cover.jpg` covers already work
 - Formatting the SD card from Settings with 32 KB clusters, which USB
@@ -230,8 +232,8 @@ FLAC (16-bit) and Ogg Vorbis**. See
 for the navigation/library architecture and the bring-up history,
 [ADR 0016](docs/adr/0016-native-formats-and-usb-drive.md) for formats,
 cover decoding and USB drive mode,
-[ADR 0017](docs/adr/0017-two-audio-decode-paths.md) for the Vorbis decode
-path, and
+[ADR 0026](docs/adr/0026-arduino-esp32-3-and-upstream-audioi2s.md) for the
+platform (Arduino-ESP32 3.x via pioarduino) and the decoder library, and
 [ADR 0018](docs/adr/0018-collections-and-menu-visibility.md) for
 collections and the main menu, and
 [ADR 0019](docs/adr/0019-utf8-tag-text-and-project-text-fonts.md) for

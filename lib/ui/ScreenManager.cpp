@@ -7,6 +7,7 @@
 #include <cstdlib>
 
 #include "BookmarkKeeper.h"
+#include "Credits.h"
 #include "GameCatalog.h"
 #include "IconFont.h"
 #include "LvglButtonHelpers.h"
@@ -192,6 +193,8 @@ void ScreenManager::render() {
     renderSleepTimer();
   } else if (current.kind == ScreenKind::ToneGenerator) {
     renderToneGenerator();
+  } else if (current.kind == ScreenKind::LicenceDetail) {
+    renderLicenceDetail();
   } else if (current.kind == ScreenKind::UsbDrive) {
     // Modal: no back button or caption. Done, eject or unplug end it.
     renderUsbDrive();
@@ -315,6 +318,14 @@ void ScreenManager::render() {
       case ScreenKind::BrowseAxis:
         for (int i = 0; i < kBrowseAxisCount; ++i) {
           items.emplace_back(kBrowseAxes[i].label, i);
+        }
+        break;
+      case ScreenKind::Licences:
+        // Drehklang itself first, then what it is built from: the row is
+        // ScreenParams::row of the page it opens.
+        items.emplace_back("Drehklang", 0);
+        for (size_t i = 0; i < about::kCreditCount; ++i) {
+          items.emplace_back(about::kCredits[i].name, static_cast<int>(i + 1));
         }
         break;
       case ScreenKind::Games:
@@ -484,6 +495,10 @@ void ScreenManager::renderList(
       // "On"/"Off"/"Always" -- the row's own state, read the same way the
       // Brightness row's percentage is (ADR 0018).
       secondary = menuVisibilityValue(items[i].second);
+    } else if (current.kind == ScreenKind::Licences) {
+      // The licence, as the quiet trailing fact a row's value is.
+      const int row = items[i].second;
+      secondary = row == 0 ? about::kOwnLicence : about::kCredits[row - 1].licence;
     } else if (current.kind == ScreenKind::Settings && items[i].second == 0) {
       snprintf(valueText, sizeof(valueText), "%u%%",
                static_cast<unsigned>(brightness_.percent()));
@@ -719,6 +734,9 @@ std::string ScreenManager::captionTextFor(
       return "Main menu";
     case ScreenKind::Games:
       return "Games";
+    case ScreenKind::Licences:
+    case ScreenKind::LicenceDetail:
+      return "Licences";
     case ScreenKind::ToneGenerator:
       return "Tones";
     case ScreenKind::Brightness:
@@ -1779,8 +1797,22 @@ void ScreenManager::onListItemClicked(lv_event_t *e) {
     case ScreenKind::BrowseAxis:
       self->openBrowseAxis(ctx->index);
       break;
+    case ScreenKind::Licences:
+      if (ctx->index >= 0 && ctx->index <= static_cast<int>(about::kCreditCount)) {
+        navigation::ScreenParams params;
+        params.row = static_cast<uint16_t>(ctx->index);
+        self->tabs_.activeStack().push(Screen{ScreenKind::LicenceDetail, params});
+        self->render();
+      }
+      break;
     case ScreenKind::Games:
       if (ctx->index >= 0 && ctx->index < games::kGameCount) {
+        // A game's sounds never play over music: the first one takes the
+        // DAC (ADR 0026). Paused, not stopped, so the track resumes
+        // afterwards -- as the tone generator does.
+        if (self->playback_.state() == playback::PlaybackState::Playing) {
+          self->playback_.togglePlayPause(lv_tick_get());
+        }
         self->tabs_.activeStack().push(
             Screen{games::kGames[ctx->index].screen, {}});
         self->render();

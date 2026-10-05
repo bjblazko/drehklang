@@ -6,6 +6,8 @@ Accepted — 2026-09-18. Adds a seventh entry to ADR 0018's main menu and a
 second source to ADR 0022's idle audio writer. Fixes a pitch bug in
 `Esp32AudioI2SDriver::resume()` that ADR 0022's blips had introduced.
 
+**Amended by [ADR 0026](0026-arduino-esp32-3-and-upstream-audioi2s.md) (2026-10-05)**: the tone output opens its own I2S channel instead of re-clocking the player's; the resume() rate fix is no longer needed.
+
 ## Context
 
 The user asked for three related tools: a **tone generator**, a **voice

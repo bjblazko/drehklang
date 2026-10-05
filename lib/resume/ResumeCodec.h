@@ -23,7 +23,10 @@ class ResumeCodec {
   // v2 (ADR 0018) added a collection byte to both sections. The layout of
   // the navigation section changed mid-record, so v1 blobs can't be read
   // -- decode() rejects them, which callers already treat as "no record".
-  static constexpr uint8_t kVersion = 2;
+  // v3 (ADR 0026) has v2's layout; only what an Ogg position means
+  // changed, so v2 still decodes, minus an Ogg track's position.
+  static constexpr uint8_t kVersion = 3;
+  static constexpr uint8_t kOggSampleVersion = 2;
   // Well inside one NVS page; a record this big would be a bug anyway.
   static constexpr std::size_t kMaxEncodedSize = 3072;
   static constexpr std::size_t kMaxStringLength = 512;

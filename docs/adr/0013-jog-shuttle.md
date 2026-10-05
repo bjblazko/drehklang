@@ -5,6 +5,8 @@
 Accepted — 2026-09-15. Amends ADR 0008's "one edge ring visible at a time"
 rule with one exception (see below).
 
+**Amended by [ADR 0026](0026-arduino-esp32-3-and-upstream-audioi2s.md) (2026-10-05)**: every format the decoder library plays can shuttle, Ogg, Opus and FLAC included.
+
 ## Context
 
 On Now Playing the knob sets the volume, and prev/next skip tracks. There

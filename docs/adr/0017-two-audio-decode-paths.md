@@ -5,6 +5,8 @@
 Accepted — 2026-09-16. Follows ADR 0016 (native formats) and records the
 debt that Ogg Vorbis support creates.
 
+**Superseded by [ADR 0026](0026-arduino-esp32-3-and-upstream-audioi2s.md) (2026-10-05)**: upstream ESP32-audioI2S on Arduino-ESP32 3.x decodes Vorbis itself; the second path is gone.
+
 ## Context
 
 ESP32-audioI2S 2.3.0 decodes MP3, AAC/M4A, WAV and FLAC, but has no Vorbis

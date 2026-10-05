@@ -1,45 +1,48 @@
 #include "ToneOutput.h"
 
 #include <Arduino.h>
-#include <driver/i2s.h>
-#include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include "AudioGain.h"
 #include "AudioOutputStage.h"
+#include "Esp32AudioI2SDriver.h"
 
 namespace drehklang::drivers {
 
 namespace {
-constexpr i2s_port_t kI2sPort = I2S_NUM_0;
-// Same core and stack shape as VorbisBackend's decode task; this one does
-// far less, but it lives in the same "produces audio" family.
 constexpr uint32_t kTaskStackBytes = 4096;
 constexpr UBaseType_t kTaskPriority = 2;
 constexpr BaseType_t kAudioCore = 0;
+constexpr TickType_t kWriteTimeout = pdMS_TO_TICKS(50);
+
+// RAII take/give of mutex_.
+struct Lock {
+  explicit Lock(SemaphoreHandle_t m) : m_(m) { xSemaphoreTake(m_, portMAX_DELAY); }
+  ~Lock() { xSemaphoreGive(m_); }
+  SemaphoreHandle_t m_;
+};
 }  // namespace
 
 void ToneOutput::begin() {
-  xTaskCreatePinnedToCore(&ToneOutput::taskTrampoline, "blip", kTaskStackBytes,
+  mutex_ = xSemaphoreCreateMutex();
+  xTaskCreatePinnedToCore(&ToneOutput::taskTrampoline, "tones", kTaskStackBytes,
                           this, kTaskPriority, nullptr, kAudioCore);
 }
 
 void ToneOutput::blip(uint16_t frequencyHz, uint16_t durationMs) {
-#ifdef DREHKLANG_TONE_DEBUG
-  triggeredMicros_ = micros();
-  measuring_ = true;
-#endif
-  audioOutputStage().tone().trigger(frequencyHz, durationMs);
+  claimDac(kBlipSampleRate);
+  tone_.trigger(frequencyHz, durationMs);
 }
 
 void ToneOutput::noise(uint16_t clockHz, uint16_t durationMs, int16_t level) {
-#ifdef DREHKLANG_TONE_DEBUG
-  triggeredMicros_ = micros();
-  measuring_ = true;
-#endif
-  audioOutputStage().tone().triggerNoise(clockHz, durationMs, level);
+  claimDac(kBlipSampleRate);
+  tone_.triggerNoise(clockHz, durationMs, level);
 }
 
-void ToneOutput::silence() { audioOutputStage().tone().silence(); }
+void ToneOutput::start() {
+  claimDac(signal::kGeneratorSampleRate);
+  control_.setRunning(true);
+}
 
 size_t ToneOutput::readRecent(int16_t *dst, size_t maxSamples) {
   return audioOutputStage()
@@ -47,98 +50,111 @@ size_t ToneOutput::readRecent(int16_t *dst, size_t maxSamples) {
       .count;
 }
 
+void ToneOutput::claimDac(uint32_t rate) {
+  dac_.claim(*this);
+  Lock lock(mutex_);
+  if (channel_ != nullptr && channelRate_ == rate) return;
+  closeChannel();
+  openChannel(rate);
+}
+
+void ToneOutput::releaseDac() {
+  Lock lock(mutex_);
+  closeChannel();
+}
+
+// 16-bit stereo, the PCM5100A's I2S pins from Esp32AudioI2SDriver.h. The
+// DAC derives its clocks from BCLK, so it follows a rate change by itself.
+bool ToneOutput::openChannel(uint32_t rate) {
+  i2s_chan_config_t chan = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
+  chan.auto_clear = true;  // Silence, not the last buffer, when we stop writing.
+  if (i2s_new_channel(&chan, &channel_, nullptr) != ESP_OK) {
+    channel_ = nullptr;
+    return false;
+  }
+  i2s_std_config_t std = {};
+  std.clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(rate);
+  std.slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT,
+                                                      I2S_SLOT_MODE_STEREO);
+  std.gpio_cfg.mclk = I2S_GPIO_UNUSED;
+  std.gpio_cfg.bclk = static_cast<gpio_num_t>(kAudioBclkPin);
+  std.gpio_cfg.ws = static_cast<gpio_num_t>(kAudioLrcPin);
+  std.gpio_cfg.dout = static_cast<gpio_num_t>(kAudioDoutPin);
+  std.gpio_cfg.din = I2S_GPIO_UNUSED;
+  if (i2s_channel_init_std_mode(channel_, &std) != ESP_OK ||
+      i2s_channel_enable(channel_) != ESP_OK) {
+    i2s_del_channel(channel_);
+    channel_ = nullptr;
+    return false;
+  }
+  channelRate_ = rate;
+  return true;
+}
+
+void ToneOutput::closeChannel() {
+  if (channel_ == nullptr) return;
+  i2s_channel_disable(channel_);
+  i2s_del_channel(channel_);
+  channel_ = nullptr;
+  channelRate_ = 0;
+}
+
 void ToneOutput::taskTrampoline(void *self) {
   static_cast<ToneOutput *>(self)->taskLoop();
 }
 
 void ToneOutput::taskLoop() {
-  auto &stage = audioOutputStage();
   for (;;) {
-    const uint32_t written = stage.samplesWritten();
-    if (written != lastSeenSamples_) {
-      lastSeenSamples_ = written;
-      lastFlowMs_ = millis();
-    }
-    const bool streamIdle = millis() - lastFlowMs_ > kStreamIdleMs;
-
-    // Only a decoder actually producing takes the rate back. Dropping the
-    // claim merely because the last blip ended made every blip reprogram
-    // the I2S clock again for nothing (measured at ~0.7ms each,
-    // 2026-09-18) -- and reprogramming a clock nothing has changed is the
-    // kind of thing that eventually bites, not just costs.
-    if (!streamIdle) rateIsOurs_ = false;
-
     // The generator keeps writing through its fade-out after stop(), so
     // the last thing the DAC hears is silence rather than a cut.
     const bool generating = control_.running() || !oscillator_.idle();
-    if ((!stage.tone().active() && !generating) || !streamIdle) {
+    if (!generating && !tone_.active()) {
       vTaskDelay(pdMS_TO_TICKS(kPollMs));
       continue;
     }
-
-#ifdef DREHKLANG_TONE_DEBUG
-    if (measuring_) {
-      measuring_ = false;
-      Serial.printf("[tone] trigger->write %luus (rate claim %s)\n",
-                    static_cast<unsigned long>(micros() - triggeredMicros_),
-                    rateIsOurs_ ? "skipped" : "needed");
-      rateClaimStart_ = micros();
-    }
-#endif
-    const uint32_t rate = generating ? signal::kGeneratorSampleRate : kToneSampleRate;
-    if (!rateIsOurs_ || claimedRate_ != rate) {
-      // The port's rate is whatever the last track set. Claim it; a
-      // decoder starting up, or a track resumed, sets its own again.
-      i2s_set_sample_rates(kI2sPort, rate);
-      stage.setSampleRate(rate);
-      rateIsOurs_ = true;
-      claimedRate_ = rate;
-    }
-
-#ifdef DREHKLANG_TONE_DEBUG
-    if (rateClaimStart_ != 0) {
-      Serial.printf("[tone] rate claim took %luus\n",
-                    static_cast<unsigned long>(micros() - rateClaimStart_));
-      rateClaimStart_ = 0;
-    }
-#endif
-    bool ok = true;
-    if (generating) {
-      oscillator_.setParams(control_.snapshot());
-      if (control_.running()) {
-        oscillator_.start();
-      } else {
-        oscillator_.stop();
-      }
-      oscillator_.render(mono_, kChunkFrames, rate);
-      for (size_t i = 0; i < kChunkFrames; ++i) {
-        chunk_[i * 2] = mono_[i];
-        chunk_[i * 2 + 1] = mono_[i];
-      }
-#ifdef DREHKLANG_GENERATOR_DEBUG
-      logGenerator(rate);
-#endif
-      ok = stage.writeFramesUnscaled(chunk_, kChunkFrames);
-    } else {
-      // writeFrames() mixes the blip in itself, so the music input is
-      // silence and what reaches the DAC is the blip alone.
-      for (size_t i = 0; i < kChunkFrames * 2; ++i) chunk_[i] = 0;
-      ok = stage.writeFrames(chunk_, kChunkFrames);
-    }
-#if defined(DREHKLANG_TONE_DEBUG) || defined(DREHKLANG_GENERATOR_DEBUG)
-    if (!ok) Serial.println("[tone] i2s write FAILED");
-#else
-    (void)ok;
-#endif
-    // Our own writes must not look like a decoder waking up.
-    lastSeenSamples_ = stage.samplesWritten();
+    const uint32_t rate = generating ? signal::kGeneratorSampleRate : kBlipSampleRate;
+    if (!writeChunk(rate)) vTaskDelay(pdMS_TO_TICKS(kPollMs));
   }
+}
+
+// One chunk of whichever voice is sounding. False when there is no channel
+// at this rate to write to (the player owns the DAC, or the rate is about
+// to change) -- the sound is then dropped, not queued.
+bool ToneOutput::writeChunk(uint32_t rate) {
+  auto &stage = audioOutputStage();
+  if (rate == signal::kGeneratorSampleRate) {
+    oscillator_.setParams(control_.snapshot());
+    if (control_.running()) {
+      oscillator_.start();
+    } else {
+      oscillator_.stop();
+    }
+    // Unscaled: the generator's level is stated in dBFS (ADR 0024).
+    oscillator_.render(mono_, kChunkFrames, rate);
+#ifdef DREHKLANG_GENERATOR_DEBUG
+    logGenerator(rate);
+#endif
+  } else {
+    for (size_t i = 0; i < kChunkFrames; ++i) {
+      mono_[i] = playback::AudioGain::applyVolume(tone_.nextSample(rate),
+                                                  stage.volumeStep(), stage.outputGain());
+    }
+  }
+  for (size_t i = 0; i < kChunkFrames; ++i) {
+    chunk_[i * 2] = mono_[i];
+    chunk_[i * 2 + 1] = mono_[i];
+    stage.noteMonoSample(mono_[i]);
+  }
+  Lock lock(mutex_);
+  if (channel_ == nullptr || channelRate_ != rate) return false;
+  size_t written = 0;
+  return i2s_channel_write(channel_, chunk_, sizeof(chunk_), &written, kWriteTimeout) == ESP_OK;
 }
 
 #ifdef DREHKLANG_GENERATOR_DEBUG
 // Once a second: the pitch and peak of what was actually written, measured
 // from the samples rather than taken from the settings -- the check that
-// the grid, the rate claim and the level all agree (ADR 0024).
+// the grid, the rate and the level all agree (ADR 0024).
 void ToneOutput::logGenerator(uint32_t rate) {
   for (size_t i = 0; i < kChunkFrames; ++i) {
     const int16_t s = mono_[i];

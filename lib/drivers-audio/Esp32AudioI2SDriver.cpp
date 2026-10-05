@@ -1,109 +1,292 @@
 #include "Esp32AudioI2SDriver.h"
 
 #include <Arduino.h>
+#include <Audio.h>
+#include <SD_MMC.h>
+#include <esp_heap_caps.h>
 
 #include <algorithm>
-#include <atomic>
-#include <cstdint>
+#include <cctype>
+#include <new>
 
 #include "AudioGain.h"
+#include "AudioHooks.h"
 #include "AudioOutputStage.h"
+#include "Mp3Duration.h"
+#include "Mp4Parser.h"
+#include "SdRawFile.h"
 
 namespace drehklang::drivers {
 
-void Esp32AudioI2SDriver::begin() {
-  audio_.setPinout(kAudioBclkPin, kAudioLrcPin, kAudioDoutPin);
-  // Input buffer 64 KB instead of the library's 300 KB PSRAM default. After
-  // every seek the library discards the buffer and stays silent until it is
-  // full again; measured on the device 2026-09-15, refilling 300 KB took
-  // ~290 ms -- as long as the then 300 ms shuttle cue cycle (ADR 0013), so cueing
-  // was mostly silence. 64 KB still holds ~1.6 s of a 320 kbps MP3, and the
-  // decoder has a core to itself (ADR 0006). Must run before the first
-  // connecttoFS(), which allocates the buffer.
-  audio_.setBufsize(-1, kInputBufferBytes);
-  mutex_ = xSemaphoreCreateMutex();
-  // Priority 3 (above Arduino's default loopTask priority of 1) since
-  // audio decoding is latency-sensitive; pinned to core 0, which
-  // nothing else in this project uses (no WiFi/BT), so it never
-  // contends with the main loop's LVGL/input/navigation work on core 1
-  // for CPU time at all, only briefly for the mutex.
-  xTaskCreatePinnedToCore(&Esp32AudioI2SDriver::audioTaskTrampoline, "audio",
-                          8192, this, /*priority=*/3, &taskHandle_,
-                          /*core=*/0);
+namespace {
+using playback::AudioGain;
+
+constexpr uint32_t kTaskStackBytes = 8192;
+// Above Arduino's loopTask (1): keeping the input buffer filled is
+// latency-sensitive. Core 0, away from LVGL's flush on core 1 (ADR 0006).
+constexpr UBaseType_t kTaskPriority = 3;
+constexpr BaseType_t kAudioCore = 0;
+
+// RAII take/give of the driver's mutex.
+struct Lock {
+  explicit Lock(SemaphoreHandle_t m) : m_(m) { xSemaphoreTake(m_, portMAX_DELAY); }
+  ~Lock() { xSemaphoreGive(m_); }
+  SemaphoreHandle_t m_;
+};
+
+std::string lowerExtension(const std::string &path) {
+  const auto dot = path.find_last_of('.');
+  if (dot == std::string::npos) return {};
+  std::string ext = path.substr(dot + 1);
+  for (char &c : ext) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+  return ext;
 }
 
-}  // namespace drehklang::drivers
+#ifdef AUDIO_LOG
+// The library's messages, for diagnosing playback. Called on its decode
+// task, so never a blocking Serial write (AGENTS.md): a line that does not
+// fit is dropped.
+void logAudioMessage(Audio::msg_t message) {
+  if (message.msg == nullptr) return;
+  char line[160];
+  const int length = snprintf(line, sizeof(line), "[audio] %s: %s\n",
+                              Audio::eventStr[message.e], message.msg);
+  if (length > 0 && Serial.availableForWrite() >= length) {
+    Serial.write(reinterpret_cast<const uint8_t *>(line), length);
+  }
+}
+#endif
+}  // namespace
 
-namespace drehklang::drivers {
+Esp32AudioI2SDriver::Esp32AudioI2SDriver(playback::DacArbiter &dac) : dac_(dac) {}
 
-playback::SampleWindow Esp32AudioI2SDriver::readRecentSamples(int16_t *dst,
-                                                              size_t maxSamples) {
-  // Plain field reads, deliberately without mutex_: taking it at frame
-  // rate would wait on the decode task's chunks, and a stale rate for one
-  // frame right after a track change or backend switch is harmless.
-  return audioOutputStage().readRecentSamples(
-      dst, maxSamples, vorbisActive_ ? vorbis_.sampleRate() : audio_.getSampleRate());
+Esp32AudioI2SDriver::~Esp32AudioI2SDriver() = default;
+
+void Esp32AudioI2SDriver::InternalRamDeleter::operator()(Audio *audio) const {
+  audio->~Audio();
+  heap_caps_free(audio);
+}
+
+void Esp32AudioI2SDriver::begin() {
+  mutex_ = xSemaphoreCreateMutex();
+#ifdef AUDIO_LOG
+  Audio::audio_info_callback = logAudioMessage;
+#endif
+  xTaskCreatePinnedToCore(&Esp32AudioI2SDriver::taskTrampoline, "audio", kTaskStackBytes,
+                          this, kTaskPriority, nullptr, kAudioCore);
+}
+
+bool Esp32AudioI2SDriver::playFileAt(const std::string &path, uint32_t position) {
+  // Before taking mutex_: claiming may close the tone output's channel,
+  // which takes that class's own lock.
+  dac_.claim(*this);
+  timing_ = readTrackTiming(path);
+  Lock lock(mutex_);
+  return openTrack(path, position);
+}
+
+// Caller holds mutex_ and owns the DAC.
+bool Esp32AudioI2SDriver::openTrack(const std::string &path, uint32_t position) {
+  ensureAudio();
+  if (!audio_) return false;  // No internal RAM for it; the caller stops.
+  audio_->stopSong();
+  path_ = path;
+  paused_ = false;
+  parked_ = false;
+  pendingSeek_ = position > 0 ? static_cast<int64_t>(position) : -1;
+  setHoldOutput(pendingSeek_ >= 0);
+  const bool ok = audio_->connecttoFS(SD_MMC, path.c_str());
+  if (!ok) {
+    path_.clear();
+    pendingSeek_ = -1;
+    setHoldOutput(false);
+  }
+  return ok;
+}
+
+// Caller holds mutex_. Creating Audio opens its I2S channel and starts its
+// decode task; its destructor undoes both (releaseDac()).
+void Esp32AudioI2SDriver::ensureAudio() {
+  if (audio_) return;
+  // Zeroed, like the global `Audio audio;` the library is written for:
+  // its constructor leaves members such as the M4A header state
+  // uninitialised, and garbage there made every M4A skip to a nonsense
+  // offset and end at once (2026-10-05).
+  void *memory = heap_caps_calloc(1, sizeof(Audio), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  if (memory == nullptr) return;
+  audio_.reset(new (memory) Audio());
+  audio_->setPinout(kAudioBclkPin, kAudioLrcPin, kAudioDoutPin);
+  audio_->setVolumeCurve(&AudioGain::volumeCurveDb);
+  audio_->setVolume(volume_);
+}
+
+void Esp32AudioI2SDriver::releaseDac() {
+  Lock lock(mutex_);
+  if (!audio_) return;
+  if (!path_.empty()) {
+    parkedPosition_ = heardPosition();
+    parked_ = true;
+  }
+  pendingSeek_ = -1;
+  setHoldOutput(false);
+  audio_.reset();
+}
+
+void Esp32AudioI2SDriver::pause() {
+  Lock lock(mutex_);
+  if (parked_ || !audio_ || paused_) return;
+  audio_->pauseResume();
+  paused_ = true;
+}
+
+void Esp32AudioI2SDriver::resume() {
+  if (parked_) {
+    dac_.claim(*this);
+    Lock lock(mutex_);
+    openTrack(path_, parkedPosition_);
+    return;
+  }
+  Lock lock(mutex_);
+  if (!audio_ || !paused_) return;
+  audio_->pauseResume();
+  paused_ = false;
+}
+
+void Esp32AudioI2SDriver::stop() {
+  Lock lock(mutex_);
+  if (audio_) audio_->stopSong();
+  path_.clear();
+  paused_ = false;
+  parked_ = false;
+  pendingSeek_ = -1;
+  setHoldOutput(false);
+}
+
+void Esp32AudioI2SDriver::setVolume(uint8_t volume) {
+  Lock lock(mutex_);
+  volume_ = volume;
+  if (audio_) audio_->setVolume(volume);
+  audioOutputStage().setVolumeStep(volume);
 }
 
 void Esp32AudioI2SDriver::setOutputGain(uint16_t gain) {
   audioOutputStage().setOutputGain(gain);
 }
 
+// A parked track still counts as running: it is only waiting for the DAC,
+// and the main loop must not take it for finished.
+bool Esp32AudioI2SDriver::isRunning() {
+  Lock lock(mutex_);
+  if (parked_) return true;
+  return audio_ && audio_->isRunning();
+}
+
+uint32_t Esp32AudioI2SDriver::filePosition() {
+  Lock lock(mutex_);
+  return heardPosition();
+}
+
+// Where the listener is, for resume (ADR 0012). The library already
+// subtracts what is still in its input buffer.
+uint32_t Esp32AudioI2SDriver::heardPosition() {
+  if (parked_) return parkedPosition_;
+  if (pendingSeek_ >= 0) return static_cast<uint32_t>(pendingSeek_);
+  return audio_ ? audio_->getAudioFilePosition() : 0;
+}
+
+// The library's own seek takes whole seconds -- too coarse for 2× cue
+// (ADR 0013) -- and converts them with its own bitrate guess, which is
+// wrong for VBR. So convert ms to bytes here, with the exact duration
+// where the file states one, and seek by byte; the library re-aligns to a
+// frame boundary itself.
+bool Esp32AudioI2SDriver::seekByMs(int32_t deltaMs) {
+  Lock lock(mutex_);
+  if (parked_ || !audio_ || pendingSeek_ >= 0) return false;
+  int64_t start = timing_.dataStart;
+  // An M4A's moov atom (tags, cover, sample tables) can sit after the
+  // audio, so the file size overstates the audio data.
+  int64_t end = timing_.dataEnd != 0 ? timing_.dataEnd : audio_->getFileSize();
+  const uint32_t avgBitrate =
+      timing_.durationSeconds != 0 && end > start
+          ? static_cast<uint32_t>((end - start) * 8 / timing_.durationSeconds)
+          : audio_->getBitRate();
+  if (avgBitrate == 0 || end <= 0) return false;
+  const int64_t bytes = static_cast<int64_t>(deltaMs) * avgBitrate / 8000;
+  // The library clamps a target before its audio data to the data start.
+  const int64_t target =
+      std::clamp<int64_t>(static_cast<int64_t>(audio_->getAudioFilePosition()) + bytes, start, end - 1);
+  return audio_->setAudioFilePosition(static_cast<uint32_t>(target));
+}
+
+// The exact duration from the MP3's VBR header or the M4A's movie header
+// when there is one; otherwise the library's estimate.
+uint32_t Esp32AudioI2SDriver::durationSeconds() {
+  Lock lock(mutex_);
+  if (timing_.durationSeconds != 0) return timing_.durationSeconds;
+  return audio_ ? audio_->getAudioFileDuration() : 0;
+}
+
+playback::SampleWindow Esp32AudioI2SDriver::readRecentSamples(int16_t *dst,
+                                                              size_t maxSamples) {
+  // Without mutex_: taking it at frame rate would wait on the loop task,
+  // and a stale rate for one frame after a track change is harmless.
+  return audioOutputStage().readRecentSamples(dst, maxSamples,
+                                              sampleRate_.load(std::memory_order_relaxed));
+}
+
+// One extra open per track start, before the decoder opens the file; not
+// under mutex_: it's a separate handle, and SD_MMC serializes card access
+// itself.
+Esp32AudioI2SDriver::TrackTiming Esp32AudioI2SDriver::readTrackTiming(const std::string &path) {
+  TrackTiming timing;
+  const std::string ext = lowerExtension(path);
+  if (ext != "mp3" && ext != "m4a") return timing;
+  fs::File file = SD_MMC.open(path.c_str());
+  if (!file) return timing;
+  SdRawFile raw(std::move(file));
+  if (ext == "mp3") {
+    timing.durationSeconds = library::Mp3Duration::readSeconds(raw);
+    return timing;
+  }
+  library::Mp4Info info = library::Mp4Parser::parse(raw);
+  timing.durationSeconds = (info.durationMs + 500) / 1000;
+  timing.dataStart = info.mdatStart;
+  timing.dataEnd = info.mdatEnd;
+  return timing;
+}
+
+// A resume position can only be applied once the decoder is past the
+// file's headers: the library needs the bitrate and the audio data range,
+// and Vorbis needs its setup header, or it never decodes (an Ogg resumed
+// after the tone generator raced through the file in silence,
+// 2026-10-05). The first decoded samples prove both; until then the
+// track's opening frames stay off the DAC.
+void Esp32AudioI2SDriver::applyPendingSeek() {
+  if (pendingSeek_ < 0 || !audio_->isRunning() || !decoderProducedSinceHold()) return;
+  if (!audio_->setAudioFilePosition(static_cast<uint32_t>(pendingSeek_))) return;
+  pendingSeek_ = -1;
+  setHoldOutput(false);
+}
+
+void Esp32AudioI2SDriver::taskTrampoline(void *self) {
+  static_cast<Esp32AudioI2SDriver *>(self)->taskLoop();
+}
+
+void Esp32AudioI2SDriver::taskLoop() {
+  for (;;) {
+    {
+      Lock lock(mutex_);
+      if (audio_) {
+        audio_->loop();
+        applyPendingSeek();
+        // Idle, the library still reports a rate nothing is clocked at.
+        if (audio_->isRunning()) sampleRate_.store(audio_->getSampleRate());
+      }
+    }
+    // Yields to the idle task (feeds core 0's watchdog) between calls;
+    // the library's own task keeps the DMA fed meanwhile.
+    vTaskDelay(pdMS_TO_TICKS(1));
+  }
+}
+
 }  // namespace drehklang::drivers
-
-// ESP32-audioI2S 2.3.0's Audio::playSample() unconditionally halves every
-// sample (`sample >> 1`, "half Vin so we can boost up to 6dB in filters")
-// before its EQ and Gain(), so even volume 21/21 only ever reached -6 dBFS
-// -- half the PCM5100A's output voltage went unused. This per-sample hook
-// runs after Gain(), right before i2s_write(), and undoes that halving:
-// volume 21 becomes true 0 dBFS. Unlike the per-buffer
-// audio_process_extern hook (tried and reverted, see AGENTS.md), it only
-// rewrites one packed sample and leaves the library's write path intact.
-namespace {
-using drehklang::playback::AudioGain;
-
-// ESP32-audioI2S 2.3.0's Audio::playSample() halves every sample before
-// its EQ and Gain() ("half Vin so we can boost up to 6dB in filters"), so
-// volume 21/21 only ever reached -6 dBFS. Doubling here, right before
-// i2s_write(), makes 21 true 0 dBFS. The sleep timer's gain rides along
-// via AudioGain, shared with the Vorbis path.
-int16_t compensate(int16_t s, uint16_t outputGain) {
-  return AudioGain::applyOutputGain(
-      static_cast<int16_t>(std::clamp<int32_t>(s * 2, INT16_MIN, INT16_MAX)), outputGain);
-}
-}  // namespace
-
-void audio_process_i2s(uint32_t *sample, bool *continueI2S) {
-  // Packed as Gain() returns it: left in the high 16 bits, right in the low.
-  // Verified on hardware 2026-09-13: loud tracks peak at 16383 in, 32766
-  // out, zero clipped samples.
-  auto &stage = drehklang::drivers::audioOutputStage();
-  const uint16_t gain = stage.outputGain();
-  // The game's blips ride on top of whatever is playing (ADR 0022). This is
-  // the library path's only per-sample seam, so it is where they join;
-  // when nothing is playing the hook never runs and ToneOutput.cpp pushes
-  // them to the DAC itself.
-  const int16_t toneSample = stage.nextToneSample();
-  const int16_t left = drehklang::drivers::AudioOutputStage::mixTone(
-      compensate(static_cast<int16_t>(*sample >> 16), gain), toneSample);
-  const int16_t right = drehklang::drivers::AudioOutputStage::mixTone(
-      compensate(static_cast<int16_t>(*sample & 0xFFFF), gain), toneSample);
-  stage.noteMonoSample(static_cast<int16_t>((static_cast<int32_t>(left) + right) / 2));
-  *sample = (static_cast<uint32_t>(static_cast<uint16_t>(left)) << 16) |
-            static_cast<uint16_t>(right);
-  *continueI2S = true;
-}
-
-// ESP32-audioI2S 2.3.0 calls this weak hook without checking that it exists
-// when it prints AAC codec parameters (Audio::showCodecParams()), so without
-// a definition the first decoded M4A frame jumped to address 0 and panicked
-// (core dump, 2026-09-16). MP3 only ever calls it through a null check.
-// Defined here, next to begin(), so it's always linked (see the
-// audio_process_i2s note above).
-void audio_info(const char *info) {
-#ifdef AUDIO_LOG
-  Serial.printf("[audio] %s\n", info);
-#else
-  (void)info;
-#endif
-}

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <driver/i2c.h>
+#include <Wire.h>
 
 #include "TouchDriver.h"
 
@@ -11,7 +11,7 @@ namespace drehklang::drivers {
 constexpr int kTouchSdaPin = 11;
 constexpr int kTouchSclPin = 12;
 constexpr uint8_t kTouchI2cAddress = 0x15;
-constexpr i2c_port_t kTouchI2cPort = I2C_NUM_0;
+constexpr uint32_t kTouchI2cHz = 300 * 1000;
 
 // CST816 touch controller, polled over I2C -- protocol ported from
 // Waveshare's own official demo for this board (register 0x00, 7 bytes:
@@ -21,20 +21,11 @@ constexpr i2c_port_t kTouchI2cPort = I2C_NUM_0;
 // GestureRecognizer infer down/up transitions from the pressed sequence.
 class Cst816Driver : public input::TouchDriver {
  public:
+  // Arduino's Wire, not ESP-IDF's legacy driver/i2c.h: on ESP-IDF 5 the
+  // core's own I2C layer links the new driver, and the two together abort
+  // at boot ("i2c: CONFLICT! driver_ng ...", 2026-10-05).
   bool begin() {
-    const i2c_config_t config = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = kTouchSdaPin,
-        .scl_io_num = kTouchSclPin,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master = {.clk_speed = 300 * 1000},
-        .clk_flags = 0,
-    };
-    if (i2c_param_config(kTouchI2cPort, &config) != ESP_OK) return false;
-    if (i2c_driver_install(kTouchI2cPort, config.mode, 0, 0, 0) != ESP_OK) {
-      return false;
-    }
+    if (!Wire.begin(kTouchSdaPin, kTouchSclPin, kTouchI2cHz)) return false;
     uint8_t normalMode = 0x00;
     writeRegister(0x00, &normalMode, 1);
     return true;
@@ -65,16 +56,20 @@ class Cst816Driver : public input::TouchDriver {
 
  private:
   void writeRegister(uint8_t reg, const uint8_t *data, size_t len) {
-    uint8_t buf[8];
-    buf[0] = reg;
-    for (size_t i = 0; i < len; ++i) buf[i + 1] = data[i];
-    i2c_master_write_to_device(kTouchI2cPort, kTouchI2cAddress, buf, len + 1,
-                                1000 / portTICK_PERIOD_MS);
+    Wire.beginTransmission(kTouchI2cAddress);
+    Wire.write(reg);
+    Wire.write(data, len);
+    Wire.endTransmission();
   }
 
+  // The chip NACKs while nothing touches it (device.md); `out` then stays
+  // as the caller zeroed it, which reads as "not pressed".
   void readRegister(uint8_t reg, uint8_t *out, size_t len) {
-    i2c_master_write_read_device(kTouchI2cPort, kTouchI2cAddress, &reg, 1,
-                                  out, len, 1000 / portTICK_PERIOD_MS);
+    Wire.beginTransmission(kTouchI2cAddress);
+    Wire.write(reg);
+    if (Wire.endTransmission(false) != 0) return;
+    const size_t got = Wire.requestFrom(kTouchI2cAddress, len);
+    for (size_t i = 0; i < got && i < len; ++i) out[i] = static_cast<uint8_t>(Wire.read());
   }
 
   int16_t lastX_ = 0;

@@ -199,6 +199,9 @@ void test_codec_rejects_every_single_bit_flip() {
       std::vector<uint8_t> flipped = bytes;
       flipped[i] ^= static_cast<uint8_t>(1 << bit);
       ResumeRecord decoded;
+      // The one flip that lands on the previous version is still a record,
+      // read under that version's rule (tested below).
+      if (i == 4 && flipped[4] == ResumeCodec::kOggSampleVersion) continue;
       TEST_ASSERT_FALSE(ResumeCodec::decode(flipped, decoded));
     }
   }
@@ -213,6 +216,29 @@ void test_codec_rejects_trailing_garbage_and_other_versions() {
   std::vector<uint8_t> future = bytes;
   future[4] = ResumeCodec::kVersion + 1;
   TEST_ASSERT_FALSE(ResumeCodec::decode(future, decoded));
+}
+
+void test_codec_reads_a_v2_record_without_its_ogg_position() {
+  ResumeRecord record = sampleRecord();
+  record.music->trackPath = "/RadioPlays/Herr der Ringe/01.OGG";
+  std::vector<uint8_t> bytes = ResumeCodec::encode(record);
+  bytes[4] = ResumeCodec::kOggSampleVersion;
+  ResumeRecord decoded;
+  TEST_ASSERT_TRUE(ResumeCodec::decode(bytes, decoded));
+  TEST_ASSERT_EQUAL_STRING(record.music->trackPath.c_str(), decoded.music->trackPath.c_str());
+  TEST_ASSERT_EQUAL_UINT32(0, decoded.music->filePosition);
+  TEST_ASSERT_EQUAL_UINT32(0, decoded.music->elapsedSeconds);
+  TEST_ASSERT_TRUE(decoded.navigation == record.navigation);
+}
+
+void test_codec_keeps_other_positions_from_a_v2_record() {
+  ResumeRecord record = sampleRecord();
+  record.music->trackPath = "/Music/A/01.mp3";
+  std::vector<uint8_t> bytes = ResumeCodec::encode(record);
+  bytes[4] = ResumeCodec::kOggSampleVersion;
+  ResumeRecord decoded;
+  TEST_ASSERT_TRUE(ResumeCodec::decode(bytes, decoded));
+  TEST_ASSERT_TRUE(decoded == record);
 }
 
 void test_codec_skips_unknown_sections() {
@@ -496,6 +522,8 @@ int main() {
   RUN_TEST(test_codec_rejects_every_truncation);
   RUN_TEST(test_codec_rejects_every_single_bit_flip);
   RUN_TEST(test_codec_rejects_trailing_garbage_and_other_versions);
+  RUN_TEST(test_codec_reads_a_v2_record_without_its_ogg_position);
+  RUN_TEST(test_codec_keeps_other_positions_from_a_v2_record);
   RUN_TEST(test_codec_skips_unknown_sections);
   RUN_TEST(test_codec_rejects_out_of_range_values_even_with_valid_crc);
   RUN_TEST(test_codec_refuses_to_encode_oversized_strings);
