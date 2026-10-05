@@ -20,6 +20,7 @@ three in step).
 | [JPEGDEC](https://github.com/bitbank2/JPEGDEC) 1.8.4 | Album cover decoding (baseline and progressive JPEG) | Apache-2.0 | Copyright 2020 BitBank Software, Inc. |
 | [Arduino-ESP32](https://github.com/espressif/arduino-esp32) 3.3.12 | Arduino core, TinyUSB, SD_MMC | LGPL-2.1-or-later | |
 | [ESP-IDF](https://github.com/espressif/esp-idf) 5.5.5 (bundled with the core) | FreeRTOS, FatFs, drivers | Apache-2.0 | |
+| Bluedroid, bundled with ESP-IDF | Bluetooth stack and SBC encoder of the ESP32-U4WDH firmware (`bt/`) | Apache-2.0 | |
 | [ESP-DSP](https://github.com/espressif/esp-dsp), bundled with the core | The FFT ESP32-audioI2S links | Apache-2.0 | |
 | [Material Symbols](https://github.com/google/material-design-icons) | The icon glyphs in `lib/ui-widgets/IconFont*.c` | Apache-2.0 | |
 | [Montserrat](https://fonts.google.com/specimen/Montserrat) (Medium, bundled by LVGL as `scripts/built_in_font/Montserrat-Medium.ttf`) | Text glyphs in `lib/ui-widgets/TextFont*.c` (replaces LVGL's built-in Montserrat fonts, extended to Latin-1 Supplement/Latin Extended-A for European tag text) | OFL-1.1 | |

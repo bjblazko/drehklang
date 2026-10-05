@@ -47,6 +47,8 @@ inline constexpr Credit kCredits[] = {
      "github.com/espressif/arduino-esp32", nullptr, nullptr},
     {"ESP-IDF", "5.5.5", "FreeRTOS, file system, drivers", "Apache-2.0",
      "github.com/espressif/esp-idf", nullptr, nullptr},
+    {"Bluedroid", "", "Bluetooth and SBC on the second chip, inside ESP-IDF", "Apache-2.0",
+     "github.com/espressif/esp-idf", nullptr, nullptr},
     {"ESP-DSP", "", "The spectrum's FFT, inside ESP32-audioI2S", "Apache-2.0",
      "github.com/espressif/esp-dsp", nullptr, nullptr},
     {"Material Symbols", "", "Icons", "Apache-2.0", "github.com/google/material-design-icons",

@@ -278,6 +278,11 @@ Full architecture: [ADR 0004](../adr/0004-navigation-library-and-index-architect
   button, a Secondary circle, opens Licences: one row per component,
   ending in its licence, each opening a page with the notice that licence
   requires (ADR 0026).
+  Bluetooth (ADR 0027) is a row like the others, ending in its state or
+  the connected headphones' name. Its screen is a list -- the switch, the
+  paired headphones with their state, Find headphones, Forget headphones
+  -- and when the Bluetooth chip has no Drehklang firmware it says so
+  instead of offering a switch that would do nothing.
 - **Two swipeable browse tabs per collection** — Library (tag-based
   Artist → Album → Track) and Files (folder browse within that
   collection's own root) — rather than a separate picker screen. A swipe
@@ -405,6 +410,10 @@ Full architecture: [ADR 0005](../adr/0005-power-lock-and-round-edge-indicators.m
   An always-on icon beside the back/scan button (the earlier design) was
   the only off-axis element on screen and read like a tappable toolbar
   icon.
+- **Bluetooth status follows the battery's rule.** Connecting and
+  disconnecting each show a message; on the lock screen a quiet
+  Bluetooth glyph sits beside the battery while headphones are
+  connected. There is no permanent icon anywhere else (ADR 0027).
 - **Status indicators are corner-safe by placement, not by luck.** The
   battery indicator is centered on the vertical axis — an initial corner
   placement looked correct in a screenshot but was invisible on the
