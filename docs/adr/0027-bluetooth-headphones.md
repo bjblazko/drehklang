@@ -181,6 +181,23 @@ found:
    ~31 KB without it (ADR 0026), so Bluetooth costs ~10 KB of internal RAM.
    The WiFi phase has to fit into what is left.
 
+5. **Fixes from the final review, checked on the device:**
+   - Discovery now starts and is reported as running.
+   - Long names are cut at a character boundary.
+   - A search tap is resolved by address.
+   - Settings no longer jumps to the top every 10 s.
+6. **Marshall Major V**, pairing again from the search (the logs on the
+   U4WDH made this visible):
+   - A pairing could stay "Connecting" for good.
+   - With the old key kept, authentication of headphones in pairing mode
+     failed after 30 s.
+   - A 20 s safety timeout cut into a pairing still in progress and left
+     A2DP stuck.
+   - **Fixes:** pairing from the search always removes the bond first, a
+     refused connect is Idle again, and the safety timeout is 60 s.
+   - Pairing, reconnecting after the headphones are switched off and on,
+     and reconnecting after pairing mode all work.
+
 ## Open
 
 - **Delay on the headphones in games.** Sound reaches the headphones
