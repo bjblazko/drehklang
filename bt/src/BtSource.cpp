@@ -91,7 +91,11 @@ bool BtSource::nextEvent(BtSourceEvent &out) {
 }
 
 void BtSource::startScan() {
-  esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, kInquiryLength, 0);
+  // Scanning from here on, not from DISC_STATE_CHANGED: the STATE sent right
+  // after SCAN_START must not already say the scan is over.
+  if (esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, kInquiryLength, 0) == ESP_OK) {
+    scanning_.store(true);
+  }
 }
 
 void BtSource::stopScan() { esp_bt_gap_cancel_discovery(); }

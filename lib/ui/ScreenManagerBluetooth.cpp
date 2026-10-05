@@ -107,7 +107,7 @@ void ScreenManager::onBluetoothRow(int itemId) {
 
 void ScreenManager::openBluetoothSearch() {
   tabs_.activeStack().push(Screen{ScreenKind::BluetoothSearch, {}});
-  bluetooth_->startScan();
+  bluetooth_->startScan(millis());
   btSearchOpen_ = true;
   shownBtScanning_ = true;
   render();
@@ -118,8 +118,10 @@ void ScreenManager::appendBluetoothSearchRows(
   if (bluetooth_ == nullptr) return;
   items.emplace_back("Search again", kBtSearchAgainItemId);
   const auto &results = bluetooth_->scanResults();
+  shownBtResults_.clear();
   for (size_t i = 0; i < results.size(); ++i) {
     items.emplace_back(results[i].name, static_cast<int>(i));
+    shownBtResults_.push_back(results[i].address);
   }
 }
 
@@ -134,14 +136,15 @@ void ScreenManager::onBluetoothSearchRow(int itemId) {
     // Greyed out by doing nothing while one runs: a second scan would
     // only restart the list under the finger.
     if (bluetooth_->scanning()) return;
-    bluetooth_->startScan();
+    bluetooth_->startScan(millis());
     shownBtScanning_ = true;
     render();
     return;
   }
-  const auto &results = bluetooth_->scanResults();
-  if (itemId < 0 || static_cast<size_t>(itemId) >= results.size()) return;
-  const auto entry = results[static_cast<size_t>(itemId)];
+  if (itemId < 0 || static_cast<size_t>(itemId) >= shownBtResults_.size()) return;
+  const auto found = bluetooth_->resultFor(shownBtResults_[static_cast<size_t>(itemId)]);
+  if (!found) return;
+  const auto entry = *found;
   bluetooth_->stopScan();
   bluetooth_->pair(entry, millis());
   btSearchOpen_ = false;
@@ -230,7 +233,30 @@ void ScreenManager::tickBluetooth(uint32_t nowMs) {
   }
   if (renderedKind_ != kind || touchHeld()) return;
   shownBtRevision_ = bluetooth_->revision();
+  std::string view = bluetoothView(kind);
+  if (view == shownBtView_) return;
+  shownBtView_ = std::move(view);
   render();
+}
+
+std::string ScreenManager::bluetoothView(ScreenKind kind) const {
+  std::vector<std::pair<std::string, int>> rows;
+  std::string view;
+  switch (kind) {
+    case ScreenKind::Settings:
+      return bluetoothSettingsValue();
+    case ScreenKind::Bluetooth:
+      appendBluetoothRows(rows);
+      view = bluetoothEmptyText();
+      for (const auto &row : rows) view += "\n" + row.first + "\t" + bluetoothRowValue(row.second);
+      return view;
+    case ScreenKind::BluetoothSearch:
+      view = bluetoothSearchCaption();
+      for (const auto &entry : bluetooth_->scanResults()) view += "\n" + entry.name;
+      return view;
+    default:
+      return {};
+  }
 }
 
 }  // namespace drehklang::ui

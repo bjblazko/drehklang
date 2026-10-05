@@ -310,8 +310,17 @@ class ScreenManager : public input::KnobSink {
   static constexpr int kBtForgetRow = 3;
   // The search's first row; results use their index.
   static constexpr int kBtSearchAgainItemId = -4;
+  // What a Bluetooth-related screen shows, as text: it is redrawn only
+  // when this changes. A redraw resets the list's scroll and highlight, so
+  // a retry every 10 s must not redraw a Settings value that stays
+  // "Not connected".
+  std::string bluetoothView(navigation::ScreenKind kind) const;
   bluetooth::BtController *bluetooth_ = nullptr;
   uint32_t shownBtRevision_ = 0;
+  std::string shownBtView_;
+  // The addresses of the search's rows as last drawn: a tap resolves its
+  // row by address, since the list re-sorts as results arrive.
+  mutable std::vector<btlink::Address> shownBtResults_;
   bool shownBtScanning_ = false;
   bool btSearchOpen_ = false;
   // Settings > Main menu (ADR 0018): which destinations Home shows.

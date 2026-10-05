@@ -213,7 +213,7 @@ void test_pairing_that_does_not_connect_in_15_s_fails() {
 void test_scan_results_are_sorted_by_signal() {
   Fixture f;
   f.answer();
-  f.controller.startScan();
+  f.controller.startScan(400);
   TEST_ASSERT_EQUAL(1, f.link.count(PacketType::ScanStart));
   TEST_ASSERT_TRUE(f.controller.scanning());
   f.controller.onPacket(scanResult(1, -80, "Far"), 400);
@@ -227,13 +227,52 @@ void test_scan_results_are_sorted_by_signal() {
 void test_scan_result_for_known_address_updates_in_place() {
   Fixture f;
   f.answer();
-  f.controller.startScan();
+  f.controller.startScan(400);
   f.controller.onPacket(scanResult(1, -80, "58:2A:BD:5E:55:3C"), 400);
   f.controller.onPacket(scanResult(1, -50, "Buds"), 400);
   const auto &results = f.controller.scanResults();
   TEST_ASSERT_EQUAL(1, results.size());
   TEST_ASSERT_EQUAL_STRING("Buds", results[0].name.c_str());
   TEST_ASSERT_EQUAL(-50, results[0].rssi);
+}
+
+void test_a_result_is_found_by_address_after_a_re_sort() {
+  // A press on the row showing "Far" must pair "Far" even when a stronger
+  // device arrives while the finger is down and the list re-sorts.
+  Fixture f;
+  f.answer();
+  f.controller.startScan(400);
+  f.controller.onPacket(scanResult(1, -80, "Far"), 400);
+  const btlink::Address shown = f.controller.scanResults()[0].address;
+  f.controller.onPacket(scanResult(2, -40, "Near"), 410);
+  auto entry = f.controller.resultFor(shown);
+  TEST_ASSERT_TRUE(entry.has_value());
+  TEST_ASSERT_EQUAL_STRING("Far", entry->name.c_str());
+  btlink::Address unknown{};
+  TEST_ASSERT_FALSE(f.controller.resultFor(unknown).has_value());
+}
+
+void test_scanning_stays_on_until_the_u4wdh_confirms_it() {
+  // The first STATE after SCAN_START still says not scanning: discovery
+  // starts a moment later on the other chip.
+  Fixture f;
+  f.answer();
+  f.controller.startScan(400);
+  f.controller.onPacket(state(btlink::LinkState::Idle, false), 450);
+  TEST_ASSERT_TRUE(f.controller.scanning());
+  f.controller.onPacket(state(btlink::LinkState::Idle, true), 600);
+  TEST_ASSERT_TRUE(f.controller.scanning());
+  f.controller.onPacket(state(btlink::LinkState::Idle, false), 11000);
+  TEST_ASSERT_FALSE(f.controller.scanning());
+}
+
+void test_a_scan_that_never_starts_ends_after_the_grace() {
+  Fixture f;
+  f.answer();
+  f.controller.startScan(400);
+  f.controller.onPacket(state(btlink::LinkState::Idle, false),
+                        400 + BtController::kScanStartGraceMs);
+  TEST_ASSERT_FALSE(f.controller.scanning());
 }
 
 void test_buttons_become_events() {
@@ -270,6 +309,9 @@ int main() {
   RUN_TEST(test_pairing_that_does_not_connect_in_15_s_fails);
   RUN_TEST(test_scan_results_are_sorted_by_signal);
   RUN_TEST(test_scan_result_for_known_address_updates_in_place);
+  RUN_TEST(test_a_result_is_found_by_address_after_a_re_sort);
+  RUN_TEST(test_scanning_stays_on_until_the_u4wdh_confirms_it);
+  RUN_TEST(test_a_scan_that_never_starts_ends_after_the_grace);
   RUN_TEST(test_buttons_become_events);
   RUN_TEST(test_enabling_is_stored_and_sent);
   return UNITY_END();

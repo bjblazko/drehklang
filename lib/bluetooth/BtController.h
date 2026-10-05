@@ -50,6 +50,9 @@ class BtController {
   static constexpr uint32_t kAnswerTimeoutMs = 3000;
   static constexpr uint32_t kHeartbeatTimeoutMs = 2000;
   static constexpr uint32_t kPairTimeoutMs = 15000;
+  // How long a fresh scan counts as running before the U4WDH confirms it:
+  // its first STATE after SCAN_START still says not scanning.
+  static constexpr uint32_t kScanStartGraceMs = 3000;
   // NVS keys are limited to 15 characters.
   static constexpr char kEnabledKey[] = "btOn";
 
@@ -99,7 +102,7 @@ class BtController {
     if (!answered_) return;
     switch (packet.type) {
       case btlink::PacketType::State:
-        onState(packet);
+        onState(packet, nowMs);
         break;
       case btlink::PacketType::ScanResult:
         onScanResult(packet);
@@ -129,9 +132,11 @@ class BtController {
   bool scanning() const { return scanning_; }
   const std::vector<ScanEntry> &scanResults() const { return results_; }
 
-  void startScan() {
+  void startScan(uint32_t nowMs) {
     results_.clear();
     setScanning(true);
+    scanConfirmed_ = false;
+    scanStartedMs_ = nowMs;
     link_.send(btlink::PacketType::ScanStart, nullptr, 0);
   }
 
@@ -167,6 +172,16 @@ class BtController {
 
   bool forwardAudio() const { return state_ == BtState::Connected; }
 
+  // A scan result by address. The UI resolves a tap this way: the list
+  // re-sorts as results arrive, so a row's position can change under the
+  // finger.
+  std::optional<ScanEntry> resultFor(const btlink::Address &address) const {
+    for (const auto &entry : results_) {
+      if (entry.address == address) return entry;
+    }
+    return std::nullopt;
+  }
+
   std::optional<BtEvent> takeEvent() {
     if (events_.empty()) return std::nullopt;
     const BtEvent event = events_.front();
@@ -201,7 +216,7 @@ class BtController {
     sendEnable();
   }
 
-  void onState(const btlink::Packet &packet) {
+  void onState(const btlink::Packet &packet, uint32_t nowMs) {
     btlink::StateMessage m;
     if (!btlink::decodeState(packet, m)) return;
     // The U4WDH starts up off: after a restart of its own it has forgotten.
@@ -212,7 +227,9 @@ class BtController {
       pairedAddress_ = m.address;
       ++revision_;
     }
-    setScanning(m.scanning);
+    if (m.scanning) scanConfirmed_ = true;
+    const bool starting = !scanConfirmed_ && scanning_ && nowMs - scanStartedMs_ < kScanStartGraceMs;
+    if (!starting) setScanning(m.scanning);
     setState(stateFor(m.link));
   }
 
@@ -278,6 +295,7 @@ class BtController {
   bool enabled_ = false;
   bool answered_ = false;
   bool scanning_ = false;
+  bool scanConfirmed_ = true;
   bool paired_ = false;
   bool pairing_ = false;
   btlink::Address pairedAddress_{};
@@ -290,6 +308,7 @@ class BtController {
   uint32_t lastHelloMs_ = 0;
   uint32_t lastPacketMs_ = 0;
   uint32_t pairingSinceMs_ = 0;
+  uint32_t scanStartedMs_ = 0;
   uint32_t revision_ = 0;
 };
 
