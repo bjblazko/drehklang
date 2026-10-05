@@ -151,7 +151,47 @@ release as the S3 and takes `btlink` and `btaudio` from `../lib`.
   the Bluetooth trademark and Bluetooth SIG qualification, next to ADR
   0026's HE-AAC decision.
 
-## Verified on the device
+## Verified on the device (2026-10-05)
 
-To be filled in by the device checks in the plan's Task 11, in the order
-found.
+Tested with SOUNDPEATS Q headphones, in the order the problems were
+found:
+
+1. **The jack went silent** as soon as the U4WDH ran anything but its
+   factory image (music, radio play and the tone generator, with either S3
+   build).
+   - A real power cycle changed nothing.
+   - Flashing the pre-Bluetooth S3 build changed nothing either.
+   - **Cause:** IO32 is the DAC's XSMT (active low), and the factory image
+     drove it high.
+   - **Fix:** `bt/src/main.cpp` drives IO32 high first thing. Recorded in
+     device.md and AGENTS.md.
+2. **Pairing, playback over Bluetooth with the jack in parallel, tones,
+   the headphone button and reconnecting all work.**
+   - After a few minutes of music: U4WDH underruns 0, CRC errors 0,
+     packets lost 0, tap drops 0.
+3. **Table Tennis's paddle blips (24 ms) did not arrive, or arrived many at
+   once,** while the 240 ms score sound did.
+   - **Cause:** a lone blip never fills the U4WDH's buffer to the half it
+     starts playing from.
+   - **Fix:** while the tone output owns the DAC and headphones are
+     connected, it writes silence between sounds, so the stream keeps
+     running.
+   - Each blip now arrives, with a constant delay.
+4. **Internal free heap while playing over Bluetooth is 21.5 KB**, against
+   ~31 KB without it (ADR 0026), so Bluetooth costs ~10 KB of internal RAM.
+   The WiFi phase has to fit into what is left.
+
+## Open
+
+- **Delay on the headphones in games.** Sound reaches the headphones
+  ~300 ms after the jack:
+  - Bluetooth itself (SBC and the headphones' buffer) accounts for
+    ~150-250 ms.
+  - The U4WDH's half-full buffer adds ~190 ms at 22.05 kHz, ~95 ms at
+    44.1 kHz.
+
+  Delaying the game itself to match was rejected: a reaction game would
+  feel sluggish. Shrinking the U4WDH's buffer target would cut up to
+  ~140 ms in games, at a higher risk of underruns, which would need
+  measuring on the device. Left as it is for now (the user's decision,
+  2026-10-05).
