@@ -412,8 +412,10 @@ Full architecture: [ADR 0005](../adr/0005-power-lock-and-round-edge-indicators.m
   icon.
 - **Bluetooth status follows the battery's rule.** Connecting and
   disconnecting each show a message; on the lock screen a quiet
-  Bluetooth glyph sits beside the battery while headphones are
-  connected. There is no permanent icon anywhere else (ADR 0027).
+  "sensors" mark (sound goes out over the air) sits beside the battery
+  while headphones are connected. Not the Bluetooth logo, a trademark;
+  not a headphone, since wired ones use the jack. There is no permanent
+  icon anywhere else (ADR 0027).
 - **Status indicators are corner-safe by placement, not by luck.** The
   battery indicator is centered on the vertical axis — an initial corner
   placement looked correct in a screenshot but was invisible on the

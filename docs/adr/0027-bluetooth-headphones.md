@@ -123,7 +123,8 @@ release as the S3 and takes `btlink` and `btaudio` from `../lib`.
   again".
 - **Messages** say when headphones connect, disconnect, or cannot be
   connected to.
-- **On the lock screen** a quiet Bluetooth glyph sits beside the battery.
+- **On the lock screen** a quiet mark sits beside the battery: Material's
+  "sensors", not the Bluetooth logo (see Open, legal check).
 - **Play/Pause from the headphones** works like Now Playing's button in
   the music and like start/stop on Tones, and does nothing in a game. A
   repeated Play never pauses.
@@ -208,9 +209,14 @@ found:
     same kind of libraries together with ESP32-audioI2S (decide together
     with HE-AAC, ADR 0026), and Bluetooth qualification for devices passed
     on, since the patent and trademark licences of the Bluetooth SIG cover
-    qualified products. The lock screen keeps the Bluetooth logo glyph;
-    that is fine for a private repository, and it is to be checked again
-    at that point.
+    qualified products.
+  - **Bluetooth logo:** the repository is public, so the lock screen no
+    longer uses the logo (a Bluetooth SIG trademark) but Material's
+    "sensors" mark: sound sent over the air, generic, and kept
+    apart from a later Wi-Fi symbol (2026-10-05).
+  - **No binary releases.** Drehklang is distributed as source only and
+    built on the user's machine (`scripts/install.py`), so the two points
+    above wait until binaries are passed on.
   - **About** now says that sound goes to the headphones.
 
 - **Delay on the headphones in games.** Sound reaches the headphones

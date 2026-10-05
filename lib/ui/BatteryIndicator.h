@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "BatteryMonitor.h"
+#include "IconFont.h"
 #include "TextFont.h"
 #include "Theme.h"
 
@@ -45,7 +46,9 @@ class BatteryIndicator {
   // Call once, after LVGL is initialized and after LockOverlay::begin().
   void begin() {
     label_ = lv_label_create(lv_layer_top());
-    lv_obj_set_style_text_font(label_, &drehklang_text_font_14, 0);
+    // The icon font carries the headphones mark and falls back to
+    // drehklang_text_font_14, with that font's line metrics.
+    lv_obj_set_style_text_font(label_, &drehklang_icon_font_16, 0);
     lv_obj_set_style_bg_color(label_, theme::surface(), 0);
     lv_obj_set_style_bg_opa(label_, LV_OPA_COVER, 0);
     lv_obj_set_style_pad_hor(label_, 8, 0);
@@ -69,7 +72,7 @@ class BatteryIndicator {
     render();
   }
 
-  // A quiet Bluetooth glyph beside the battery on the lock screen while
+  // A quiet "sensors" mark (not the Bluetooth logo) beside the battery on the lock screen while
   // headphones are connected (ADR 0027) -- status shown where it is looked
   // for, nowhere else (ux-guidelines §6).
   void setBluetoothConnected(bool connected) {
@@ -107,7 +110,7 @@ class BatteryIndicator {
         lv_obj_add_flag(label_, LV_OBJ_FLAG_HIDDEN);
         return;
       }
-      lv_label_set_text(label_, bluetooth_ ? LV_SYMBOL_BLUETOOTH "  " LV_SYMBOL_CHARGE "  Charging"
+      lv_label_set_text(label_, bluetooth_ ? DREHKLANG_ICON_SENSORS "  " LV_SYMBOL_CHARGE "  Charging"
                                            : LV_SYMBOL_CHARGE "  Charging");
       lv_obj_set_style_text_color(label_, theme::structure(), 0);
       lv_obj_align(label_, LV_ALIGN_TOP_MID, 0, kLockedY);
@@ -122,7 +125,7 @@ class BatteryIndicator {
     }
     char text[32];
     snprintf(text, sizeof(text), "%s%s  %d%%",
-             locked_ && bluetooth_ ? LV_SYMBOL_BLUETOOTH "  " : "", symbol, percent);
+             locked_ && bluetooth_ ? DREHKLANG_ICON_SENSORS "  " : "", symbol, percent);
     lv_label_set_text(label_, text);
     // Red only when low -- otherwise neutral, even on the lock screen.
     lv_obj_set_style_text_color(label_,

@@ -57,6 +57,10 @@ LV_FONT_DECLARE(drehklang_icon_font_16);
 
 #define DREHKLANG_ICON_FAST_REWIND "\xEE\x80\xA0"  // U+E020
 #define DREHKLANG_ICON_FAST_FORWARD "\xEE\x80\x9F"  // U+E01F
+// "sensors", the lock screen's mark for connected headphones (ADR 0027):
+// sound goes out over the air. Generic, unlike the Bluetooth logo (a
+// trademark), and not a headphone, since wired ones use the jack.
+#define DREHKLANG_ICON_SENSORS "\xEE\x94\x9E"  // U+E51E
 
 #ifdef __cplusplus
 }

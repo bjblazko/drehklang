@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Size: 16 px
  * Bpp: 4
- * Opts: --font MaterialSymbolsOutlined.ttf --range 0xE020,0xE01F --size 16 --bpp 4 --no-compress --format lvgl --lv-include lvgl.h --lv-font-name drehklang_icon_font_16 -o IconFont16.c
+ * Opts: --font MaterialSymbolsOutlined.ttf --range 0xE020,0xE01F,0xE51E --size 16 --bpp 4 --no-compress --format lvgl --lv-include lvgl.h --lv-font-name drehklang_icon_font_16 -o IconFont16.c
  *
  * Generated 2026-09-15 via lv_font_conv (npm) from the same Google
  * Material Symbols Outlined variable font as IconFont.c/IconFont48.c
@@ -13,9 +13,14 @@
  * prev/next, easily confused with the transport buttons right next to
  * this pill, so a real double-triangle fast-wind glyph is used instead.
  *
+ * U+E51E "sensors" added 2026-10-05 (same font, master as of that date;
+ * the two glyphs above came out byte-identical): the lock screen's
+ * "headphones connected" mark beside the battery (ADR 0027), in place of
+ * the Bluetooth logo, which is the Bluetooth SIG's trademark.
+ *
  * `.fallback = &drehklang_text_font_14` below lets the pill mix these
  * glyphs with plain digits/"x" in one label -- this font only carries
- * the two icon codepoints, everything else (LVGL 8.3 supports
+ * the icon codepoints, everything else (LVGL 8.3 supports
  * lv_font_t.fallback) falls through to the project's own text font
  * already used for the rest of the pill's text.
  *
@@ -38,7 +43,8 @@
  * .line_height/.base_line if this font (or drehklang_text_font_14) is ever
  * regenerated.
  *
- * Also hand-edited: both glyphs' .ofs_y changed from 4 to 1. With the
+ * Also hand-edited: the fast-wind glyphs' .ofs_y changed from 4 to 1,
+ * and "sensors"' from 3 to 0, for the same reason. With the
  * Montserrat metrics above the icons' vertical center sat at 5px while
  * the digits' sits at 8px ("0": box_h 10, ofs_y 0) -- the marks looked
  * top-aligned next to the time (user feedback 2026-09-15). ofs_y 1 puts
@@ -79,7 +85,18 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
     0x74, 0xde, 0x53, 0xf1, 0x1b, 0xf9, 0xe, 0x74,
     0xde, 0x53, 0xf1, 0x0, 0x5e, 0xdf, 0x70, 0x9,
     0xfc, 0xf1, 0x0, 0x1, 0xbf, 0x70, 0x0, 0x4e,
-    0xf1, 0x0, 0x0, 0x5, 0x60, 0x0, 0x0, 0x91
+    0xf1, 0x0, 0x0, 0x5, 0x60, 0x0, 0x0, 0x91,
+
+    /* U+E51E "" */
+    0x2, 0x80, 0x0, 0x0, 0x0, 0x9, 0x10, 0xd,
+    0xc0, 0x0, 0x0, 0x0, 0x1d, 0xa0, 0x5f, 0x24,
+    0x90, 0x0, 0xb, 0x25, 0xf2, 0x9c, 0xd, 0xa0,
+    0x64, 0xd, 0xa0, 0xe6, 0xb9, 0xf, 0x45, 0xff,
+    0x27, 0xd0, 0xc8, 0xba, 0xf, 0x63, 0xfe, 0x19,
+    0xd0, 0xd8, 0x8d, 0xa, 0xd0, 0x0, 0xf, 0x71,
+    0xf5, 0x2f, 0x51, 0x40, 0x0, 0x5, 0x8, 0xe0,
+    0x9, 0xe0, 0x0, 0x0, 0x0, 0x1f, 0x60, 0x0,
+    0x30, 0x0, 0x0, 0x0, 0x4, 0x0
 };
 
 
@@ -90,21 +107,24 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
 static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {
     {.bitmap_index = 0, .adv_w = 0, .box_w = 0, .box_h = 0, .ofs_x = 0, .ofs_y = 0} /* id = 0 reserved */,
     {.bitmap_index = 0, .adv_w = 256, .box_w = 14, .box_h = 8, .ofs_x = 1, .ofs_y = 1},
-    {.bitmap_index = 56, .adv_w = 256, .box_w = 14, .box_h = 8, .ofs_x = 1, .ofs_y = 1}
+    {.bitmap_index = 56, .adv_w = 256, .box_w = 14, .box_h = 8, .ofs_x = 1, .ofs_y = 1},
+    {.bitmap_index = 112, .adv_w = 256, .box_w = 14, .box_h = 10, .ofs_x = 1, .ofs_y = 0}
 };
 
 /*---------------------
  *  CHARACTER MAPPING
  *--------------------*/
 
-
+static const uint16_t unicode_list_0[] = {
+    0x0, 0x1, 0x4ff
+};
 
 /*Collect the unicode lists and glyph_id offsets*/
 static const lv_font_fmt_txt_cmap_t cmaps[] =
 {
     {
-        .range_start = 57375, .range_length = 2, .glyph_id_start = 1,
-        .unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
+        .range_start = 57375, .range_length = 1280, .glyph_id_start = 1,
+        .unicode_list = unicode_list_0, .glyph_id_ofs_list = NULL, .list_length = 3, .type = LV_FONT_FMT_TXT_CMAP_SPARSE_TINY
     }
 };
 
