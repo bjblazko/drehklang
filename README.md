@@ -57,8 +57,8 @@ Now Playing shows the spectrum in their place.
 
 - [Features in detail](#features-in-detail)
 - [Hardware](#hardware)
+- [Building and flashing](#building-and-flashing)
 - [Preparing an SD card](#preparing-an-sd-card)
-- [Flashing](#flashing)
 - [Planned next](#planned-next)
 - [Explicitly out of scope for now](#explicitly-out-of-scope-for-now)
 - [Status](#status)
@@ -159,6 +159,71 @@ microSD slot and an optional battery. A second chip, an ESP32-U4WDH,
 provides Classic Bluetooth. [`device.md`](device.md) has the pinout, the
 quirks found on the way and the links to Waveshare's pages.
 
+## Building and flashing
+
+There are no ready-made firmware files to download: Drehklang is built
+from this source on your own computer and flashed over the USB-C cable.
+One script does both, on Windows, macOS and Linux.
+
+**What you need:** the board, a USB-C cable that carries data (not a
+charge-only one), [git](https://git-scm.com/downloads) and
+[Python 3.9 or newer](https://www.python.org/downloads/). The script
+uses [PlatformIO](https://platformio.org) for building and flashing; if
+it is not installed yet, the script offers to install it into
+`.venv-pio/` inside the project folder. The first build downloads the
+ESP32 toolchain (about 1 GB) and takes a while; later builds take
+seconds.
+
+**macOS and Linux:**
+
+```bash
+git clone https://github.com/bjblazko/drehklang.git
+cd drehklang
+python3 scripts/install.py
+```
+
+**Windows** (PowerShell or Command Prompt):
+
+```bat
+git clone https://github.com/bjblazko/drehklang.git
+cd drehklang
+py scripts\install.py
+```
+
+The board has two chips behind its one USB-C port, and **the way the plug
+is turned decides which one you reach** (device.md): Drehklang itself runs
+on the ESP32-S3, Bluetooth on the ESP32-U4WDH. The script builds both,
+flashes whichever chip it finds first, then asks you to unplug the board,
+turn the plug over and plug it back in for the other one.
+
+- `--only s3` or `--only bt` flashes just one chip, e.g. after an update
+  that only touches Drehklang itself. `--skip-build` flashes what was
+  built last.
+- **Linux:** the serial port needs permission. If flashing says
+  "Permission denied", run `sudo usermod -aG dialout $USER` and log in
+  again.
+- **Windows:** the Bluetooth chip sits behind a CH340 USB-serial chip.
+  Windows 10 and 11 usually install its driver by themselves; if no port
+  appears when the plug is turned that way, install the
+  [CH340 driver from WCH](https://www.wch-ic.com/downloads/CH341SER_EXE.html).
+- **Nothing found at all:** try another cable, or hold the board's BOOT
+  button while plugging it in.
+
+To update later, `git pull` and run the script again. Settings, the
+library index and where you left off are kept.
+
+For development there are the per-chip scripts, which the script above
+replaces for everyone else:
+
+```bash
+scripts/flash-primary-mcu.sh   # Drehklang itself, on the ESP32-S3 (native USB)
+scripts/flash-bt-mcu.sh        # the Bluetooth firmware, on the ESP32-U4WDH (CH340)
+scripts/check.sh               # host tests and a firmware build, no board needed
+```
+
+The original firmware of both chips is backed up and can be restored with
+`hardware-backups/restore.sh` (the images themselves are not in git).
+
 ## Preparing an SD card
 
 The card must be **FAT32 with 32 KB clusters** inside an **MBR partition**.
@@ -223,21 +288,6 @@ reader (much faster for a first fill) or over the cable via
 Settings > USB drive, at about 0.8 MB/s writing and 0.9 MB/s reading
 (the ESP32-S3 has USB full speed only, whose practical ceiling is
 ~1.2 MB/s). That is roughly 2 minutes per album, or 9 hours for 26 GB.
-
-## Flashing
-
-The board has two chips behind one USB-C port, and **the way the plug is
-turned decides which one you reach** (device.md):
-
-```bash
-scripts/flash-primary-mcu.sh   # Drehklang itself, on the ESP32-S3 (native USB)
-scripts/flash-bt-mcu.sh        # the Bluetooth firmware, on the ESP32-U4WDH (CH340)
-scripts/check.sh               # host tests and a firmware build, no board needed
-```
-
-Both scripts find the port and say when the plug needs turning. The
-original firmware of both chips is backed up and can be restored with
-`hardware-backups/restore.sh` (the images themselves are not in git).
 
 ## Planned next
 

@@ -31,3 +31,6 @@ screenshot.bmp
 
 # Python bytecode (scripts/readme-screenshots.py imports screenshot.py)
 __pycache__/
+
+# PlatformIO installed by scripts/install.py when none was found
+.venv-pio/
