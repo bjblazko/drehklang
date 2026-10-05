@@ -311,23 +311,26 @@ duplicating it.
     `UsbMscStorage::printEvents()` prints the drive's host events later.
   - Serial commands for driving the device without a hand on it:
     `TAP x y`, `SWIPE x1 y1 x2 y2`, `KNOB n`, `INFO`, `BLIP <hz>`,
-    `SCREENSHOT`.
+    `SCREENSHOT`, `HOME`, `WHERE`, `HOLD x y ms`, `BT`.
   - **Never `Serial.printf()` from the audio task (core 0)**, not even in a
     debug build. A `[generator]` line from `ToneOutput` spun in
     `USBCDC::write` during a `SCREENSHOT` transfer until the task watchdog
     reset the board (reset reason 6, core dump in `tud_cdc_n_write_available`,
     2026-09-18). Format into a buffer and write only if
     `Serial.availableForWrite()` has room, otherwise drop the line.
-  - **`SCREENSHOT` is no longer safe to rely on** since the TinyUSB switch:
-    it pushes a 259 KB framebuffer (360x360 RGB565) through the same CDC
-    that `Serial.write()` spins forever on when the endpoint can't drain.
-    Observed 2026-09-16: `scripts/screenshot.sh` died partway through the
-    pixel read and the board dropped off USB entirely until a hardware
-    power cycle (`INFO` afterwards showed reset reason 1, power-on, so the
-    firmware itself was fine). Not root-caused further. Until it is, check
-    UI layout by asking the person holding the device, and keep the bulk
-    transfer caveat above in mind -- USB drive mode is the reliable path
-    for anything large.
+  - **`SCREENSHOT` works again** (2026-10-05): on the 3.x core one
+    259 KB `Serial.write()` gave up part-way (197 KB arrived), so
+    `LvglGlue::writeScreenshotToSerial()` now writes 512-byte chunks and
+    waits for room, giving up after 2 s without progress. Earlier, on the
+    2.0.x core, a transfer once dropped the board off USB until a power
+    cycle (2026-09-16); keep a reader on the port while it runs.
+  - **Scripted tours:** `HOME` (Home, first entry selected, browse tabs at
+    their roots, display woken), `WHERE` (prints `[where] <ScreenKind>`),
+    `HOLD x y ms` (a held finger; send `KNOB n` meanwhile for
+    hold-and-turn). `scripts/readme-screenshots.py` is the example: it
+    waits ~1 s after each tap (knob detents sent before the next screen
+    has rendered went to the old one) and retries a step from Home, since
+    a serial line now and then goes missing.
   - Bulk transfer over the old USB-Serial-JTAG CDC dropped bytes; TinyUSB
     CDC with an 8 KB ack per chunk was reliable but slow (0.14 MB/s) and
     stalled once after ~30 MB. Use USB drive mode for files.

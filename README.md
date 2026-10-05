@@ -1,12 +1,74 @@
 # Drehklang
 
-Offline audio player built on a Waveshare ESP32-S3-Knob-Touch-LCD-1.8 — music, audiobooks and radio plays, each on its own shelf. See [`device.md`](device.md) for full hardware specs (dual MCU, display, audio DAC, encoders, etc.), the official product page, and wiki links.
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
+[![PlatformIO](https://img.shields.io/badge/PlatformIO-pioarduino-orange)](https://github.com/pioarduino/platform-espressif32)
+[![ESP32-S3](https://img.shields.io/badge/ESP32--S3-Arduino%203.x-E7352C)](device.md)
 
-## Goal
+Drehklang is a music player you hold in one hand: a round 1.8" touch
+display set in a turning metal knob — the Waveshare
+ESP32-S3-Knob-Touch-LCD-1.8 — playing music, audiobooks and radio plays
+from an SD card. Turn to scroll, set the volume or scrub through a track;
+tap to choose. No app, no account, no cloud: nothing leaves the device.
+
+**What it does:**
+- Music, Audiobooks and Radio Plays, each on its own shelf: browse by
+  artist, album, song, year, genre or folder, and jump through long lists
+  by initial letter
+- MP3, M4A (AAC), FLAC, WAV and Ogg Vorbis, with tags, exact durations and
+  cover art
+- Spoken word remembers where each title was left; the whole device
+  resumes where it was after a power cut
+- Jog/shuttle like a CD player: hold the time and turn
+- Bluetooth headphones next to the 3.5 mm jack, with Play/Pause on the
+  headphones
+- A dot-matrix spectrum analyzer, a tone generator with oscilloscope, a
+  sleep timer, and two games for the knob
+- The SD card as a USB drive, for copying music over the cable
+- A calm, Braun-inspired design: one orange control per screen, nothing
+  that blinks for its own sake
+
+**What it is not:**
+- Not a streaming player — Wi-Fi radio and podcasts are planned, but
+  today everything plays from the SD card
+- Not a phone accessory: there is no companion app, and nothing to set up
+  on another device
+
+## Screenshots
+
+These are taken from the device itself by
+[`scripts/readme-screenshots.py`](scripts/readme-screenshots.py), which
+walks the interface over the serial port like an end-to-end test and cuts
+each frame to the round display. Album covers are left out on purpose:
+Now Playing shows the spectrum in their place.
+
+| Home | Library | An album |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/home.png" alt="Home: a carousel of round tiles turned by the knob, Music selected, the playing track below" width="240"> | <img src="docs/screenshots/library.png" alt="Music's artists, with Browse by and Shuffle on top" width="240"> | <img src="docs/screenshots/tracks.png" alt="An album's tracks with their numbers" width="240"> |
+| **Now Playing** | **Options** | **Locked** |
+| <img src="docs/screenshots/now-playing.png" alt="Now Playing with the dot-matrix spectrum, the title, the transport buttons and the song-progress ring" width="240"> | <img src="docs/screenshots/options.png" alt="The options panel: shuffle, repeat, spectrum or cover, lock" width="240"> | <img src="docs/screenshots/locked.png" alt="The lock screen: hold the button and turn the knob to unlock" width="240"> |
+| **Tones** | **Tones, spectrum** | **Sleep timer** |
+| <img src="docs/screenshots/tones.png" alt="The tone generator: a saw wave on the oscilloscope, its frequency large, the parameter chips and the stop button" width="240"> | <img src="docs/screenshots/tones-spectrum.png" alt="The tone generator's band swiped to the spectrum" width="240"> | <img src="docs/screenshots/sleep.png" alt="The sleep timer, off, with its ring" width="240"> |
+| **Settings** | **Bluetooth** | **About** |
+| <img src="docs/screenshots/settings.png" alt="Settings: a list, each row ending in its value" width="240"> | <img src="docs/screenshots/bluetooth.png" alt="Settings, Bluetooth: the switch, the paired headphones, find and forget" width="240"> | <img src="docs/screenshots/about.png" alt="About: version, author, source, licence" width="240"> |
+| **Table Tennis** | **Gravity** | |
+| <img src="docs/screenshots/table-tennis.png" alt="Table Tennis: paddles, the net and the score, white on black" width="240"> | <img src="docs/screenshots/gravity.png" alt="Gravity: a lander above a landscape with three landing pads" width="240"> | |
+
+## Contents
+
+- [Features in detail](#features-in-detail)
+- [Hardware](#hardware)
+- [Preparing an SD card](#preparing-an-sd-card)
+- [Flashing](#flashing)
+- [Planned next](#planned-next)
+- [Explicitly out of scope for now](#explicitly-out-of-scope-for-now)
+- [Status](#status)
+- [License](#license)
+
+## Features in detail
 
 See [`docs/design/ux-guidelines.md`](docs/design/ux-guidelines.md) for the
-UX/UI design philosophy, color system, and interaction flows behind the
-screens described below.
+design philosophy, colour system and interaction flows behind the
+screens.
 
 - Play music stored on an SD card, in well-known formats.
 - Audio output via the onboard 3.5mm jack (PCM5100A DAC).
@@ -80,6 +142,22 @@ screens described below.
   swiping it shows a spectrum. Its oscillator, scope and spectrum live in
   `lib/signal/`, built to be reused by a recorder and an analyzer — see
   [ADR 0024](docs/adr/0024-tone-generator.md).
+- Bluetooth headphones, through the board's second chip (the ESP32-S3
+  has no Classic Bluetooth): everything audible goes to them while the
+  jack keeps playing, one volume for both, Play/Pause on the headphones,
+  pairing from Settings > Bluetooth and reconnecting by itself. The
+  second chip gets its own firmware (`bt/`, flashed with
+  `scripts/flash-bt-mcu.sh`) — see
+  [ADR 0027](docs/adr/0027-bluetooth-headphones.md).
+
+## Hardware
+
+Drehklang runs on the **Waveshare ESP32-S3-Knob-Touch-LCD-1.8**: an
+ESP32-S3 with 8 MB PSRAM and 16 MB flash, a 360×360 round IPS display
+with capacitive touch, a rotary knob, a PCM5100A DAC on a 3.5 mm jack, a
+microSD slot and an optional battery. A second chip, an ESP32-U4WDH,
+provides Classic Bluetooth. [`device.md`](device.md) has the pinout, the
+quirks found on the way and the links to Waveshare's pages.
 
 ## Preparing an SD card
 
@@ -146,11 +224,25 @@ Settings > USB drive, at about 0.8 MB/s writing and 0.9 MB/s reading
 (the ESP32-S3 has USB full speed only, whose practical ceiling is
 ~1.2 MB/s). That is roughly 2 minutes per album, or 9 hours for 26 GB.
 
+## Flashing
+
+The board has two chips behind one USB-C port, and **the way the plug is
+turned decides which one you reach** (device.md):
+
+```bash
+scripts/flash-primary-mcu.sh   # Drehklang itself, on the ESP32-S3 (native USB)
+scripts/flash-bt-mcu.sh        # the Bluetooth firmware, on the ESP32-U4WDH (CH340)
+scripts/check.sh               # host tests and a firmware build, no board needed
+```
+
+Both scripts find the port and say when the plug needs turning. The
+original firmware of both chips is backed up and can be restored with
+`hardware-backups/restore.sh` (the images themselves are not in git).
+
 ## Planned next
 
-- Bluetooth headphone output, through the board's second chip (the
-  ESP32-S3 has no Classic Bluetooth) — see ADR 0026's roadmap and
-  device.md
+- Less delay on Bluetooth headphones in games (~300 ms today; ADR 0027's
+  open points)
 - Wi-Fi: internet radio, and podcasts downloaded to the SD card
 
 ## Explicitly out of scope for now
@@ -249,7 +341,9 @@ UTF-8 tag decoding and the project's own text fonts, which is what lets
 umlauts and accents render as written, and
 [ADR 0021](docs/adr/0021-jump-by-letter-and-music-browse-axes.md) for
 jump-by-letter and Music's browse axes, and
-[ADR 0024](docs/adr/0024-tone-generator.md) for the tone generator.
+[ADR 0024](docs/adr/0024-tone-generator.md) for the tone generator, and
+[ADR 0027](docs/adr/0027-bluetooth-headphones.md) for Bluetooth
+headphones.
 
 ### What goes on the SD card
 
@@ -276,14 +370,5 @@ Drehklang is licensed under **GPL-3.0-or-later** — see [LICENSE](LICENSE).
 That follows from the audio library: ESP32-audioI2S is GPL-3.0, so
 firmware linking it is covered as a whole. [THIRD-PARTY.md](THIRD-PARTY.md)
 lists every component and its licence, and explains where M4A/AAC decoding
-comes from (the Helix-derived decoder inside that same library) and how
+comes from (FAAD2, inside that same library) and how
 its patent situation looks — Drehklang ships no decoder of its own.
-
-## Starting a new session here
-
-The next step is UX/design work for v1 (navigation model, screen
-structure, library/metadata handling on the SD card), followed by actual
-feature implementation on top of the existing scaffold. A good first
-prompt for that session:
-
-> Read README.md, device.md, docs/adr/, and docs/arc42/arc42.md. Let's design the UX for v1 (navigation model, screen structure for browsing + now-playing, how the rotary encoder and touch interact) and then start implementing it inside the existing PlatformIO scaffold, following docs/coding-guidelines.md.

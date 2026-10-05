@@ -28,3 +28,6 @@ screenshot.bmp
 
 # JetBrains IDE
 .idea/
+
+# Python bytecode (scripts/readme-screenshots.py imports screenshot.py)
+__pycache__/
