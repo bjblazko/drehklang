@@ -5,7 +5,7 @@
 #include "RawFile.h"
 #include "TagResult.h"
 
-namespace knobify::library {
+namespace dialhard::library {
 
 // Dispatches to the right format-specific parser by file extension, then
 // applies the "Unknown Artist"/"Unknown Album"/filename-as-title
@@ -18,4 +18,4 @@ class TagReader {
   static TagResult read(RawFile &file, const std::string &filePath);
 };
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

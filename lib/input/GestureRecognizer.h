@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace knobify::input {
+namespace dialhard::input {
 
 struct TouchSample {
   int16_t x;
@@ -80,4 +80,4 @@ class GestureRecognizer {
   int16_t lastY_ = 0;
 };
 
-}  // namespace knobify::input
+}  // namespace dialhard::input

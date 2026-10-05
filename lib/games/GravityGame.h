@@ -7,7 +7,7 @@
 #include "FixedTrig.h"
 #include "GravityTerrain.h"
 
-namespace knobify::games {
+namespace dialhard::games {
 
 // Gravity (ADR 0023): set a craft down on a flat pad before the fuel runs
 // out. The knob turns it, a held finger fires the engine, and the ground
@@ -281,4 +281,4 @@ class GravityGame {
   uint8_t soundCount_ = 0;
 };
 
-}  // namespace knobify::games
+}  // namespace dialhard::games

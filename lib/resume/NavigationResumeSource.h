@@ -8,7 +8,7 @@
 #include "ResumeSource.h"
 #include "TabController.h"
 
-namespace knobify::resume {
+namespace dialhard::resume {
 
 // Resumes every tab's back-stack and which tab is active (ADR 0012), so the
 // device comes back on the same screen with Back still leading where it did.
@@ -155,4 +155,4 @@ class NavigationResumeSource : public ResumeSource {
   const playback::PlaybackStateMachine &playback_;
 };
 
-}  // namespace knobify::resume
+}  // namespace dialhard::resume

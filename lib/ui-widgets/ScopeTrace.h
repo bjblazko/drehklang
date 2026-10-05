@@ -7,7 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace knobify::ui_widgets {
+namespace dialhard::ui_widgets {
 
 // An oscilloscope trace (ADR 0024): one lv_line over a zero line. Also
 // draws the spectrum, which is a line over the same band. A line
@@ -100,4 +100,4 @@ class ScopeTrace {
   std::array<lv_point_t, 2> zeroPoints_{};
 };
 
-}  // namespace knobify::ui_widgets
+}  // namespace dialhard::ui_widgets

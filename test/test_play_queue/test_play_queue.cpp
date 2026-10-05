@@ -6,8 +6,8 @@
 
 #include "PlayQueue.h"
 
-using knobify::playback::PlayQueue;
-using knobify::playback::RepeatMode;
+using dialhard::playback::PlayQueue;
+using dialhard::playback::RepeatMode;
 
 void setUp() {}
 void tearDown() {}

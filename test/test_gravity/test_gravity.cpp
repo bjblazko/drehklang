@@ -7,10 +7,10 @@
 #include "GravityGame.h"
 #include "GravityTerrain.h"
 
-using knobify::games::FixedTrig;
-using knobify::games::GravityGame;
-using knobify::games::GravityTerrain;
-using knobify::games::Pad;
+using dialhard::games::FixedTrig;
+using dialhard::games::GravityGame;
+using dialhard::games::GravityTerrain;
+using dialhard::games::Pad;
 using Phase = GravityGame::Phase;
 using Sound = GravityGame::Sound;
 

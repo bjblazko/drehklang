@@ -3,7 +3,7 @@
 #include <array>
 #include <cstring>
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace {
 
@@ -91,4 +91,4 @@ uint32_t Mp3Duration::readSeconds(RawFile &file) {
   return 0;
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

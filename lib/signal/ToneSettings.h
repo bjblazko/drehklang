@@ -10,7 +10,7 @@
 #include "KeyValueStore.h"
 #include "Waveform.h"
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // What the knob can be set to adjust on the tone generator (ADR 0024) --
 // one touch chip each.
@@ -291,4 +291,4 @@ class ToneSettings {
   bool turnedBefore_ = false;
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal

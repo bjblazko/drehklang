@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace knobify::library {
+namespace dialhard::library {
 
 // How a browse list is ordered. Music is tagged well enough to sort
 // artists by their tag (ignoring a leading "The", folding accents) and
@@ -50,4 +50,4 @@ struct Track {
   uint16_t discNumber = 0;  // 0 if unknown (sorts as disc 1).
 };
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

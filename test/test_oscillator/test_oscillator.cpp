@@ -8,10 +8,10 @@
 
 #include "Oscillator.h"
 
-using knobify::signal::NoiseColor;
-using knobify::signal::Oscillator;
-using knobify::signal::OscillatorParams;
-using knobify::signal::Waveform;
+using dialhard::signal::NoiseColor;
+using dialhard::signal::Oscillator;
+using dialhard::signal::OscillatorParams;
+using dialhard::signal::Waveform;
 
 void setUp() {}
 void tearDown() {}
@@ -191,7 +191,7 @@ void test_every_noise_colour_is_as_loud_and_never_past_its_level() {
   // The level is the peak, as for every waveform; the RMS sits 12 dB
   // under it, the same for every colour, so switching colour does not
   // switch loudness.
-  for (int c = 0; c < knobify::signal::kNoiseColorCount; ++c) {
+  for (int c = 0; c < dialhard::signal::kNoiseColorCount; ++c) {
     Oscillator osc;
     osc.setParams(noise(static_cast<NoiseColor>(c), 0.5f));
     auto s = steady(osc, kRate * 2);

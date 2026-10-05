@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Captures the current display contents from a running knobify device.
+"""Captures the current display contents from a running DialHard device.
 
 Sends "SCREENSHOT\n" over the board's serial port, reads back the header
 line LvglGlue::writeScreenshotToSerial() prints (width, height, bits per

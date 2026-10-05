@@ -87,7 +87,7 @@ Throwaway firmware on branch `experiment/format-feasibility`:
   command and `scripts/read-coredump.sh`.
 - ADR 0002's licensing reasoning no longer holds as stated. Note that the
   AAC decoder was already compiled into every firmware image before this
-  change (Audio.cpp references it unconditionally); only whether knobify
+  change (Audio.cpp references it unconditionally); only whether DialHard
   *uses and advertises* it changes.
 
 ## Open

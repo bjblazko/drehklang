@@ -4,7 +4,7 @@
 
 #include "ResumeRecord.h"
 
-namespace knobify::resume {
+namespace dialhard::resume {
 
 // One part of the device that can be resumed after a reboot: navigation,
 // music, later a podcast/radio/video player (ADR 0012). Each owns its own
@@ -23,4 +23,4 @@ class ResumeSource {
   virtual void restore(const ResumeRecord &record, uint32_t nowMs) = 0;
 };
 
-}  // namespace knobify::resume
+}  // namespace dialhard::resume

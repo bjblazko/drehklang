@@ -10,7 +10,7 @@ second source to ADR 0022's idle audio writer. Fixes a pitch bug in
 
 The user asked for three related tools: a **tone generator**, a **voice
 recorder** and a **spectrum analyzer** fed by the microphone or by
-knobify's own output. Only the first is built here. The request came with
+DialHard's own output. Only the first is built here. The request came with
 an instruction for how to build it: the three share components — a signal
 path and a scope/spectrum display — and the first one should be cut so
 the other two can reuse its pieces.
@@ -33,7 +33,7 @@ answered, before any code was written.
 ### A shared, pure `lib/signal/`
 
 Everything that is not about this one screen lives in `lib/signal/`,
-namespace `knobify::signal`, with no Arduino and no LVGL, host-tested:
+namespace `dialhard::signal`, with no Arduino and no LVGL, host-tested:
 
 | Piece | What it does | Reused by |
 |---|---|---|
@@ -290,7 +290,7 @@ the fix.
 
 ### Measured on the device
 
-With `-DKNOBIFY_GENERATOR_DEBUG`, `ToneOutput` logs the pitch and peak it
+With `-DDIALHARD_GENERATOR_DEBUG`, `ToneOutput` logs the pitch and peak it
 measured from the samples it wrote, once a second:
 
 | Setting | Logged |

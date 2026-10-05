@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace knobify::power {
+namespace dialhard::power {
 
 // Tracks display on/off based on touch/encoder activity, independent of
 // lock state (decision, ADR 0005) -- a device sitting on a table should
@@ -74,4 +74,4 @@ class IdleTimer {
   int wakeDetents_ = 0;
 };
 
-}  // namespace knobify::power
+}  // namespace dialhard::power

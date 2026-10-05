@@ -15,7 +15,7 @@
 
 #include <Arduino_DataBus.h>
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 inline const uint8_t kSt77916InitOps[] = {
     BEGIN_WRITE,
@@ -225,4 +225,4 @@ inline const uint8_t kSt77916InitOps[] = {
 
 inline constexpr size_t kSt77916InitOpsLen = sizeof(kSt77916InitOps);
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

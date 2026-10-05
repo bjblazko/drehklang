@@ -18,7 +18,7 @@ come back where it was: the same screen, the same track, roughly the same
 position. It must not auto-play. It should also work for later sources
 (podcasts, web radio, a video player).
 
-knobify gets no shutdown signal. Power can go at any moment, including while
+DialHard gets no shutdown signal. Power can go at any moment, including while
 the state is being saved. A half-written or otherwise bad record must never stop
 the device from booting; in that case it just starts on Home.
 
@@ -40,7 +40,7 @@ of position. The user said precision to the second isn't needed.
 
 ### Storage: one NVS blob, checked on read
 
-The record is one NVS blob (`resume` in the `knobify` namespace), next to
+The record is one NVS blob (`resume` in the `dialhard` namespace), next to
 volume and the other settings.
 
 - **Power-loss safety.** NVS writes a changed value to new entries and only

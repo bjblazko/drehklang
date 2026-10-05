@@ -1,5 +1,5 @@
 // Vendored from https://github.com/nothings/stb (public domain / MIT).
-// knobify uses it for Ogg Vorbis playback because ESP32-audioI2S 2.3.0 has
+// DialHard uses it for Ogg Vorbis playback because ESP32-audioI2S 2.3.0 has
 // no Vorbis decoder -- see docs/adr/0017-two-audio-decode-paths.md.
 // Measured on the device 2026-09-15: 2.5x realtime, ~180 KB working set,
 // needs a task stack of ~32 KB.

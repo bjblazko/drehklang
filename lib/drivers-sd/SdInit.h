@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <SD_MMC.h>
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // SDMMC 4-wire pins per device.md's pinout (sourced from a community
 // reference for this exact board, not yet independently verified against
@@ -36,4 +36,4 @@ inline bool initSdCard() {
                        SDMMC_FREQ_HIGHSPEED);
 }
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

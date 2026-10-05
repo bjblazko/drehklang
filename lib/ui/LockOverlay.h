@@ -10,7 +10,7 @@
 #include "TextFont.h"
 #include "Theme.h"
 
-namespace knobify::ui {
+namespace dialhard::ui {
 
 // The locked-device UI: a full-screen overlay with an unlock button and
 // a progress ring, shown/hidden based on LockController::isLocked()
@@ -52,7 +52,7 @@ class LockOverlay {
     lv_obj_clear_flag(root_, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *label = lv_label_create(root_);
-    lv_obj_set_style_text_font(label, &knobify_text_font_20, 0);
+    lv_obj_set_style_text_font(label, &dialhard_text_font_20, 0);
     lv_label_set_text(label, "Locked");
     // Set explicitly rather than inherited: this root lives on
     // lv_layer_top(), not a themed screen (same class of bug as ADR
@@ -87,10 +87,10 @@ class LockOverlay {
     progressArc_.setValue(0.0f);
 
     unlockButton_ =
-        makeHoldButton(root_, KNOBIFY_ICON_LOCK_OPEN, 96, 96, LV_ALIGN_CENTER,
+        makeHoldButton(root_, DIALHARD_ICON_LOCK_OPEN, 96, 96, LV_ALIGN_CENTER,
                        0, 0, &LockOverlay::onUnlockPressed,
                        &LockOverlay::onUnlockReleased, this,
-                       ButtonRole::Primary, &knobify_icon_font_28);
+                       ButtonRole::Primary, &dialhard_icon_font_28);
 
     // Wordless hint (the pulsing ring, started/stopped below) plus a
     // plain-text one -- neither the button nor the ring alone made the
@@ -180,4 +180,4 @@ class LockOverlay {
   bool visible_ = false;
 };
 
-}  // namespace knobify::ui
+}  // namespace dialhard::ui

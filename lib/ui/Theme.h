@@ -2,9 +2,9 @@
 
 #include <lvgl.h>
 
-namespace knobify::ui::theme {
+namespace dialhard::ui::theme {
 
-// knobify's Braun-inspired palette -- the single source of truth for
+// DialHard's Braun-inspired palette -- the single source of truth for
 // every color drawn on screen. Token names and roles are documented in
 // docs/design/ux-guidelines.md §3; UI code uses these, never a raw hex
 // value or an lv_palette_* color.
@@ -71,4 +71,4 @@ inline void styleQuietButton(lv_obj_t *btn) {
   lv_obj_set_style_shadow_width(btn, 0, 0);
 }
 
-}  // namespace knobify::ui::theme
+}  // namespace dialhard::ui::theme

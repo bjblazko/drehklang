@@ -4,8 +4,8 @@
 
 #include "Bookmarks.h"
 
-using knobify::resume::Bookmark;
-using knobify::resume::Bookmarks;
+using dialhard::resume::Bookmark;
+using dialhard::resume::Bookmarks;
 
 void setUp() {}
 void tearDown() {}

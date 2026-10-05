@@ -1,6 +1,6 @@
 #include "GpioEncoderDriver.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 GpioEncoderDriver *GpioEncoderDriver::instance_ = nullptr;
 
@@ -67,4 +67,4 @@ void IRAM_ATTR GpioEncoderDriver::isr() {
   if (instance_) instance_->handleInterrupt();
 }
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // What the tone generator can play (ADR 0024). Stored in NVS by value, so
 // append-only.
@@ -29,4 +29,4 @@ struct OscillatorParams {
   NoiseColor noise = NoiseColor::White;
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal

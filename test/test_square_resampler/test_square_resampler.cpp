@@ -5,7 +5,7 @@
 
 #include "SquareResampler.h"
 
-using knobify::library::SquareResampler;
+using dialhard::library::SquareResampler;
 
 void setUp() {}
 void tearDown() {}

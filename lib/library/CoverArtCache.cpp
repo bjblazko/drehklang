@@ -4,7 +4,7 @@
 #include <cctype>
 #include <cstdio>
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace {
 
@@ -99,4 +99,4 @@ void CoverArtCache::ensureCoverCached(const std::string &albumFolderPath,
                  writer);
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

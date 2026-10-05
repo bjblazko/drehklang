@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace knobify::library {
+namespace dialhard::library {
 
 struct FileEntry {
   std::string path;  // Full path, e.g. "/Music/Artist/Album/01 Song.mp3".
@@ -36,4 +36,4 @@ class FileLister {
   virtual bool next(FileEntry &out) = 0;
 };
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

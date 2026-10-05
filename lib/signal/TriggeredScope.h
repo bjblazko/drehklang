@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cstdlib>
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // Turns a window of recent samples into an oscilloscope trace (ADR 0024):
 // `width` values, each a sample value, starting on a rising zero crossing
@@ -185,4 +185,4 @@ class TriggeredScope {
   }
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal

@@ -6,11 +6,11 @@
 
 #include "ToneSettings.h"
 
-using knobify::playback::KeyValueStore;
-using knobify::signal::NoiseColor;
-using knobify::signal::ToneParam;
-using knobify::signal::ToneSettings;
-using knobify::signal::Waveform;
+using dialhard::playback::KeyValueStore;
+using dialhard::signal::NoiseColor;
+using dialhard::signal::ToneParam;
+using dialhard::signal::ToneSettings;
+using dialhard::signal::Waveform;
 
 void setUp() {}
 void tearDown() {}

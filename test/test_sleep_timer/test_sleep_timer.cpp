@@ -2,8 +2,8 @@
 
 #include "SleepTimer.h"
 
-using knobify::power::SleepPhase;
-using knobify::power::SleepTimer;
+using dialhard::power::SleepPhase;
+using dialhard::power::SleepTimer;
 
 void setUp() {}
 void tearDown() {}

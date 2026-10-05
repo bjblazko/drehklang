@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace knobify::messaging {
+namespace dialhard::messaging {
 
 // Screen messages belong to what's on screen (a toggle's feedback) and go
 // away when the screen changes or the device locks. System messages
@@ -51,4 +51,4 @@ class MessageTimer {
   bool visible_ = false;
 };
 
-}  // namespace knobify::messaging
+}  // namespace dialhard::messaging

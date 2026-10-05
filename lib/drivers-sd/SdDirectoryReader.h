@@ -7,7 +7,7 @@
 
 #include "FolderBrowser.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // Lists one directory's immediate children for Files-mode browsing
 // (lib/library/FolderBrowser) -- always live, never cached, per decision
@@ -45,4 +45,4 @@ class SdDirectoryReader : public library::DirectoryReader {
   }
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

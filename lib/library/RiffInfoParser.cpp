@@ -6,7 +6,7 @@
 
 #include "Id3Genres.h"
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace {
 
@@ -123,4 +123,4 @@ TagResult RiffInfoParser::parse(RawFile &file) {
   return result;
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

@@ -4,7 +4,7 @@
 
 #include "ScopeScale.h"
 
-using knobify::signal::ScopeScale;
+using dialhard::signal::ScopeScale;
 
 void setUp() {}
 void tearDown() {}

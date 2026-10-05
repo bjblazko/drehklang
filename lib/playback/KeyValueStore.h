@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace knobify::playback {
+namespace dialhard::playback {
 
 // Minimal persistent key-value surface for small bits of state that
 // should survive a reboot (volume, and later the gesture-hint "seen"
@@ -16,4 +16,4 @@ class KeyValueStore {
   virtual void setU8(const std::string &key, uint8_t value) = 0;
 };
 
-}  // namespace knobify::playback
+}  // namespace dialhard::playback

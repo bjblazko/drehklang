@@ -4,7 +4,7 @@
 
 #include "TextFont.h"
 
-namespace knobify::ui {
+namespace dialhard::ui {
 
 // What the games share, and only the games (ADR 0022, ADR 0023).
 //
@@ -70,4 +70,4 @@ inline lv_obj_t *makeLabel(lv_obj_t *parent, lv_coord_t left, lv_coord_t top,
 }
 
 }  // namespace game_style
-}  // namespace knobify::ui
+}  // namespace dialhard::ui

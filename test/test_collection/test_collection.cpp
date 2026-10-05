@@ -7,12 +7,12 @@
 #include "CollectionId.h"
 #include "CollectionProfile.h"
 
-using knobify::collection::CollectionId;
-using knobify::collection::isValidCollection;
-using knobify::collection::kCollectionCount;
-using knobify::collection::kCollections;
-using knobify::collection::profileOf;
-using knobify::collection::SortOrder;
+using dialhard::collection::CollectionId;
+using dialhard::collection::isValidCollection;
+using dialhard::collection::kCollectionCount;
+using dialhard::collection::kCollections;
+using dialhard::collection::profileOf;
+using dialhard::collection::SortOrder;
 
 void setUp() {}
 void tearDown() {}
@@ -62,7 +62,7 @@ void test_music_keeps_the_historical_cache_path() {
   // Changing it would silently invalidate every existing card's index.
   const auto &music = profileOf(CollectionId::Music);
   TEST_ASSERT_EQUAL_STRING("/Music", music.rootPath);
-  TEST_ASSERT_EQUAL_STRING("/knobify/library.idx", music.cachePath);
+  TEST_ASSERT_EQUAL_STRING("/dialhard/library.idx", music.cachePath);
 }
 
 void test_spoken_word_collections_do_not_shuffle_and_resume_in_place() {

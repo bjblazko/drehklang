@@ -7,7 +7,7 @@
 
 // Small LVGL helpers shared by ScreenManager's translation units
 // (ScreenManager.cpp, ScreenManagerMenu.cpp).
-namespace knobify::ui {
+namespace dialhard::ui {
 
 // Sets a label's text, wrapping to at most `maxLines` lines and ending
 // in an ellipsis beyond that. LV_LABEL_LONG_DOT alone only truncates a
@@ -54,4 +54,4 @@ inline lv_obj_t *makeEdgeArcHost(lv_obj_t *parent, lv_coord_t insetPx = 0) {
   return host;
 }
 
-}  // namespace knobify::ui
+}  // namespace dialhard::ui

@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace knobify::resume {
+namespace dialhard::resume {
 
 // Where the device was, persisted periodically so a power cut resumes there
 // -- see docs/adr/0012-resume-session.md. Each part is optional and stored as
@@ -80,4 +80,4 @@ struct ResumeRecord {
   bool operator!=(const ResumeRecord &other) const { return !(*this == other); }
 };
 
-}  // namespace knobify::resume
+}  // namespace dialhard::resume

@@ -10,7 +10,7 @@
 #include "PlaybackDriver.h"
 #include "VolumePersistence.h"
 
-namespace knobify::playback {
+namespace dialhard::playback {
 
 enum class PlaybackState { Stopped, Playing, Paused };
 
@@ -168,7 +168,7 @@ class PlaybackStateMachine {
 
   // Whether the current track can be shuttled. backendForPath() (owned by
   // AudioBackendKind.h) is the one place that knows which decoder a path
-  // goes to; everything on knobify's own Vorbis path seeks by sample
+  // goes to; everything on DialHard's own Vorbis path seeks by sample
   // (ADR 0017), so it's always seekable, and this only needs to name the
   // library codecs that seek (MP3, M4A, WAV) among the rest of the
   // library path (e.g. FLAC, which doesn't). Known before a cued track
@@ -309,4 +309,4 @@ class PlaybackStateMachine {
   uint32_t trackGeneration_ = 0;
 };
 
-}  // namespace knobify::playback
+}  // namespace dialhard::playback

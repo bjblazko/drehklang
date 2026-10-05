@@ -1,6 +1,6 @@
 #pragma once
 
-namespace knobify::usbdrive {
+namespace dialhard::usbdrive {
 
 // The SD card as a USB mass storage device. Implemented over TinyUSB on
 // the device (lib/drivers-usb/UsbMscStorage.h), faked in host tests.
@@ -19,4 +19,4 @@ class UsbStorage {
   virtual bool takeEjectRequest() = 0;
 };
 
-}  // namespace knobify::usbdrive
+}  // namespace dialhard::usbdrive

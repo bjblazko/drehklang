@@ -12,7 +12,7 @@
 #include "RawFile.h"
 #include "TagReader.h"
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace detail {
 
@@ -271,4 +271,4 @@ class LibraryScanner {
                             ScanProgressListener *progress = nullptr);
 };
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

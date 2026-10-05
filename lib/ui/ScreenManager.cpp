@@ -16,11 +16,11 @@
 #include "TextFont.h"
 #include "Theme.h"
 
-using knobify::navigation::Screen;
-using knobify::navigation::ScreenKind;
-using knobify::navigation::ScreenParams;
+using dialhard::navigation::Screen;
+using dialhard::navigation::ScreenKind;
+using dialhard::navigation::ScreenParams;
 
-namespace knobify::ui {
+namespace dialhard::ui {
 
 namespace {
 
@@ -37,7 +37,7 @@ namespace {
 // this screen, after using the scan button -- see AGENTS.md).
 // lv_refr_now() only forces the pending redraw, without touching input
 // devices or other timers, so it's safe to call from here.
-class ScanProgressLabelListener : public knobify::library::ScanProgressListener {
+class ScanProgressLabelListener : public dialhard::library::ScanProgressListener {
  public:
   explicit ScanProgressLabelListener(lv_obj_t *label) : label_(label) {}
 
@@ -418,7 +418,7 @@ void ScreenManager::renderList(
     // several artist/album names all mid-scroll at once.
     lv_obj_t *label = lv_obj_get_child(btn, 0);
     if (label) {
-      lv_obj_set_style_text_font(label, &knobify_text_font_20, 0);
+      lv_obj_set_style_text_font(label, &dialhard_text_font_20, 0);
     }
 
     // Album rows end in the release year -- albums are sorted by it
@@ -435,7 +435,7 @@ void ScreenManager::renderList(
         snprintf(yearText, sizeof(yearText), "%u",
                  static_cast<unsigned>(album.year));
         lv_obj_t *yearLabel = lv_label_create(btn);
-        lv_obj_set_style_text_font(yearLabel, &knobify_text_font_14, 0);
+        lv_obj_set_style_text_font(yearLabel, &dialhard_text_font_14, 0);
         lv_label_set_text(yearLabel, yearText);
         lv_obj_set_style_pad_column(btn, 10, 0);
         break;
@@ -463,7 +463,7 @@ void ScreenManager::renderList(
                    static_cast<unsigned>(track.trackNumber));
         }
         lv_obj_t *numberLabel = lv_label_create(btn);
-        lv_obj_set_style_text_font(numberLabel, &knobify_text_font_14, 0);
+        lv_obj_set_style_text_font(numberLabel, &dialhard_text_font_14, 0);
         lv_label_set_text(numberLabel, numberText);
         lv_obj_set_style_pad_column(btn, 10, 0);
       }
@@ -491,7 +491,7 @@ void ScreenManager::renderList(
     }
     if (secondary) {
       lv_obj_t *valueLabel = lv_label_create(btn);
-      lv_obj_set_style_text_font(valueLabel, &knobify_text_font_14, 0);
+      lv_obj_set_style_text_font(valueLabel, &dialhard_text_font_14, 0);
       lv_label_set_text(valueLabel, secondary);
       lv_obj_set_style_pad_column(btn, 10, 0);
     }
@@ -534,7 +534,7 @@ void ScreenManager::renderList(
   // data" is when the absence itself is the thing worth saying.
   if (static_cast<int>(items.size()) == leadingRows) {
     lv_obj_t *empty = lv_label_create(screen_);
-    lv_obj_set_style_text_font(empty, &knobify_text_font_14, 0);
+    lv_obj_set_style_text_font(empty, &dialhard_text_font_14, 0);
     lv_obj_set_style_text_color(empty, theme::structure(), 0);
     lv_obj_set_style_text_align(empty, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_width(empty, 220);
@@ -690,7 +690,7 @@ void ScreenManager::renderMiniBar() {
   constexpr lv_coord_t kMaxTitleWidth = 170;
   const std::string title = trackInfoFor(playback_.currentPath()).title;
   lv_obj_t *label = lv_label_create(row);
-  lv_obj_set_style_text_font(label, &knobify_text_font_16, 0);
+  lv_obj_set_style_text_font(label, &dialhard_text_font_16, 0);
   lv_obj_set_style_text_color(label, theme::ink(), 0);
   lv_label_set_text(label, title.c_str());
   lv_obj_update_layout(label);
@@ -784,7 +784,7 @@ void ScreenManager::renderContextCaption() {
   if (!letterJump_.eligible(rowCount)) {
     caption_ = nullptr;
     lv_obj_t *label = lv_label_create(screen_);
-    lv_obj_set_style_text_font(label, &knobify_text_font_14, 0);
+    lv_obj_set_style_text_font(label, &dialhard_text_font_14, 0);
     lv_obj_set_style_text_color(label, theme::structure(), 0);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_width(label, 200);
@@ -797,7 +797,7 @@ void ScreenManager::renderContextCaption() {
                             LV_ALIGN_TOP_MID, 0, kCaptionY,
                             &ScreenManager::onCaptionPressed,
                             &ScreenManager::onCaptionReleased, this,
-                            ButtonRole::Secondary, &knobify_text_font_14);
+                            ButtonRole::Secondary, &dialhard_text_font_14);
   applyCaptionChip();
 }
 
@@ -817,7 +817,7 @@ void ScreenManager::applyCaptionChip() {
       active ? std::string(letter)
              : captionTextFor(tabs_.activeStack().current()) + "  A–Z";
   const lv_font_t *font =
-      active ? &knobify_text_font_16 : &knobify_text_font_14;
+      active ? &dialhard_text_font_16 : &dialhard_text_font_14;
 
   lv_point_t textSize;
   lv_txt_get_size(&textSize, text.c_str(), font, 0, 0, LV_COORD_MAX,
@@ -928,7 +928,7 @@ void ScreenManager::renderBackButtonIfNeeded() {
   makeIconButton(screen_, glyph, kHeaderButtonW, kHeaderButtonH,
                  LV_ALIGN_TOP_MID, 0, kHeaderButtonY,
                  &ScreenManager::onBackClicked, this, ButtonRole::Quiet,
-                 &knobify_text_font_20);
+                 &dialhard_text_font_20);
 }
 
 ScreenManager::TrackInfo ScreenManager::trackInfoFor(
@@ -1015,7 +1015,7 @@ void ScreenManager::renderNowPlaying() {
   TrackInfo info = trackInfoFor(playback_.currentPath());
 
   lv_obj_t *title = lv_label_create(screen_);
-  lv_obj_set_style_text_font(title, &knobify_text_font_20, 0);
+  lv_obj_set_style_text_font(title, &dialhard_text_font_20, 0);
   lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
   // Wide: without a cover this block sits near the vertical middle, where
   // the round screen is ~330px across; with a cover (y~164) still ~320px.
@@ -1036,7 +1036,7 @@ void ScreenManager::renderNowPlaying() {
   }
   if (!meta.empty()) {
     lv_obj_t *metaLabel = lv_label_create(screen_);
-    lv_obj_set_style_text_font(metaLabel, &knobify_text_font_14, 0);
+    lv_obj_set_style_text_font(metaLabel, &dialhard_text_font_14, 0);
     lv_obj_set_style_text_color(metaLabel, theme::structure(), 0);
     lv_obj_set_style_text_align(metaLabel, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_width(metaLabel, 300);
@@ -1138,7 +1138,7 @@ void ScreenManager::renderNowPlaying() {
   lv_obj_clear_flag(volumeHudPill_, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_clear_flag(volumeHudPill_, LV_OBJ_FLAG_CLICKABLE);
   volumeHudLabel_ = lv_label_create(volumeHudPill_);
-  lv_obj_set_style_text_font(volumeHudLabel_, &knobify_text_font_28, 0);
+  lv_obj_set_style_text_font(volumeHudLabel_, &dialhard_text_font_28, 0);
   lv_obj_set_style_text_color(volumeHudLabel_, theme::surface(), 0);
   char volText[8];
   snprintf(volText, sizeof(volText), "%d", playback_.volume());
@@ -1161,14 +1161,14 @@ void ScreenManager::renderNowPlaying() {
   makeIconButton(screen_, "...", kHeaderButtonW, kOptionsHandleH,
                  LV_ALIGN_BOTTOM_MID, 0, -kOptionsHandleBottom,
                  &ScreenManager::onOptionsHandleClicked, this,
-                 ButtonRole::Quiet, &knobify_text_font_20);
+                 ButtonRole::Quiet, &dialhard_text_font_20);
 
   // Transport row: secondary (grey) prev/next either side of the one
   // primary control. Inset well within the round display's visible area at this
   // height -- see decision 6, ADR 0004.
   makeIconButton(screen_, LV_SYMBOL_PREV, 56, 56, LV_ALIGN_TOP_MID, -84,
                  kTransportCenterY - 28, &ScreenManager::onPrevClicked, this,
-                 ButtonRole::Secondary, &knobify_text_font_20);
+                 ButtonRole::Secondary, &dialhard_text_font_20);
 
   makeIconButton(screen_,
                  playback_.state() == playback::PlaybackState::Playing
@@ -1176,11 +1176,11 @@ void ScreenManager::renderNowPlaying() {
                      : LV_SYMBOL_PLAY,
                  72, 72, LV_ALIGN_TOP_MID, 0, kTransportCenterY - 36,
                  &ScreenManager::onPlayPauseClicked, this, ButtonRole::Primary,
-                 &knobify_text_font_28);
+                 &dialhard_text_font_28);
 
   makeIconButton(screen_, LV_SYMBOL_NEXT, 56, 56, LV_ALIGN_TOP_MID, 84,
                  kTransportCenterY - 28, &ScreenManager::onNextClicked, this,
-                 ButtonRole::Secondary, &knobify_text_font_20);
+                 ButtonRole::Secondary, &dialhard_text_font_20);
 
   // Elapsed (and, once known, total) play time -- requested after real
   // hardware testing made it clear there was no way to tell whether
@@ -1197,12 +1197,12 @@ void ScreenManager::renderNowPlaying() {
                                LV_ALIGN_TOP_MID, 0, kTimePillY,
                                &ScreenManager::onTimePillPressed,
                                &ScreenManager::onTimePillReleased, this,
-                               ButtonRole::Secondary, &knobify_icon_font_16);
+                               ButtonRole::Secondary, &dialhard_icon_font_16);
     lv_obj_set_ext_click_area(timePill_, 0);
     elapsedLabel_ = lv_obj_get_child(timePill_, 0);
   } else {
     elapsedLabel_ = lv_label_create(screen_);
-    lv_obj_set_style_text_font(elapsedLabel_, &knobify_text_font_14, 0);
+    lv_obj_set_style_text_font(elapsedLabel_, &dialhard_text_font_14, 0);
     lv_obj_set_style_text_color(elapsedLabel_, theme::structure(), 0);
     lv_obj_align(elapsedLabel_, LV_ALIGN_TOP_MID, 0, timeY);
     lv_label_set_text(elapsedLabel_, "0:00");
@@ -1251,7 +1251,7 @@ void ScreenManager::renderOptionsPanel(bool animate) {
   makeIconButton(panel, LV_SYMBOL_DOWN, kHeaderButtonW, kOptionsHandleH,
                  LV_ALIGN_TOP_MID, 0, 4,
                  &ScreenManager::onOptionsPanelCloseClicked, this,
-                 ButtonRole::Quiet, &knobify_text_font_20);
+                 ButtonRole::Quiet, &dialhard_text_font_20);
 
   // Four secondary circles in a row, each named underneath -- the icons
   // alone didn't say what shuffle/repeat were doing (ADR 0011), and the
@@ -1277,21 +1277,21 @@ void ScreenManager::renderOptionsPanel(bool animate) {
   // what is *playing*, not by the screen behind the panel -- you can be
   // browsing Music while a book plays, and these buttons act on playback.
   if (playingProfile().hasShuffleRow) {
-    options[kCount++] = {KNOBIFY_ICON_SHUFFLE, "Shuffle", playback_.shuffle(),
+    options[kCount++] = {DIALHARD_ICON_SHUFFLE, "Shuffle", playback_.shuffle(),
                          true, &ScreenManager::onShuffleClicked};
   }
   options[kCount++] = {repeat == playback::RepeatMode::One
-                           ? KNOBIFY_ICON_REPEAT_ONE
-                           : KNOBIFY_ICON_REPEAT,
+                           ? DIALHARD_ICON_REPEAT_ONE
+                           : DIALHARD_ICON_REPEAT,
                        "Repeat", repeat != playback::RepeatMode::Off, true,
                        &ScreenManager::onRepeatClicked};
   // Shows what a tap switches to; only switchable when there is a cover.
-  options[kCount++] = {showingSpectrum ? KNOBIFY_ICON_IMAGE
-                                       : KNOBIFY_ICON_EQUALIZER,
+  options[kCount++] = {showingSpectrum ? DIALHARD_ICON_IMAGE
+                                       : DIALHARD_ICON_EQUALIZER,
                        showingSpectrum ? "Cover" : "Spectrum", false,
                        coverImg_ != nullptr,
                        &ScreenManager::onCoverSwitchClicked};
-  options[kCount++] = {KNOBIFY_ICON_LOCK, "Lock", false, true,
+  options[kCount++] = {DIALHARD_ICON_LOCK, "Lock", false, true,
                        &ScreenManager::onLockClicked};
   for (int i = 0; i < kCount; ++i) {
     const Option &option = options[i];
@@ -1299,10 +1299,10 @@ void ScreenManager::renderOptionsPanel(bool animate) {
     lv_obj_t *btn = makeIconButton(panel, option.glyph, kButtonSize, kButtonSize,
                                    LV_ALIGN_TOP_MID, x, kButtonTop, option.cb,
                                    this, ButtonRole::Secondary,
-                                   &knobify_icon_font_28);
+                                   &dialhard_icon_font_28);
     lv_obj_set_ext_click_area(btn, 0);
     lv_obj_t *label = lv_label_create(panel);
-    lv_obj_set_style_text_font(label, &knobify_text_font_14, 0);
+    lv_obj_set_style_text_font(label, &dialhard_text_font_14, 0);
     lv_obj_set_style_text_color(label, theme::structure(), 0);
     lv_label_set_text(label, option.label);
     lv_obj_align(label, LV_ALIGN_TOP_MID, x, kButtonTop + kButtonSize + 6);
@@ -1391,7 +1391,7 @@ void ScreenManager::tickSpectrum(uint32_t nowMs, bool visible) {
   lastSpectrumTickMs_ = nowMs;
   if (dtMs > 100) dtMs = 100;  // After a stall, don't jump straight to empty.
 
-#ifdef KNOBIFY_SPECTRUM_DEBUG
+#ifdef DIALHARD_SPECTRUM_DEBUG
   int64_t startUs = esp_timer_get_time();
 #endif
   playback::SampleWindow window = playback_.readRecentSamples(
@@ -1399,7 +1399,7 @@ void ScreenManager::tickSpectrum(uint32_t nowMs, bool visible) {
   analyzer_.update(spectrumSamples_.data(), window.count, window.sampleRate,
                    window.gain, dtMs);
   spectrum_.setLevels(analyzer_.levels());
-#ifdef KNOBIFY_SPECTRUM_DEBUG
+#ifdef DIALHARD_SPECTRUM_DEBUG
   static uint32_t frames = 0;
   static int64_t worstUs = 0;
   int64_t tookUs = esp_timer_get_time() - startUs;
@@ -1516,11 +1516,11 @@ void ScreenManager::updateElapsedTimeDisplay() {
     // so the pill keeps showing the time and total while winding.
     if (timePill_ && durationSeconds_ != 0) {
       snprintf(text, sizeof(text),
-               KNOBIFY_ICON_FAST_REWIND " %u:%02u / %u:%02u " KNOBIFY_ICON_FAST_FORWARD,
+               DIALHARD_ICON_FAST_REWIND " %u:%02u / %u:%02u " DIALHARD_ICON_FAST_FORWARD,
                em, es, dm, ds);
     } else if (timePill_) {
       snprintf(text, sizeof(text),
-               KNOBIFY_ICON_FAST_REWIND " %u:%02u " KNOBIFY_ICON_FAST_FORWARD, em, es);
+               DIALHARD_ICON_FAST_REWIND " %u:%02u " DIALHARD_ICON_FAST_FORWARD, em, es);
     } else if (durationSeconds_ != 0) {
       snprintf(text, sizeof(text), "%u:%02u / %u:%02u", em, es, dm, ds);
     } else {
@@ -2010,4 +2010,4 @@ void ScreenManager::runRescanAll() {
   }
 }
 
-}  // namespace knobify::ui
+}  // namespace dialhard::ui

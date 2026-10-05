@@ -9,31 +9,31 @@
 #include "ResumeCodec.h"
 #include "ResumeScheduler.h"
 
-using knobify::library::Album;
-using knobify::library::Artist;
-using knobify::library::LibraryIndex;
-using knobify::library::Track;
-using knobify::navigation::Screen;
-using knobify::navigation::ScreenKind;
-using knobify::navigation::ScreenParams;
-using knobify::navigation::Tab;
-using knobify::navigation::TabController;
-using knobify::playback::KeyValueStore;
-using knobify::playback::PlaybackDriver;
-using knobify::playback::PlaybackState;
-using knobify::playback::PlaybackStateMachine;
-using knobify::playback::PlayScope;
-using knobify::playback::VolumePersistence;
-using knobify::resume::BlobStore;
-using knobify::resume::PlaybackResumeSource;
-using knobify::resume::PlaybackSnapshot;
-using knobify::resume::NavEntry;
-using knobify::resume::NavigationResumeSource;
-using knobify::resume::NavigationSnapshot;
-using knobify::resume::ResumeCodec;
-using knobify::resume::ResumeRecord;
-using knobify::resume::ResumeScheduler;
-using knobify::resume::ResumeSource;
+using dialhard::library::Album;
+using dialhard::library::Artist;
+using dialhard::library::LibraryIndex;
+using dialhard::library::Track;
+using dialhard::navigation::Screen;
+using dialhard::navigation::ScreenKind;
+using dialhard::navigation::ScreenParams;
+using dialhard::navigation::Tab;
+using dialhard::navigation::TabController;
+using dialhard::playback::KeyValueStore;
+using dialhard::playback::PlaybackDriver;
+using dialhard::playback::PlaybackState;
+using dialhard::playback::PlaybackStateMachine;
+using dialhard::playback::PlayScope;
+using dialhard::playback::VolumePersistence;
+using dialhard::resume::BlobStore;
+using dialhard::resume::PlaybackResumeSource;
+using dialhard::resume::PlaybackSnapshot;
+using dialhard::resume::NavEntry;
+using dialhard::resume::NavigationResumeSource;
+using dialhard::resume::NavigationSnapshot;
+using dialhard::resume::ResumeCodec;
+using dialhard::resume::ResumeRecord;
+using dialhard::resume::ResumeScheduler;
+using dialhard::resume::ResumeSource;
 
 void setUp() {}
 void tearDown() {}
@@ -58,7 +58,7 @@ class FakeDriver : public PlaybackDriver {
   void setOutputGain(uint16_t) override {}
   bool isRunning() override { return true; }
   uint32_t durationSeconds() override { return 0; }
-  knobify::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
+  dialhard::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
     return {};
   }
   void loop() override {}
@@ -102,18 +102,18 @@ LibraryIndex makeLibrary() {
 
 // The three collections, with only Music populated -- the resume sources
 // resolve names against whichever one a record names (ADR 0018).
-class FakeCollections : public knobify::collection::CollectionSet {
+class FakeCollections : public dialhard::collection::CollectionSet {
  public:
-  LibraryIndex &index(knobify::collection::CollectionId id) override {
-    return indexes[knobify::collection::indexOf(id)];
+  LibraryIndex &index(dialhard::collection::CollectionId id) override {
+    return indexes[dialhard::collection::indexOf(id)];
   }
 
-  void rescan(knobify::collection::CollectionId,
-              knobify::library::ScanProgressListener *) override {
+  void rescan(dialhard::collection::CollectionId,
+              dialhard::library::ScanProgressListener *) override {
     ++rescans;
   }
 
-  LibraryIndex indexes[knobify::collection::kCollectionCount];
+  LibraryIndex indexes[dialhard::collection::kCollectionCount];
   int rescans = 0;
 };
 
@@ -385,7 +385,7 @@ void test_scheduler_discard_removes_the_record() {
 
 void test_capture_then_restore_brings_back_screen_and_paused_track() {
   Rig before;
-  before.tabs.openCollection(knobify::collection::CollectionId::Music);
+  before.tabs.openCollection(dialhard::collection::CollectionId::Music);
   before.tabs.activeStack().push(Screen{ScreenKind::Albums, ScreenParams{.artistId = 1}});
   before.tabs.activeStack().push(Screen{ScreenKind::Tracks, ScreenParams{.albumId = 1}});
   before.playback.play({"/Music/B/Second/b1.mp3", "/Music/B/Second/b2.mp3"}, 1, 0,

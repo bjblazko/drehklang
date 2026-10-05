@@ -10,7 +10,7 @@ offset passes through, via m_resumeFilePos in Audio::loop() -- opens with
 
 So without the call, the guard always fires and every M4A seek is silently
 rewritten to the first byte of audio: shuttling an M4A restarted the track on
-every cue cycle while knobify's wall-clock readout kept counting, and resuming
+every cue cycle while DialHard's wall-clock readout kept counting, and resuming
 an M4A from a bookmark always came back at 0:00. MP3 (syncword rescan) and WAV
 (4-byte align) take other branches and were never affected.
 
@@ -29,7 +29,7 @@ import sys
 
 Import("env")  # noqa: F821 -- SCons injects this.
 
-MARKER = "knobify patch:"
+MARKER = "DialHard patch:"
 
 # Matched verbatim, including indentation. If ESP32-audioI2S ever changes these
 # two lines the patch stops applying, and that must be noisy rather than silent.
@@ -41,17 +41,17 @@ ANCHOR = (
 # seek_m4a_stsz() walks the atom tree with audiofile.seek() and leaves the
 # shared file pointer at 0, which would make the decoder read the header back
 # as audio -- hence the save/restore around it. Local files only: it reads the
-# file directly, which a stream can't do (and knobify only plays from SD).
+# file directly, which a stream can't do (and DialHard only plays from SD).
 PATCH = """\
-        // knobify patch: upstream 2.3.0 never calls seek_m4a_stsz(), so
+        // DialHard patch: upstream 2.3.0 never calls seek_m4a_stsz(), so
         // m_stsz_position stays 0 and m4a_correctResumeFilePos()'s guard
         // sends every M4A seek back to m_audioDataStart. This restores the
         // behaviour the library intended. seek_m4a_stsz() moves the shared
         // file pointer and leaves it at 0, so save and restore it.
         if(getDatamode() == AUDIO_LOCALFILE){
-            uint32_t knobify_resumePos = audiofile.position();
+            uint32_t dialhard_resumePos = audiofile.position();
             seek_m4a_stsz();
-            audiofile.seek(knobify_resumePos);
+            audiofile.seek(dialhard_resumePos);
         }
 """
 

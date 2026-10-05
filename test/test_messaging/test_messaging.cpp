@@ -3,9 +3,9 @@
 #include "MessageTimer.h"
 #include "RoundScreen.h"
 
-using knobify::messaging::MessageScope;
-using knobify::messaging::MessageTimer;
-using knobify::messaging::visibleWidthAt;
+using dialhard::messaging::MessageScope;
+using dialhard::messaging::MessageTimer;
+using dialhard::messaging::visibleWidthAt;
 
 void setUp() {}
 void tearDown() {}

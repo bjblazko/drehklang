@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace knobify::games {
+namespace dialhard::games {
 
 // How a game asks for a sound (ADR 0022). Deliberately this small: a game
 // knows a pitch and a length, and nothing about I2S, tasks or whether
@@ -21,4 +21,4 @@ class BlipPlayer {
   virtual void silence() = 0;
 };
 
-}  // namespace knobify::games
+}  // namespace dialhard::games

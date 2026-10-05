@@ -3,19 +3,19 @@
 #include "Fakes.h"
 #include "IndexCache.h"
 
-using knobify::library::Album;
-using knobify::library::Genre;
-using knobify::library::Artist;
-using knobify::library::computeSignature;
-using knobify::library::FileEntry;
-using knobify::library::FolderBrowser;
-using knobify::library::FolderEntry;
-using knobify::library::IndexCache;
-using knobify::library::LibraryIndex;
-using knobify::library::LibraryScanner;
-using knobify::library::LibrarySignature;
-using knobify::library::TagResult;
-using knobify::library::Track;
+using dialhard::library::Album;
+using dialhard::library::Genre;
+using dialhard::library::Artist;
+using dialhard::library::computeSignature;
+using dialhard::library::FileEntry;
+using dialhard::library::FolderBrowser;
+using dialhard::library::FolderEntry;
+using dialhard::library::IndexCache;
+using dialhard::library::LibraryIndex;
+using dialhard::library::LibraryScanner;
+using dialhard::library::LibrarySignature;
+using dialhard::library::TagResult;
+using dialhard::library::Track;
 
 void setUp() {}
 void tearDown() {}
@@ -374,10 +374,10 @@ void test_tag_reader_falls_back_to_filename_track_and_folder_year() {
 
 namespace {
 
-class RecordingProgressListener : public knobify::library::ScanProgressListener {
+class RecordingProgressListener : public dialhard::library::ScanProgressListener {
  public:
   void onFileScanned(size_t) override {}
-  void onNewAlbum(const std::string &albumFolderPath, knobify::library::RawFile &,
+  void onNewAlbum(const std::string &albumFolderPath, dialhard::library::RawFile &,
                    const TagResult &tags) override {
     calls.push_back(albumFolderPath);
     titlesOfFirstTrackPerCall.push_back(tags.title);
@@ -629,14 +629,14 @@ void test_by_name_sorting_ignores_the_tag_folding_rules() {
 
   // ByTag: "The " is stripped and the umlaut folded, so Ärzte -> "arzte",
   // The Beatles -> "beatles", Zappa -> "zappa".
-  auto byTag = index.artistsSorted(knobify::library::SortOrder::ByTag);
+  auto byTag = index.artistsSorted(dialhard::library::SortOrder::ByTag);
   TEST_ASSERT_EQUAL(1, byTag[0]);
   TEST_ASSERT_EQUAL(0, byTag[1]);
   TEST_ASSERT_EQUAL(2, byTag[2]);
 
   // ByName: plain byte order, so "The Beatles" sorts under T and the
   // multi-byte umlaut sorts last -- a shelf order, not a tag order.
-  auto byName = index.artistsSorted(knobify::library::SortOrder::ByName);
+  auto byName = index.artistsSorted(dialhard::library::SortOrder::ByName);
   TEST_ASSERT_EQUAL(0, byName[0]);
   TEST_ASSERT_EQUAL(2, byName[1]);
   TEST_ASSERT_EQUAL(1, byName[2]);

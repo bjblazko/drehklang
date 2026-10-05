@@ -36,11 +36,13 @@
 #include "PlaybackResumeSource.h"
 #include "NavigationResumeSource.h"
 #include "NvsKeyValueStore.h"
+#include "NvsNamespaceMigration.h"
 #include "PlaybackStateMachine.h"
 #include "ResumeScheduler.h"
 #include "ScreenManager.h"
 #include "SdCoverReader.h"
 #include "SdCoverWriter.h"
+#include "SdDirectoryMigration.h"
 #include "SdDirectoryReader.h"
 #include "SdFileLister.h"
 #include "SdFileOpener.h"
@@ -63,7 +65,7 @@ namespace {
 // cache is persisted, both come from its profile now
 // (lib/collection/CollectionProfile.h) rather than from one pair of
 // constants here -- see decision 2, ADR 0004 and ADR 0018.
-constexpr const char *kCacheDir = "/knobify";
+constexpr const char *kCacheDir = "/dialhard";
 
 std::vector<uint8_t> readIndexCacheFile(const char *cachePath) {
   std::vector<uint8_t> bytes;
@@ -78,7 +80,7 @@ std::vector<uint8_t> readIndexCacheFile(const char *cachePath) {
 void writeIndexCacheFile(const char *cachePath,
                         const std::vector<uint8_t> &bytes) {
   // The SD_MMC/FATFS layer refuses to create a file inside a directory
-  // that doesn't exist yet -- every cache path's parent ("/knobify") is
+  // that doesn't exist yet -- every cache path's parent ("/dialhard") is
   // never created anywhere else, so without this every single boot
   // silently failed to persist the cache and re-did the full scan from
   // scratch forever. mkdir() on an already-existing dir is a harmless
@@ -101,13 +103,13 @@ void writeIndexCacheFile(const char *cachePath,
 // ScreenManager's own listener do this) so cover-art caching stays a
 // scan-level concern independent of whatever's showing progress on
 // screen.
-class CoverArtScanListener : public knobify::library::ScanProgressListener {
+class CoverArtScanListener : public dialhard::library::ScanProgressListener {
  public:
-  CoverArtScanListener(knobify::library::ScanProgressListener *inner,
-                        knobify::library::DirectoryReader &dirReader,
-                        knobify::library::FileOpener &opener,
-                        knobify::library::JpegDecoder &decoder,
-                        knobify::library::CoverWriter &writer)
+  CoverArtScanListener(dialhard::library::ScanProgressListener *inner,
+                        dialhard::library::DirectoryReader &dirReader,
+                        dialhard::library::FileOpener &opener,
+                        dialhard::library::JpegDecoder &decoder,
+                        dialhard::library::CoverWriter &writer)
       : inner_(inner),
         dirReader_(dirReader),
         opener_(opener),
@@ -119,40 +121,40 @@ class CoverArtScanListener : public knobify::library::ScanProgressListener {
   }
 
   void onFileResult(const std::string &path, bool opened,
-                     const knobify::library::TagResult &tags) override {
+                     const dialhard::library::TagResult &tags) override {
     if (inner_) inner_->onFileResult(path, opened, tags);
   }
 
   void onNewAlbum(const std::string &albumFolderPath,
-                   knobify::library::RawFile &file,
-                   const knobify::library::TagResult &tags) override {
+                   dialhard::library::RawFile &file,
+                   const dialhard::library::TagResult &tags) override {
     Serial.printf("[cover] onNewAlbum folder=%s picture.present=%d\n",
                   albumFolderPath.c_str(), tags.picture.present);
-    knobify::library::CoverArtCache::ensureCoverCached(
+    dialhard::library::CoverArtCache::ensureCoverCached(
         albumFolderPath, file, tags, dirReader_, opener_, decoder_, writer_);
     if (inner_) inner_->onNewAlbum(albumFolderPath, file, tags);
   }
 
  private:
-  knobify::library::ScanProgressListener *inner_;
-  knobify::library::DirectoryReader &dirReader_;
-  knobify::library::FileOpener &opener_;
-  knobify::library::JpegDecoder &decoder_;
-  knobify::library::CoverWriter &writer_;
+  dialhard::library::ScanProgressListener *inner_;
+  dialhard::library::DirectoryReader &dirReader_;
+  dialhard::library::FileOpener &opener_;
+  dialhard::library::JpegDecoder &decoder_;
+  dialhard::library::CoverWriter &writer_;
 };
 
-knobify::library::LibraryIndex loadOrBuildLibraryIndex(
-    const char *cachePath, knobify::drivers::SdFileLister &lister,
-    knobify::library::FileOpener &opener,
-    knobify::library::DirectoryReader &coverDirReader,
-    knobify::library::JpegDecoder &coverDecoder,
-    knobify::library::CoverWriter &coverWriter,
-    knobify::library::ScanProgressListener *progress) {
-  using knobify::library::IndexCache;
-  using knobify::library::LibraryIndex;
-  using knobify::library::LibrarySignature;
-  using knobify::library::LibraryScanner;
-  using knobify::library::computeSignature;
+dialhard::library::LibraryIndex loadOrBuildLibraryIndex(
+    const char *cachePath, dialhard::drivers::SdFileLister &lister,
+    dialhard::library::FileOpener &opener,
+    dialhard::library::DirectoryReader &coverDirReader,
+    dialhard::library::JpegDecoder &coverDecoder,
+    dialhard::library::CoverWriter &coverWriter,
+    dialhard::library::ScanProgressListener *progress) {
+  using dialhard::library::IndexCache;
+  using dialhard::library::LibraryIndex;
+  using dialhard::library::LibrarySignature;
+  using dialhard::library::LibraryScanner;
+  using dialhard::library::computeSignature;
 
   LibrarySignature currentSignature = computeSignature(lister);
 
@@ -182,18 +184,18 @@ knobify::library::LibraryIndex loadOrBuildLibraryIndex(
 // there. Bundled so adding a collection is one table row in
 // CollectionProfile.h plus one element here, not another set of globals.
 struct CollectionState {
-  explicit CollectionState(const knobify::collection::CollectionProfile &p)
+  explicit CollectionState(const dialhard::collection::CollectionProfile &p)
       : profile(p), lister(p.rootPath) {}
 
-  const knobify::collection::CollectionProfile &profile;
-  knobify::drivers::SdFileLister lister;
-  knobify::library::LibraryIndex index;
+  const dialhard::collection::CollectionProfile &profile;
+  dialhard::drivers::SdFileLister lister;
+  dialhard::library::LibraryIndex index;
 };
 
-CollectionState g_collectionState[knobify::collection::kCollectionCount] = {
-    CollectionState(knobify::collection::kCollections[0]),
-    CollectionState(knobify::collection::kCollections[1]),
-    CollectionState(knobify::collection::kCollections[2]),
+CollectionState g_collectionState[dialhard::collection::kCollectionCount] = {
+    CollectionState(dialhard::collection::kCollections[0]),
+    CollectionState(dialhard::collection::kCollections[1]),
+    CollectionState(dialhard::collection::kCollections[2]),
 };
 
 // Concrete CollectionSet: wraps the SD-backed listers/opener (file-scope
@@ -201,78 +203,78 @@ CollectionState g_collectionState[knobify::collection::kCollectionCount] = {
 // existing signature-check-then-scan logic on demand, from Settings'
 // Rescan rows rather than at boot -- see AGENTS.md. Defined out-of-line
 // below, once g_fileOpener and friends exist.
-class SdCollectionSet : public knobify::collection::CollectionSet {
+class SdCollectionSet : public dialhard::collection::CollectionSet {
  public:
-  knobify::library::LibraryIndex &index(
-      knobify::collection::CollectionId id) override {
-    return g_collectionState[knobify::collection::indexOf(id)].index;
+  dialhard::library::LibraryIndex &index(
+      dialhard::collection::CollectionId id) override {
+    return g_collectionState[dialhard::collection::indexOf(id)].index;
   }
 
-  void rescan(knobify::collection::CollectionId id,
-              knobify::library::ScanProgressListener *progress) override;
+  void rescan(dialhard::collection::CollectionId id,
+              dialhard::library::ScanProgressListener *progress) override;
 };
 
-knobify::drivers::SdFileOpener g_fileOpener;
+dialhard::drivers::SdFileOpener g_fileOpener;
 SdCollectionSet g_collections;
-knobify::drivers::SdDirectoryReader g_directoryReader;
-knobify::drivers::SdCoverWriter g_coverWriter;
-knobify::drivers::SdCoverReader g_coverReader;
-knobify::drivers::JpegDecAdapter g_jpegDecoder;
-knobify::drivers::GpioEncoderDriver g_encoder(knobify::drivers::kEncoderPinA,
-                                               knobify::drivers::kEncoderPinB);
-knobify::drivers::NvsKeyValueStore g_nvsStore;
-knobify::playback::VolumePersistence g_volume(g_nvsStore);
-knobify::drivers::Esp32AudioI2SDriver g_audioDriver;
+dialhard::drivers::SdDirectoryReader g_directoryReader;
+dialhard::drivers::SdCoverWriter g_coverWriter;
+dialhard::drivers::SdCoverReader g_coverReader;
+dialhard::drivers::JpegDecAdapter g_jpegDecoder;
+dialhard::drivers::GpioEncoderDriver g_encoder(dialhard::drivers::kEncoderPinA,
+                                               dialhard::drivers::kEncoderPinB);
+dialhard::drivers::NvsKeyValueStore g_nvsStore;
+dialhard::playback::VolumePersistence g_volume(g_nvsStore);
+dialhard::drivers::Esp32AudioI2SDriver g_audioDriver;
 // A game's blips (ADR 0022): mixed into whatever is playing, and pushed to
 // the DAC by its own task when nothing is.
-knobify::drivers::ToneOutput g_toneOutput;
+dialhard::drivers::ToneOutput g_toneOutput;
 // The tone generator (ADR 0024): its settings and whether it sounds. The
 // sound itself goes through g_toneOutput's task.
-knobify::signal::ToneSession g_toneSession(g_toneOutput, g_nvsStore);
-knobify::playback::PlaybackStateMachine g_playback(g_audioDriver, g_volume);
-knobify::playback::Shuttle g_shuttle(g_playback);
-knobify::navigation::TabController g_tabs;
-knobify::power::BrightnessSetting g_brightness(g_nvsStore);
-knobify::power::SleepTimer g_sleepTimer;
-knobify::input::TouchCalibrationFlow g_touchCalibration(g_nvsStore);
-knobify::drivers::UsbMscStorage g_usbStorage;
-knobify::usbdrive::UsbDriveSession g_usbDrive(g_usbStorage);
+dialhard::signal::ToneSession g_toneSession(g_toneOutput, g_nvsStore);
+dialhard::playback::PlaybackStateMachine g_playback(g_audioDriver, g_volume);
+dialhard::playback::Shuttle g_shuttle(g_playback);
+dialhard::navigation::TabController g_tabs;
+dialhard::power::BrightnessSetting g_brightness(g_nvsStore);
+dialhard::power::SleepTimer g_sleepTimer;
+dialhard::input::TouchCalibrationFlow g_touchCalibration(g_nvsStore);
+dialhard::drivers::UsbMscStorage g_usbStorage;
+dialhard::usbdrive::UsbDriveSession g_usbDrive(g_usbStorage);
 
-knobify::drivers::St77916Driver g_display;
-knobify::drivers::Cst816Driver g_touch;
-knobify::ui::LvglGlue g_lvglGlue;
-knobify::power::IdleTimer g_idleTimer;
-knobify::power::LockController g_lockController;
-knobify::ui_widgets::MessageArea g_messageArea;
+dialhard::drivers::St77916Driver g_display;
+dialhard::drivers::Cst816Driver g_touch;
+dialhard::ui::LvglGlue g_lvglGlue;
+dialhard::power::IdleTimer g_idleTimer;
+dialhard::power::LockController g_lockController;
+dialhard::ui_widgets::MessageArea g_messageArea;
 // Per-title positions for spoken word (ADR 0018). Separate from the
 // session resume: that restores the one thing that was playing when the
 // power went, this remembers where several titles were left.
-knobify::resume::Bookmarks g_bookmarks;
-knobify::ui::ScreenManager g_screenManager(
+dialhard::resume::Bookmarks g_bookmarks;
+dialhard::ui::ScreenManager g_screenManager(
     g_tabs, g_collections, g_directoryReader, g_playback, g_shuttle,
     g_lockController, g_coverReader, g_fileOpener, g_jpegDecoder,
     g_coverWriter, g_nvsStore, g_brightness, g_sleepTimer, g_touchCalibration,
     g_usbDrive, g_messageArea, g_bookmarks);
-knobify::ui::LockOverlay g_lockOverlay(g_lockController);
-knobify::drivers::BatteryAdcDriver g_batteryAdc;
-knobify::power::BatteryMonitor g_batteryMonitor;
-knobify::ui::BatteryIndicator g_batteryIndicator(g_batteryMonitor);
-knobify::input::InputRouter g_inputRouter(g_tabs, g_playback, g_shuttle,
+dialhard::ui::LockOverlay g_lockOverlay(g_lockController);
+dialhard::drivers::BatteryAdcDriver g_batteryAdc;
+dialhard::power::BatteryMonitor g_batteryMonitor;
+dialhard::ui::BatteryIndicator g_batteryIndicator(g_batteryMonitor);
+dialhard::input::InputRouter g_inputRouter(g_tabs, g_playback, g_shuttle,
                                           g_brightness, g_sleepTimer,
                                           g_touchCalibration, g_screenManager);
-knobify::input::GestureRecognizer g_gestureRecognizer;
+dialhard::input::GestureRecognizer g_gestureRecognizer;
 
 bool sdFileExists(const std::string &path) { return SD_MMC.exists(path.c_str()); }
 
 // Where the device was before power went away (ADR 0012). Music restores
 // before navigation, which drops Now Playing if no queue came back.
-knobify::resume::PlaybackResumeSource g_playbackResume(g_playback, g_collections,
+dialhard::resume::PlaybackResumeSource g_playbackResume(g_playback, g_collections,
                                                        &sdFileExists);
-knobify::resume::NavigationResumeSource g_navigationResume(g_tabs, g_collections,
+dialhard::resume::NavigationResumeSource g_navigationResume(g_tabs, g_collections,
                                                            g_playback);
-knobify::resume::BookmarkKeeper g_bookmarkKeeper(g_bookmarks, g_nvsStore,
+dialhard::resume::BookmarkKeeper g_bookmarkKeeper(g_bookmarks, g_nvsStore,
                                                 g_collections, g_playback);
-knobify::resume::ResumeScheduler g_resumeScheduler(
+dialhard::resume::ResumeScheduler g_resumeScheduler(
     g_nvsStore, {&g_playbackResume, &g_navigationResume});
 
 bool g_wasPlaying = false;
@@ -288,9 +290,9 @@ uint32_t g_lastBatteryUpdateMs = 0;
 // loop() iteration like touch/encoder input does.
 constexpr uint32_t kBatteryUpdateIntervalMs = 5000;
 
-void SdCollectionSet::rescan(knobify::collection::CollectionId id,
-                             knobify::library::ScanProgressListener *progress) {
-  CollectionState &state = g_collectionState[knobify::collection::indexOf(id)];
+void SdCollectionSet::rescan(dialhard::collection::CollectionId id,
+                             dialhard::library::ScanProgressListener *progress) {
+  CollectionState &state = g_collectionState[dialhard::collection::indexOf(id)];
   state.index = loadOrBuildLibraryIndex(state.profile.cachePath, state.lister,
                                         g_fileOpener, g_directoryReader,
                                         g_jpegDecoder, g_coverWriter, progress);
@@ -300,20 +302,20 @@ void SdCollectionSet::rescan(knobify::collection::CollectionId id,
 // sleep until a touch. The fade has already brought the output to 0.
 [[noreturn]] void enterSleepTimerDeepSleep(uint32_t now) {
   Serial.println("[sleep] timer expired -- entering deep sleep");
-  if (g_playback.state() == knobify::playback::PlaybackState::Playing) {
+  if (g_playback.state() == dialhard::playback::PlaybackState::Playing) {
     g_playback.togglePlayPause(now);
   }
   g_toneSession.stop();
   g_resumeScheduler.saveNow(now);
   g_bookmarkKeeper.saveNow(now);
   // Volume and brightness changes still inside their save debounce.
-  g_playback.tick(now + knobify::playback::PlaybackStateMachine::kVolumeSaveDebounceMs);
-  g_brightness.tick(now + knobify::power::BrightnessSetting::kSaveDebounceMs);
+  g_playback.tick(now + dialhard::playback::PlaybackStateMachine::kVolumeSaveDebounceMs);
+  g_brightness.tick(now + dialhard::power::BrightnessSetting::kSaveDebounceMs);
   g_display.setBacklight(0);
   if (g_display.gfx()) g_display.gfx()->displayOff();
   g_touch.armWakeOnTouch();
   Serial.flush();
-  knobify::drivers::enterDeepSleepUntilTouch();
+  dialhard::drivers::enterDeepSleepUntilTouch();
 }
 
 }  // namespace
@@ -331,10 +333,13 @@ void setup() {
   // buffer explicitly, so it isn't affected by the line above.
   g_usbStorage.begin();
   Serial.begin(115200);
-  Serial.printf("knobify %s starting\n", knobify::kVersion);
+  Serial.printf("DialHard %s starting\n", dialhard::kVersion);
   if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
     Serial.println("[sleep] woke from deep sleep by touch");
   }
+  // Before anything below loads volume, settings or the resume record.
+  dialhard::drivers::migrateLegacyNvsNamespace(
+      dialhard::drivers::NvsKeyValueStore::kNamespace);
 
   g_encoder.begin();
   g_batteryAdc.begin();
@@ -376,8 +381,8 @@ void setup() {
     bootScreen = lv_obj_create(nullptr);
     lv_scr_load(bootScreen);
     lv_obj_t *title = lv_label_create(bootScreen);
-    lv_label_set_text(title, "knobify");
-    lv_obj_set_style_text_font(title, &knobify_text_font_20, 0);
+    lv_label_set_text(title, "DialHard");
+    lv_obj_set_style_text_font(title, &dialhard_text_font_20, 0);
     lv_obj_align(title, LV_ALIGN_CENTER, 0, -30);
     bootLabel = lv_label_create(bootScreen);
     lv_label_set_text(bootLabel, "Starting...");
@@ -386,13 +391,14 @@ void setup() {
     lv_timer_handler();  // Flush immediately so something appears right away.
   }
 
-  if (!knobify::drivers::initSdCard()) {
+  if (!dialhard::drivers::initSdCard()) {
     Serial.println("SD card init FAILED -- check wiring/pinout in device.md");
     if (bootLabel) {
       lv_label_set_text(bootLabel, "SD card init FAILED");
       lv_timer_handler();
     }
   } else {
+    dialhard::drivers::migrateLegacyCacheDir(kCacheDir);
     // Boot no longer scans the SD card at all -- just loads whatever index
     // each collection last cached (a small file read each, no directory
     // walk), so the device is usable immediately. Change detection/full
@@ -402,8 +408,8 @@ void setup() {
     // just starts empty -- see AGENTS.md.
     for (CollectionState &state : g_collectionState) {
       std::vector<uint8_t> cacheBytes = readIndexCacheFile(state.profile.cachePath);
-      knobify::library::LibrarySignature ignoredSignature;
-      if (!cacheBytes.empty() && knobify::library::IndexCache::decode(
+      dialhard::library::LibrarySignature ignoredSignature;
+      if (!cacheBytes.empty() && dialhard::library::IndexCache::decode(
                                      cacheBytes, state.index, ignoredSignature)) {
         Serial.printf("%s: %u artists, %u albums, %u tracks (from cache)\n",
                        state.profile.label,
@@ -453,8 +459,8 @@ void setup() {
     g_batteryIndicator.begin();
     g_batteryIndicator.update(g_batteryAdc.readMilliVolts());
     // Last on the top layer: messages show above everything (MessageArea.h).
-    g_messageArea.begin(knobify::ui::theme::ink(), knobify::ui::theme::surface(),
-                        knobify::drivers::kLcdHorRes);
+    g_messageArea.begin(dialhard::ui::theme::ink(), dialhard::ui::theme::surface(),
+                        dialhard::drivers::kLcdHorRes);
     if (bootScreen) lv_obj_del(bootScreen);
   }
 }
@@ -498,7 +504,7 @@ void pollSerialCommands() {
         // Screenshots and INFO write a lot; not while the USB drive is
         // busy (UsbMscStorage::exporting()), where that would hang.
         if (strcmp(buf, "SCREENSHOT") == 0) {
-          if (!knobify::drivers::UsbMscStorage::exporting()) {
+          if (!dialhard::drivers::UsbMscStorage::exporting()) {
             g_lvglGlue.writeScreenshotToSerial();
           }
         } else if (sscanf(buf, "SWIPE %d %d %d %d", &x, &y, &toX, &toY) == 4) {
@@ -516,7 +522,7 @@ void pollSerialCommands() {
           g_injectedTapStartMs = millis();
           g_injectedTapUntilMs = g_injectedTapStartMs + kInjectedTapMs;
         } else if (strcmp(buf, "INFO") == 0 &&
-                   !knobify::drivers::UsbMscStorage::exporting()) {
+                   !dialhard::drivers::UsbMscStorage::exporting()) {
           // A reset reason of 4 is a panic: read the core dump (AGENTS.md).
           Serial.printf("[info] up %lus, reset reason %d, internal free %u, "
                         "loop stack left %u\n",
@@ -539,8 +545,8 @@ void pollSerialCommands() {
   }
 }
 
-#ifdef KNOBIFY_LOOP_WDT
-// Diagnostic build only (PLATFORMIO_BUILD_FLAGS=-DKNOBIFY_LOOP_WDT): turns
+#ifdef DIALHARD_LOOP_WDT
+// Diagnostic build only (PLATFORMIO_BUILD_FLAGS=-DDIALHARD_LOOP_WDT): turns
 // a hung loop() into a panic, so the crash's core dump names the call it
 // hung in (scripts/read-coredump.sh). That is how the USB CDC write spin
 // was found twice (AGENTS.md).
@@ -564,7 +570,7 @@ void armLoopWatchdog() {
 #endif
 
 void loop() {
-#ifdef KNOBIFY_LOOP_WDT
+#ifdef DIALHARD_LOOP_WDT
   armLoopWatchdog();
   esp_task_wdt_reset();
 #endif
@@ -586,10 +592,10 @@ void loop() {
   // consumers slightly different coordinates (real capacitive touch
   // jitters between reads), which could make a single tap also register
   // as a swipe -- see LvglGlue.h.
-  knobify::input::TouchSample touchSample{};
+  dialhard::input::TouchSample touchSample{};
   g_touch.poll(touchSample);
   // Kept raw for Settings > Touch calibration, which fits from raw points.
-  const knobify::input::TouchSample rawTouchSample = touchSample;
+  const dialhard::input::TouchSample rawTouchSample = touchSample;
   touchSample = g_touchCalibration.active().apply(rawTouchSample);
   if (g_injectedTapUntilMs != 0) {
     const uint32_t nowMs = millis();
@@ -607,7 +613,7 @@ void loop() {
     }
   }
 
-#ifdef KNOBIFY_TOUCH_DEBUG
+#ifdef DIALHARD_TOUCH_DEBUG
   {
     static uint32_t lastLoopMs = 0, maxLoopMs = 0, windowStartMs = 0;
     static uint32_t downAtMs = 0;
@@ -669,16 +675,16 @@ void loop() {
   // Sleep timer (ADR 0015). During its fade a touch or (with the display
   // on) a turn means someone is still awake: cancel, and let that input do
   // nothing else. Not while locked -- that's a pocket.
-  knobify::power::SleepPhase sleepPhase = g_sleepTimer.tick(now);
-  if (sleepPhase == knobify::power::SleepPhase::Fading) {
-    constexpr knobify::ui_widgets::MessageAnchor kCenter{
-        knobify::drivers::kLcdHorRes / 2, knobify::drivers::kLcdVerRes / 2};
+  dialhard::power::SleepPhase sleepPhase = g_sleepTimer.tick(now);
+  if (sleepPhase == dialhard::power::SleepPhase::Fading) {
+    constexpr dialhard::ui_widgets::MessageAnchor kCenter{
+        dialhard::drivers::kLcdHorRes / 2, dialhard::drivers::kLcdVerRes / 2};
     bool stillAwake = !g_lockController.isLocked() &&
                       (touchDownEdge || (displayOn && encoderDelta != 0));
     if (stillAwake) {
       Serial.println("[sleep] cancelled during fade");
       g_sleepTimer.cancel();
-      g_playback.setOutputGain(knobify::power::SleepTimer::kUnityGain);
+      g_playback.setOutputGain(dialhard::power::SleepTimer::kUnityGain);
       g_sleepFading = false;
       if (touchDownEdge) g_swallowingWakeTouch = true;
       encoderDelta = 0;
@@ -694,12 +700,12 @@ void loop() {
       }
       g_playback.setOutputGain(g_sleepTimer.fadeGain(now));
     }
-  } else if (sleepPhase == knobify::power::SleepPhase::Expired) {
+  } else if (sleepPhase == dialhard::power::SleepPhase::Expired) {
     enterSleepTimerDeepSleep(now);
   } else if (g_sleepFading) {
     // Turned off or re-set on the Sleep screen mid-fade.
     g_sleepFading = false;
-    g_playback.setOutputGain(knobify::power::SleepTimer::kUnityGain);
+    g_playback.setOutputGain(dialhard::power::SleepTimer::kUnityGain);
   }
 
   if (g_swallowingWakeTouch) {
@@ -708,7 +714,7 @@ void loop() {
     // Calibration taps go to the calibrator only: LVGL sees no touch (so
     // nothing underneath clicks) and no gesture can pop the screen.
     g_touchCalibration.feedRaw(rawTouchSample, now);
-    g_lvglGlue.feedTouch(knobify::input::TouchSample{});
+    g_lvglGlue.feedTouch(dialhard::input::TouchSample{});
   } else {
     g_lvglGlue.feedTouch(touchSample);
     // Sideways drift while turning the knob during a shuttle hold
@@ -724,7 +730,7 @@ void loop() {
       if (gesture && !g_screenManager.swipeStartsOnControl(gesture->startX,
                                                            gesture->startY)) {
         g_inputRouter.onGesture(*gesture);
-        if (gesture->type == knobify::input::GestureType::SwipeLeftToRight) {
+        if (gesture->type == dialhard::input::GestureType::SwipeLeftToRight) {
           g_screenManager.render();
         }
       }
@@ -770,7 +776,7 @@ void loop() {
   if (g_shuttle.isHeld() &&
       (!touchSample.pressed || !displayOn || g_lockController.isLocked() ||
        g_tabs.activeStack().current().kind !=
-           knobify::navigation::ScreenKind::NowPlaying)) {
+           dialhard::navigation::ScreenKind::NowPlaying)) {
     g_shuttle.release(now);
   }
   g_shuttle.tick(now);
@@ -785,7 +791,7 @@ void loop() {
     g_lastBatteryUpdateMs = now;
     uint32_t batteryMilliVolts = g_batteryAdc.readMilliVolts();
     // Never while the USB drive is busy -- see UsbMscStorage::exporting().
-    if (!knobify::drivers::UsbMscStorage::exporting()) {
+    if (!dialhard::drivers::UsbMscStorage::exporting()) {
       Serial.printf("[battery] %u mV\n", batteryMilliVolts);
     }
     g_batteryIndicator.update(batteryMilliVolts);
@@ -825,7 +831,7 @@ void loop() {
   // against the installed ESP32-audioI2S version's actual pause behavior
   // once on hardware.
   bool isPlayingNow =
-      g_playback.state() == knobify::playback::PlaybackState::Playing;
+      g_playback.state() == dialhard::playback::PlaybackState::Playing;
   if (g_wasPlaying && isPlayingNow && !g_audioDriver.isRunning()) {
     g_playback.onTrackFinished(millis());
     g_screenManager.render();

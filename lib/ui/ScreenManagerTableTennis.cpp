@@ -15,7 +15,7 @@
 #include "St77916Driver.h"
 #include "TextFont.h"
 
-namespace knobify::ui {
+namespace dialhard::ui {
 
 using games::TableTennisGame;
 
@@ -111,7 +111,7 @@ void ScreenManager::renderTableTennis() {
 
   tableTennisHint_ = game_style::makeLabel(
       screen_, (drivers::kLcdHorRes - kHintWidth) / 2, kHintTop, kHintWidth,
-      &knobify_text_font_14);
+      &dialhard_text_font_14);
 
   // This board has no button, the game has no back button, and a modal
   // screen whose only way out is an unannounced gesture is exactly the
@@ -220,4 +220,4 @@ bool ScreenManager::tickTableTennis(uint32_t nowMs, bool visible) {
   return tableTennis_.phase() == TableTennisGame::Phase::Rally;
 }
 
-}  // namespace knobify::ui
+}  // namespace dialhard::ui

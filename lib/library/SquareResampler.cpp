@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace {
 
@@ -79,4 +79,4 @@ void SquareResampler::resample(const uint16_t *src, uint16_t width,
   }
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

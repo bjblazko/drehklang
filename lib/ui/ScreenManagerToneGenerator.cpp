@@ -21,12 +21,12 @@
 #include "ToneSettings.h"
 #include "TriggeredScope.h"
 
-#ifdef KNOBIFY_GENERATOR_DEBUG
+#ifdef DIALHARD_GENERATOR_DEBUG
 #include <Arduino.h>
 #include <esp_timer.h>
 #endif
 
-namespace knobify::ui {
+namespace dialhard::ui {
 
 using signal::ToneParam;
 using signal::ToneSettings;
@@ -90,7 +90,7 @@ void ScreenManager::renderToneGenerator() {
   lv_obj_add_event_cb(toneBand_, onToneBandReleased, LV_EVENT_PRESS_LOST, this);
 
   toneScaleLabel_ = lv_label_create(screen_);
-  lv_obj_set_style_text_font(toneScaleLabel_, &knobify_text_font_14, 0);
+  lv_obj_set_style_text_font(toneScaleLabel_, &dialhard_text_font_14, 0);
   lv_obj_set_style_text_color(toneScaleLabel_, theme::structure(), 0);
   lv_obj_align(toneScaleLabel_, LV_ALIGN_TOP_MID, 0, kScaleLabelY);
 
@@ -107,7 +107,7 @@ void ScreenManager::renderToneGenerator() {
   }
 
   toneValueLabel_ = lv_label_create(screen_);
-  lv_obj_set_style_text_font(toneValueLabel_, &knobify_text_font_28, 0);
+  lv_obj_set_style_text_font(toneValueLabel_, &dialhard_text_font_28, 0);
   lv_obj_set_style_text_color(toneValueLabel_, theme::ink(), 0);
   lv_obj_align(toneValueLabel_, LV_ALIGN_TOP_MID, 0, kValueY);
 
@@ -118,7 +118,7 @@ void ScreenManager::renderToneGenerator() {
     lv_obj_set_ext_click_area(chip, kChipGap / 2);
     theme::styleSecondaryButton(chip);
     lv_obj_t *label = lv_label_create(chip);
-    lv_obj_set_style_text_font(label, &knobify_text_font_16, 0);
+    lv_obj_set_style_text_font(label, &dialhard_text_font_16, 0);
     lv_obj_center(label);
     // On the press, not the click: holding a chip and turning the knob
     // with the other hand is this device's two-handed gesture (§7).
@@ -277,7 +277,7 @@ void ScreenManager::tickToneGenerator(uint32_t nowMs, bool visible) {
   if (dtMs < kToneScopeFrameMs) return;
   lastToneScopeMs_ = nowMs;
 
-#ifdef KNOBIFY_GENERATOR_DEBUG
+#ifdef DIALHARD_GENERATOR_DEBUG
   const int64_t startUs = esp_timer_get_time();
 #endif
   const size_t count =
@@ -289,7 +289,7 @@ void ScreenManager::tickToneGenerator(uint32_t nowMs, bool visible) {
   } else {
     drawToneSpectrum(count, std::min<uint32_t>(dtMs, 100));
   }
-#ifdef KNOBIFY_GENERATOR_DEBUG
+#ifdef DIALHARD_GENERATOR_DEBUG
   static uint32_t frames = 0;
   static int64_t worstUs = 0;
   worstUs = std::max(worstUs, esp_timer_get_time() - startUs);
@@ -339,4 +339,4 @@ void ScreenManager::drawToneSpectrum(size_t count, uint32_t dtMs) {
                        kSpectrumBottomDeci, kSpectrumTopDeci);
 }
 
-}  // namespace knobify::ui
+}  // namespace dialhard::ui

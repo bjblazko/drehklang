@@ -9,11 +9,11 @@
 #include "TagReader.h"
 #include "VorbisCommentParser.h"
 
-using knobify::library::Id3v2Parser;
-using knobify::library::RiffInfoParser;
-using knobify::library::TagReader;
-using knobify::library::TagResult;
-using knobify::library::VorbisCommentParser;
+using dialhard::library::Id3v2Parser;
+using dialhard::library::RiffInfoParser;
+using dialhard::library::TagReader;
+using dialhard::library::TagResult;
+using dialhard::library::VorbisCommentParser;
 
 void setUp() {}
 void tearDown() {}
@@ -349,7 +349,7 @@ void test_vorbis_comment_parses_fields() {
     buf.insert(buf.end(), s.begin(), s.end());
   };
 
-  std::string vendor = "knobify test encoder";
+  std::string vendor = "DialHard test encoder";
   appendU32LE(static_cast<uint32_t>(vendor.size()));
   buf.insert(buf.end(), vendor.begin(), vendor.end());
 

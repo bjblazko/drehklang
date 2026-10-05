@@ -9,7 +9,7 @@
 #include "AudioFileTypes.h"
 #include "FileLister.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // Recursively lists every audio file (see AudioFileTypes.h) under a root path on
 // the SD card, for the tag-based library scan (lib/library/LibraryScanner).
@@ -125,4 +125,4 @@ class SdFileLister : public library::FileLister {
   size_t appleDoubleSkipped_ = 0;
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

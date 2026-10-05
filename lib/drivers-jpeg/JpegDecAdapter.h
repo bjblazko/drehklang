@@ -9,7 +9,7 @@
 #include "CoverArtCache.h"
 #include "SquareResampler.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // Decodes a JPEG (from memory) into a square RGB565 cover with JPEGDEC.
 // Baseline images use the largest of JPEGDEC's 1/2, 1/4, 1/8 scales that
@@ -93,4 +93,4 @@ class JpegDecAdapter : public library::JpegDecoder {
   uint16_t scratchHeight_ = 0;
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

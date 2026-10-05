@@ -2,7 +2,7 @@
 
 ## Context
 
-knobify lists `.ogg` files but can't play them: ESP32-audioI2S 2.3.0
+DialHard lists `.ogg` files but can't play them: ESP32-audioI2S 2.3.0
 decodes MP3, AAC/M4A, WAV and FLAC, and rejects Ogg streams that aren't
 Ogg-FLAC ("ogg/flac support only", Audio.cpp:2127). The user's audiobook
 collection is 29 Ogg Vorbis files of ~23 minutes each, and a published
@@ -162,7 +162,7 @@ during USB transfers):
 
 ## Debt
 
-ADR 0017 records that knobify now has two decode paths because the pinned
+ADR 0017 records that DialHard now has two decode paths because the pinned
 library can't decode Vorbis, and that the alternative — ESP32-audioI2S
 3.x on Arduino-ESP32 3.x — was rejected for now because it would mean
 re-validating PSRAM mode, the SDMMC quirks, TinyUSB mass storage, CDC

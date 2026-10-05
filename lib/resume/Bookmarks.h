@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace knobify::resume {
+namespace dialhard::resume {
 
 // Where one spoken-word title was left: which part was playing and how far
 // into it. A "title" is an audiobook or a radio play -- one folder of
@@ -195,4 +195,4 @@ class Bookmarks {
   bool dirty_ = false;
 };
 
-}  // namespace knobify::resume
+}  // namespace dialhard::resume

@@ -5,7 +5,7 @@
 #include <cstring>
 #include <vector>
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace {
 
@@ -128,4 +128,4 @@ TagResult VorbisCommentParser::parse(RawFile &file) {
   return result;
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

@@ -5,7 +5,7 @@
 
 #include "ToneGenerator.h"
 
-using knobify::playback::ToneGenerator;
+using dialhard::playback::ToneGenerator;
 
 void setUp() {}
 void tearDown() {}

@@ -5,9 +5,9 @@
 #include "AudioBackendKind.h"
 #include "AudioGain.h"
 
-using knobify::playback::AudioBackendKind;
-using knobify::playback::AudioGain;
-using knobify::playback::backendForPath;
+using dialhard::playback::AudioBackendKind;
+using dialhard::playback::AudioGain;
+using dialhard::playback::backendForPath;
 
 void setUp() {}
 void tearDown() {}

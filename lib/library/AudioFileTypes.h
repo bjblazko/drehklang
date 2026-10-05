@@ -4,7 +4,7 @@
 #include <cctype>
 #include <string>
 
-namespace knobify::library {
+namespace dialhard::library {
 
 // Whether a file name's extension is one the library lists and the player
 // is asked to play. Shared by the SD walk and the folder browser so both
@@ -18,4 +18,4 @@ inline bool isAudioFileName(const std::string &name) {
   return ext == "mp3" || ext == "m4a" || ext == "ogg" || ext == "wav";
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

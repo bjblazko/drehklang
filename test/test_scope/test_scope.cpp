@@ -7,7 +7,7 @@
 
 #include "TriggeredScope.h"
 
-using knobify::signal::TriggeredScope;
+using dialhard::signal::TriggeredScope;
 
 void setUp() {}
 void tearDown() {}

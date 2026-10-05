@@ -6,10 +6,10 @@
 
 #include "AudioGain.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 namespace {
-// The port ESP32-audioI2S installs in Audio's constructor; knobify's own
+// The port ESP32-audioI2S installs in Audio's constructor; DialHard's own
 // decoders write to the same one rather than installing a second driver.
 constexpr i2s_port_t kI2sPort = I2S_NUM_0;
 }  // namespace
@@ -99,4 +99,4 @@ AudioOutputStage &audioOutputStage() {
   return stage;
 }
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

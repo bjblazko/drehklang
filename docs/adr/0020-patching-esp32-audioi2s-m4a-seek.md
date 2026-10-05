@@ -58,7 +58,7 @@ build) and **fails the build** if its anchor text is not found exactly
 once, so a dependency change can never quietly drop the fix and leave M4A
 seeking broken again.
 
-No knobify C++ changed. `seekByMs()`, `Mp4Parser`, `Shuttle` and
+No DialHard C++ changed. `seekByMs()`, `Mp4Parser`, `Shuttle` and
 `PlaybackStateMachine` were computing a correct byte target all along;
 the library was discarding it.
 
@@ -69,10 +69,10 @@ the library was discarding it.
   ~5000 lines of `Audio.cpp` plus three decoder trees, and taking over
   its maintenance for a one-line fix is the wrong trade.
 - **Bumping the version.** Upstream master could not be confirmed to fix
-  it, and 2.3.0 is pinned deliberately: knobify already works around its
+  it, and 2.3.0 is pinned deliberately: DialHard already works around its
   `audio_info()` null-deref and its `playSample()` 6 dB halving, and 3.x
   needs the Arduino-ESP32 3.x migration ADR 0017 describes.
-- **Computing the frame boundary in knobify** and passing it in. The
+- **Computing the frame boundary in DialHard** and passing it in. The
   library's correction is unconditional for `CODEC_M4A`, so a
   pre-corrected offset would be discarded too. It stays available as the
   follow-up below.
@@ -86,7 +86,7 @@ the library was discarding it.
   every seek, four bytes at a time via single `audiofile.read()` calls.
   A 5-minute AAC is ~12 900 frames, so a seek costs ~51 600 one-byte SD
   reads, and jog/shuttle cues every 600 ms (`Shuttle::kCycleMs`). If that
-  proves too slow on the device, the follow-up is for knobify to build
+  proves too slow on the device, the follow-up is for DialHard to build
   the cumulative `stsz` offset table itself in
   `Esp32AudioI2SDriver::readTrackTiming()` — which already opens the file
   through `Mp4Parser` — and to extend this patch to accept a

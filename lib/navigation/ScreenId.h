@@ -5,7 +5,7 @@
 
 #include "CollectionId.h"
 
-namespace knobify::navigation {
+namespace dialhard::navigation {
 
 // Which screen is showing. Deliberately open-ended (not "Artists is the
 // app root"), which is what let the Home menu be added above the music
@@ -84,4 +84,4 @@ struct Screen {
   ScreenParams params;
 };
 
-}  // namespace knobify::navigation
+}  // namespace dialhard::navigation

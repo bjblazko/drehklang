@@ -22,10 +22,10 @@ extern "C" {
 // comment for why .line_height/.base_line are hand-pinned to the
 // built-in Montserrat fonts' own values. Regenerate with
 // scripts/generate-text-fonts.sh, never by hand.
-LV_FONT_DECLARE(knobify_text_font_14);
-LV_FONT_DECLARE(knobify_text_font_16);
-LV_FONT_DECLARE(knobify_text_font_20);
-LV_FONT_DECLARE(knobify_text_font_28);
+LV_FONT_DECLARE(dialhard_text_font_14);
+LV_FONT_DECLARE(dialhard_text_font_16);
+LV_FONT_DECLARE(dialhard_text_font_20);
+LV_FONT_DECLARE(dialhard_text_font_28);
 
 #ifdef __cplusplus
 }

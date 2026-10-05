@@ -1,9 +1,9 @@
 ---
 name: flash-device
-description: Flash the knobify firmware to the board's primary ESP32-S3R8 MCU, guarding against this board's dual-MCU USB-cable-orientation quirk. Use whenever the user asks to flash, upload, deploy, or test the firmware on the actual hardware.
+description: Flash the DialHard firmware to the board's primary ESP32-S3R8 MCU, guarding against this board's dual-MCU USB-cable-orientation quirk. Use whenever the user asks to flash, upload, deploy, or test the firmware on the actual hardware.
 ---
 
-# Flashing knobify to the device
+# Flashing DialHard to the device
 
 This board (Waveshare ESP32-S3-Knob-Touch-LCD-1.8) has two MCUs sharing
 one USB-serial port through a CH445P analog switch. Which MCU actually

@@ -6,7 +6,7 @@
 
 #include "Spectrum.h"
 
-using knobify::signal::Spectrum;
+using dialhard::signal::Spectrum;
 
 void setUp() {}
 void tearDown() {}

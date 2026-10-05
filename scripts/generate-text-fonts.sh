@@ -222,7 +222,7 @@ for SIZE in 14 16 20 28; do
     --font "$FONTAWESOME" \
       -r "$FONTAWESOME_RANGE" \
     --format lvgl --force-fast-kern-format \
-    --lv-include lvgl.h --lv-font-name "knobify_text_font_${SIZE}" \
+    --lv-include lvgl.h --lv-font-name "dialhard_text_font_${SIZE}" \
     -o "$OUT"
   patch_metrics "$OUT" "$SIZE"
 done

@@ -6,7 +6,7 @@
 
 #include "GestureRecognizer.h"
 
-namespace knobify::input {
+namespace dialhard::input {
 
 // Maps the CST816's raw coordinates onto the 360x360 display, per axis as
 // raw = scale * visual + offset. On this board the panel's X axis doesn't
@@ -83,4 +83,4 @@ struct TouchCalibration {
   }
 };
 
-}  // namespace knobify::input
+}  // namespace dialhard::input

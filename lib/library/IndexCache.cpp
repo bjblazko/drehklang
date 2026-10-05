@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace {
 
@@ -215,4 +215,4 @@ bool IndexCache::decode(const std::vector<uint8_t> &bytes, LibraryIndex &index,
   return true;
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

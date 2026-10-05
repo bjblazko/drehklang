@@ -92,7 +92,7 @@ successful flash before trusting blindly.
 
 Waveshare's own official Arduino demo for this board (mirrored in the
 same community repo) targets **LVGL v8.3.11** (RGB565 color depth,
-byte-swapped for QSPI) — knobify's `lib_deps` should pin the same major
+byte-swapped for QSPI) — DialHard's `lib_deps` should pin the same major
 version rather than LVGL v9, to stay compatible with any ST77916 QSPI
 init/driver code ported from that demo.
 

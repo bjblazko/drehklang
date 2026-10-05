@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace knobify::navigation {
+namespace dialhard::navigation {
 
 // One initial-letter group in a browse list: `letter` is what the header
 // shows, `row` the first list row belonging to it.
@@ -133,4 +133,4 @@ class LetterJump {
   uint32_t lastTurnMs_ = 0;
 };
 
-}  // namespace knobify::navigation
+}  // namespace dialhard::navigation

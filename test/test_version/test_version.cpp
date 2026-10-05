@@ -6,7 +6,7 @@ void setUp() {}
 void tearDown() {}
 
 void test_version_is_not_empty() {
-  TEST_ASSERT_TRUE(knobify::kVersion[0] != '\0');
+  TEST_ASSERT_TRUE(dialhard::kVersion[0] != '\0');
 }
 
 int main(int argc, char **argv) {

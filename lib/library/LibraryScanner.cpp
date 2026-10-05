@@ -1,6 +1,6 @@
 #include "LibraryScanner.h"
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace {
 
@@ -106,4 +106,4 @@ LibraryIndex LibraryScanner::scan(FileLister &lister, FileOpener &opener,
   return index;
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

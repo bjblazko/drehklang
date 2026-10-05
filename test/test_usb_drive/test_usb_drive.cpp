@@ -2,10 +2,10 @@
 
 #include "UsbDriveSession.h"
 
-using knobify::usbdrive::UsbDriveEnd;
-using knobify::usbdrive::UsbDrivePhase;
-using knobify::usbdrive::UsbDriveSession;
-using knobify::usbdrive::UsbStorage;
+using dialhard::usbdrive::UsbDriveEnd;
+using dialhard::usbdrive::UsbDrivePhase;
+using dialhard::usbdrive::UsbDriveSession;
+using dialhard::usbdrive::UsbStorage;
 
 namespace {
 

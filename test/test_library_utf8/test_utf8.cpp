@@ -4,7 +4,7 @@
 
 #include "Utf8.h"
 
-using namespace knobify::library::utf8;
+using namespace dialhard::library::utf8;
 
 void setUp() {}
 void tearDown() {}

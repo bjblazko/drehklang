@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace knobify::games {
+namespace dialhard::games {
 
 // Integer sine and cosine for the games (ADR 0023), in degrees, scaled to
 // kScale. No floating point: the same call has to produce the craft's
@@ -43,4 +43,4 @@ class FixedTrig {
   };
 };
 
-}  // namespace knobify::games
+}  // namespace dialhard::games

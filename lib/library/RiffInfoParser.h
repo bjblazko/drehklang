@@ -3,7 +3,7 @@
 #include "RawFile.h"
 #include "TagResult.h"
 
-namespace knobify::library {
+namespace dialhard::library {
 
 // Extracts title/artist/album from a WAV file's RIFF "LIST"/"INFO" chunk
 // (INAM/IART/IPRD sub-chunks). WAV has no standard track-number tag, so
@@ -13,4 +13,4 @@ class RiffInfoParser {
   static TagResult parse(RawFile &file);
 };
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // device.md pinout: "Other | Battery ADC | 1". Confirmed by a live
 // serial probe (2026-09-13, see the battery-indicator plan doc) to
@@ -30,4 +30,4 @@ class BatteryAdcDriver {
   }
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

@@ -22,7 +22,7 @@ Constraints:
   I2S sample rate, up to 1.5×, and the pitch rises with it. What the library
   can do cheaply is jump within the open file (`setFilePos`) without
   reopening it.
-- **Seeking only works for MP3 and WAV.** knobify plays `mp3`, `ogg` and
+- **Seeking only works for MP3 and WAV.** DialHard plays `mp3`, `ogg` and
   `wav`; the library can't seek within Ogg.
 - **The Rams guidelines prefer no hidden modes**, one accent per screen and
   honest state. The UX guidelines allow only one edge ring at a time.
@@ -33,7 +33,7 @@ Constraints:
 
 The elapsed-time readout becomes a quiet grey pill: `◀◀ 1:23 / 4:05 ▶▶`
 (Material Symbols `fast_rewind`/`fast_forward` from a generated 16 px icon
-font `knobify_icon_font_16` with fallback to Montserrat 14 for digits and
+font `dialhard_icon_font_16` with fallback to Montserrat 14 for digits and
 text). While you hold the pill,
 turning the knob shuttles. Lifting your finger ends it, and the knob sets
 the volume again straight away.
@@ -148,8 +148,8 @@ busier. The speed readout in the pill covers the exact step.
   or Now Playing goes away.
 - `EdgeArcConfig` gains a `mode` field for the symmetrical arc;
   `makeEdgeArcHost` an inset.
-- The pill's ◀◀ ▶▶ marks use `knobify_icon_font_16` (Material Symbols
-  `fast_rewind`/`fast_forward`), which has `knobify_text_font_14` as
+- The pill's ◀◀ ▶▶ marks use `dialhard_icon_font_16` (Material Symbols
+  `fast_rewind`/`fast_forward`), which has `dialhard_text_font_14` as
   fallback (ADR 0019 -- originally `lv_font_montserrat_14`) so digits
   render in the same label; `line_height` and `base_line` are set to that
   font's values (16/3) because LVGL labels size and position by the

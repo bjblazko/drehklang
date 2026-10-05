@@ -7,7 +7,7 @@
 
 #include "Theme.h"
 
-namespace knobify::ui {
+namespace dialhard::ui {
 
 namespace {
 constexpr int kBufHeight = drivers::kLcdVerRes / 10;
@@ -47,7 +47,7 @@ bool LvglGlue::begin(drivers::St77916Driver &display) {
   indevDrv_.disp = disp;
   indevDrv_.read_cb = &LvglGlue::touchReadCb;
   indevDrv_.user_data = this;
-#ifdef KNOBIFY_TOUCH_DEBUG
+#ifdef DIALHARD_TOUCH_DEBUG
   indevDrv_.feedback_cb = [](lv_indev_drv_t *, uint8_t code) {
     const char *name = nullptr;
     switch (code) {
@@ -136,7 +136,7 @@ void LvglGlue::touchReadCb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
   data->point.y = self->lastPressedY_;
   data->state = touch.pressed ? LV_INDEV_STATE_PRESSED
                               : LV_INDEV_STATE_RELEASED;
-#ifdef KNOBIFY_TOUCH_DEBUG
+#ifdef DIALHARD_TOUCH_DEBUG
   static bool lastReported = false;
   if (touch.pressed != lastReported) {
     lastReported = touch.pressed;
@@ -146,4 +146,4 @@ void LvglGlue::touchReadCb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
 #endif
 }
 
-}  // namespace knobify::ui
+}  // namespace dialhard::ui

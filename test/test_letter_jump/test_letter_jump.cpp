@@ -6,9 +6,9 @@
 #include "LetterJump.h"
 #include "LibraryScanner.h"
 
-using knobify::library::LibraryIndex;
-using knobify::navigation::LetterBucket;
-using knobify::navigation::LetterJump;
+using dialhard::library::LibraryIndex;
+using dialhard::navigation::LetterBucket;
+using dialhard::navigation::LetterJump;
 
 void setUp() {}
 void tearDown() {}

@@ -4,7 +4,7 @@
 #include "NavigationStack.h"
 #include "ScreenId.h"
 
-namespace knobify::navigation {
+namespace dialhard::navigation {
 
 // Menu is the main menu's own stack (Home -> Settings -> Brightness, or
 // Now Playing opened from its mini-bar); Library and Files are the two
@@ -155,4 +155,4 @@ class TabController {
   Tab lastBrowseTab_;
 };
 
-}  // namespace knobify::navigation
+}  // namespace dialhard::navigation

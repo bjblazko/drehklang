@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Size: 48 px
  * Bpp: 4
- * Opts: --font MaterialSymbolsOutlined.ttf --range 0xE405,0xE8B8,0xE518,0xEF44,0xEA19,0xEA66,0xEA28,0xF154 --size 48 --bpp 4 --no-compress --format lvgl --lv-include lvgl.h --lv-font-name knobify_icon_font_48 -o IconFont48.c
+ * Opts: --font MaterialSymbolsOutlined.ttf --range 0xE405,0xE8B8,0xE518,0xEF44,0xEA19,0xEA66,0xEA28,0xF154 --size 48 --bpp 4 --no-compress --format lvgl --lv-include lvgl.h --lv-font-name dialhard_icon_font_48 -o IconFont48.c
  *
  * Generated 2026-09-15 via lv_font_conv (npm) from the same Google
  * Material Symbols Outlined variable font as IconFont.c
@@ -31,11 +31,11 @@
 #include "lvgl.h"
 #endif
 
-#ifndef KNOBIFY_ICON_FONT_48
-#define KNOBIFY_ICON_FONT_48 1
+#ifndef DIALHARD_ICON_FONT_48
+#define DIALHARD_ICON_FONT_48 1
 #endif
 
-#if KNOBIFY_ICON_FONT_48
+#if DIALHARD_ICON_FONT_48
 
 /*-----------------
  *    BITMAPS
@@ -856,9 +856,9 @@ static lv_font_fmt_txt_dsc_t font_dsc = {
 
 /*Initialize a public general font descriptor*/
 #if LVGL_VERSION_MAJOR >= 8
-const lv_font_t knobify_icon_font_48 = {
+const lv_font_t dialhard_icon_font_48 = {
 #else
-lv_font_t knobify_icon_font_48 = {
+lv_font_t dialhard_icon_font_48 = {
 #endif
     .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt,    /*Function pointer to get glyph's data*/
     .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,    /*Function pointer to get glyph's bitmap*/
@@ -880,5 +880,5 @@ lv_font_t knobify_icon_font_48 = {
 
 
 
-#endif /*#if KNOBIFY_ICON_FONT_48*/
+#endif /*#if DIALHARD_ICON_FONT_48*/
 

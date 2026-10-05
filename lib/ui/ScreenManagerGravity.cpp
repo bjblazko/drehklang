@@ -23,7 +23,7 @@
 #include "St77916Driver.h"
 #include "TextFont.h"
 
-namespace knobify::ui {
+namespace dialhard::ui {
 
 using games::FixedTrig;
 using games::GravityGame;
@@ -138,7 +138,7 @@ void ScreenManager::renderGravity() {
   // ground, so it stays white like the ridge it belongs to.
   for (int i = 0; i < GravityTerrain::kMaxPads; ++i) {
     w.padLabels[i] = game_style::makeLabel(screen_, 0, 0, 40,
-                                           &knobify_text_font_14);
+                                           &dialhard_text_font_14);
     lv_obj_add_flag(w.padLabels[i], LV_OBJ_FLAG_HIDDEN);
   }
   rebuildGravityTerrain();
@@ -150,16 +150,16 @@ void ScreenManager::renderGravity() {
   const lv_coord_t rightColumn = drivers::kLcdHorRes / 2;
   w.altitude = game_style::makeLabel(screen_, leftColumn, kInstrumentTop,
                                      kInstrumentColumnWidth,
-                                     &knobify_text_font_14);
+                                     &dialhard_text_font_14);
   w.vertical = game_style::makeLabel(screen_, rightColumn, kInstrumentTop,
                                      kInstrumentColumnWidth,
-                                     &knobify_text_font_14);
+                                     &dialhard_text_font_14);
   w.horizontal = game_style::makeLabel(
       screen_, leftColumn, kInstrumentTop + kInstrumentRowGap,
-      kInstrumentColumnWidth, &knobify_text_font_14);
+      kInstrumentColumnWidth, &dialhard_text_font_14);
   w.fuel = game_style::makeLabel(screen_, rightColumn,
                                  kInstrumentTop + kInstrumentRowGap,
-                                 kInstrumentColumnWidth, &knobify_text_font_14);
+                                 kInstrumentColumnWidth, &dialhard_text_font_14);
 
   // Below the ground line, so it lies on the grey mass rather than the
   // sky -- and is therefore set in ink rather than white. The one place
@@ -167,7 +167,7 @@ void ScreenManager::renderGravity() {
   // the background does.
   w.hint = game_style::makeLabel(screen_,
                                  (drivers::kLcdHorRes - kHintWidth) / 2,
-                                 kHintTop, kHintWidth, &knobify_text_font_14);
+                                 kHintTop, kHintWidth, &dialhard_text_font_14);
   lv_obj_set_style_text_color(w.hint, game_style::vacuum(), 0);
 
   // Three controls is two more than a knob and a screen suggest on their
@@ -176,7 +176,7 @@ void ScreenManager::renderGravity() {
   // it (user, 2026-09-18).
   w.legend = game_style::makeLabel(
       screen_, (drivers::kLcdHorRes - kLegendWidth) / 2, kLegendTop,
-      kLegendWidth, &knobify_text_font_14);
+      kLegendWidth, &dialhard_text_font_14);
   lv_label_set_text(w.legend, "TURN TO STEER\nHOLD TO THRUST");
 
   // Said once, on arriving: this board has no button and the game has no
@@ -397,4 +397,4 @@ void ScreenManager::drainGravitySounds() {
   }
 }
 
-}  // namespace knobify::ui
+}  // namespace dialhard::ui

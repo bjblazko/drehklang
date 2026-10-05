@@ -3,9 +3,9 @@
 #include "LibraryScanner.h"
 #include "PlaylistBuilder.h"
 
-using knobify::library::LibraryIndex;
-using knobify::library::PlaylistBuilder;
-using knobify::library::SortOrder;
+using dialhard::library::LibraryIndex;
+using dialhard::library::PlaylistBuilder;
+using dialhard::library::SortOrder;
 
 void setUp() {}
 void tearDown() {}

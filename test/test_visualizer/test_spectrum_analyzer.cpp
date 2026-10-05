@@ -6,7 +6,7 @@
 
 #include "SpectrumAnalyzer.h"
 
-using knobify::visualizer::SpectrumAnalyzer;
+using dialhard::visualizer::SpectrumAnalyzer;
 
 void setUp() {}
 void tearDown() {}

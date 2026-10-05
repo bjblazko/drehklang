@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace knobify::resume {
+namespace dialhard::resume {
 
 namespace {
 
@@ -232,4 +232,4 @@ uint32_t ResumeCodec::crc32(const uint8_t *data, std::size_t length) {
   return ~crc;
 }
 
-}  // namespace knobify::resume
+}  // namespace dialhard::resume

@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <string>
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
-// A decoder knobify drives itself, as opposed to the ESP32-audioI2S path
+// A decoder DialHard drives itself, as opposed to the ESP32-audioI2S path
 // (ADR 0017). Positions are sample indices: that is what a Vorbis stream
 // can seek to, and PlaybackDriver's position is opaque above the driver.
 class DecoderBackend {
@@ -25,4 +25,4 @@ class DecoderBackend {
   virtual void setPaused(bool paused) = 0;
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

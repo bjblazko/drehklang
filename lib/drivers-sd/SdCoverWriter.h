@@ -8,7 +8,7 @@
 
 #include "CoverArtCache.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // Cached-cover file format: a small fixed header, then a raw RGB565
 // pixel dump -- decoding is done once at scan time (CoverArtCache), so
@@ -23,7 +23,7 @@ struct CoverFileHeader {
 // Where cached covers live on the SD card, one file per album folder --
 // see lib/library/CoverArtCache.h for the folder-path -> filename
 // mapping (shared with SdCoverReader so both sides agree).
-constexpr const char *kCoverCacheDir = "/knobify/covers";
+constexpr const char *kCoverCacheDir = "/dialhard/covers";
 
 inline std::string coverCachePathFor(const std::string &albumFolderPath) {
   return std::string(kCoverCacheDir) + "/" +
@@ -55,4 +55,4 @@ class SdCoverWriter : public library::CoverWriter {
   }
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

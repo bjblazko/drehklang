@@ -10,7 +10,7 @@ decode paths. Suspends one rule of the design system
 
 ## Context
 
-Every destination knobify has had so far plays something through the
+Every destination DialHard has had so far plays something through the
 speaker: three collections, Settings and the sleep timer (ADR 0018). The
 user asked for a sixth, **Games**, and for Pong as its first entry,
 "so nah am Original wie möglich".
@@ -26,7 +26,7 @@ direction.
 
 **Badly**, in three ways, each settled with the user on 2026-09-17:
 
-- The game is white on black. knobify is a light system: `surface` `#F4F4F0`
+- The game is white on black. DialHard is a light system: `surface` `#F4F4F0`
   on every screen, lock screen included, because the panel is a
   reflective IPS LCD on which a dark theme rendered poorly (§3).
 - The original court is 4:3 landscape with the paddles at the far left

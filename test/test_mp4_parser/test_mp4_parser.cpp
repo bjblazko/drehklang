@@ -8,10 +8,10 @@
 #include "Mp4Parser.h"
 #include "TagReader.h"
 
-using knobify::library::Mp4Info;
-using knobify::library::Mp4Parser;
-using knobify::library::TagReader;
-using knobify::library::TagResult;
+using dialhard::library::Mp4Info;
+using dialhard::library::Mp4Parser;
+using dialhard::library::TagReader;
+using dialhard::library::TagResult;
 
 void setUp() {}
 void tearDown() {}

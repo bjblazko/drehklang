@@ -15,10 +15,10 @@
 #include "TextFont.h"
 #include "Theme.h"
 
-using knobify::navigation::Screen;
-using knobify::navigation::ScreenKind;
+using dialhard::navigation::Screen;
+using dialhard::navigation::ScreenKind;
 
-namespace knobify::ui {
+namespace dialhard::ui {
 
 // Music's browse axes (ADR 0021), in the order the picker lists them:
 // the shelf you know first, the flatter ones after, the derived ones
@@ -86,33 +86,33 @@ struct MenuEntry {
 };
 
 constexpr MenuEntry kMenuEntries[] = {
-    {KNOBIFY_ICON_MUSIC_NOTE, "Music",
+    {DIALHARD_ICON_MUSIC_NOTE, "Music",
      [](navigation::TabController &tabs) {
        tabs.openCollection(collection::CollectionId::Music);
      }},
-    {KNOBIFY_ICON_MENU_BOOK, "Audiobooks",
+    {DIALHARD_ICON_MENU_BOOK, "Audiobooks",
      [](navigation::TabController &tabs) {
        tabs.openCollection(collection::CollectionId::Audiobooks);
      }},
-    {KNOBIFY_ICON_THEATER_COMEDY, "Radio Plays",
+    {DIALHARD_ICON_THEATER_COMEDY, "Radio Plays",
      [](navigation::TabController &tabs) {
        tabs.openCollection(collection::CollectionId::RadioPlays);
      }},
-    {KNOBIFY_ICON_SETTINGS, "Settings",
+    {DIALHARD_ICON_SETTINGS, "Settings",
      [](navigation::TabController &tabs) {
        tabs.activeStack().push(Screen{ScreenKind::Settings, {}});
      },
      /*showsSleepTimer=*/false, /*alwaysVisible=*/true},
-    {KNOBIFY_ICON_BEDTIME, "Sleep",
+    {DIALHARD_ICON_BEDTIME, "Sleep",
      [](navigation::TabController &tabs) {
        tabs.activeStack().push(Screen{ScreenKind::SleepTimer, {}});
      },
      /*showsSleepTimer=*/true},
-    {KNOBIFY_ICON_GAMES, "Games",
+    {DIALHARD_ICON_GAMES, "Games",
      [](navigation::TabController &tabs) {
        tabs.activeStack().push(Screen{ScreenKind::Games, {}});
      }},
-    {KNOBIFY_ICON_TONES, "Tones",
+    {DIALHARD_ICON_TONES, "Tones",
      [](navigation::TabController &tabs) {
        tabs.activeStack().push(Screen{ScreenKind::ToneGenerator, {}});
      }},
@@ -172,7 +172,7 @@ constexpr lv_coord_t kDotSize = 6;
 constexpr lv_coord_t kDotSpacing = 14;
 constexpr lv_coord_t kDotsY = 252;
 
-// The wordmark, top-centre: a small dial and "knobify" in lowercase, set
+// The wordmark, top-centre: a small dial and "DialHard", set
 // in an ink capsule. Home is the one screen with room for it -- no
 // caption, title or back button, and it is the screen the device boots
 // into.
@@ -215,7 +215,7 @@ constexpr lv_coord_t kWordmarkGap = 8;
 // width comes from lv_txt_get_size() with this value, so changing it
 // needs no other number touched.
 constexpr lv_coord_t kWordmarkTracking = 3;
-constexpr const char *kWordmark = "knobify";
+constexpr const char *kWordmark = "DialHard";
 
 // Which carousel slot a tile sits in. Stored in the cell's user data so
 // one click handler can tell "open this" from "rotate to this".
@@ -399,14 +399,14 @@ void ScreenManager::renderHome() {
   if (playback_.state() != playback::PlaybackState::Stopped) renderMiniBar();
 }
 
-// The wordmark: the dial and "knobify" inverted inside an ink capsule,
+// The wordmark: the dial and "DialHard" inverted inside an ink capsule,
 // centred as one shape. The capsule is sized from the measured text and
 // both parts are placed explicitly inside it, rather than put in a flex
 // row -- every other screen here positions with lv_obj_align(), and the
 // screen the device boots into is the last place to introduce a layout
 // engine whose passes interact with the label clamping below.
 void ScreenManager::renderWordmark() {
-  const lv_font_t *font = &knobify_text_font_16;
+  const lv_font_t *font = &dialhard_text_font_16;
   lv_point_t textSize;
   lv_txt_get_size(&textSize, kWordmark, font, kWordmarkTracking, 0,
                   LV_COORD_MAX, LV_TEXT_FLAG_NONE);
@@ -513,7 +513,7 @@ void ScreenManager::makeMenuTile(int entryIndex, int slot) {
   // Font before text -- see makeIconButton()'s comment.
   lv_obj_t *glyph = lv_label_create(circle);
   lv_obj_set_style_text_font(
-      glyph, centre ? &knobify_icon_font_48 : &knobify_icon_font_28, 0);
+      glyph, centre ? &dialhard_icon_font_48 : &dialhard_icon_font_28, 0);
   lv_label_set_text(glyph, kMenuEntries[entryIndex].icon);
   lv_obj_center(glyph);
 
@@ -524,7 +524,7 @@ void ScreenManager::makeMenuTile(int entryIndex, int slot) {
     // like the circle does -- the label has always been part of the
     // target.
     lv_obj_t *label = lv_label_create(tiles_);
-    lv_obj_set_style_text_font(label, &knobify_text_font_16, 0);
+    lv_obj_set_style_text_font(label, &dialhard_text_font_16, 0);
     lv_obj_set_style_text_color(label, theme::ink(), 0);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_width(label, kLabelWidth);
@@ -582,20 +582,20 @@ void ScreenManager::renderBrightness() {
   constexpr lv_coord_t kGlyphY = 104;
 
   lv_obj_t *glyph = lv_label_create(screen_);
-  lv_obj_set_style_text_font(glyph, &knobify_icon_font_48, 0);
+  lv_obj_set_style_text_font(glyph, &dialhard_icon_font_48, 0);
   lv_obj_set_style_text_color(glyph, theme::structure(), 0);
-  lv_label_set_text(glyph, KNOBIFY_ICON_LIGHT_MODE);
+  lv_label_set_text(glyph, DIALHARD_ICON_LIGHT_MODE);
   lv_obj_align(glyph, LV_ALIGN_TOP_MID, 0, kGlyphY);
 
   brightnessLabel_ = lv_label_create(screen_);
-  lv_obj_set_style_text_font(brightnessLabel_, &knobify_text_font_28, 0);
+  lv_obj_set_style_text_font(brightnessLabel_, &dialhard_text_font_28, 0);
   lv_obj_set_style_text_color(brightnessLabel_, theme::ink(), 0);
   lv_obj_align(brightnessLabel_, LV_ALIGN_TOP_MID, 0, kGlyphY + 60);
 
   // There's no button to press on this screen, so name the one control
   // that does something.
   lv_obj_t *hint = lv_label_create(screen_);
-  lv_obj_set_style_text_font(hint, &knobify_text_font_14, 0);
+  lv_obj_set_style_text_font(hint, &dialhard_text_font_14, 0);
   lv_obj_set_style_text_color(hint, theme::structure(), 0);
   lv_label_set_text(hint, "Turn to adjust");
   lv_obj_align(hint, LV_ALIGN_TOP_MID, 0, kGlyphY + 104);
@@ -632,18 +632,18 @@ void ScreenManager::renderSleepTimer() {
   constexpr lv_coord_t kGlyphY = 104;
 
   lv_obj_t *glyph = lv_label_create(screen_);
-  lv_obj_set_style_text_font(glyph, &knobify_icon_font_48, 0);
+  lv_obj_set_style_text_font(glyph, &dialhard_icon_font_48, 0);
   lv_obj_set_style_text_color(glyph, theme::structure(), 0);
-  lv_label_set_text(glyph, KNOBIFY_ICON_BEDTIME);
+  lv_label_set_text(glyph, DIALHARD_ICON_BEDTIME);
   lv_obj_align(glyph, LV_ALIGN_TOP_MID, 0, kGlyphY);
 
   sleepValueLabel_ = lv_label_create(screen_);
-  lv_obj_set_style_text_font(sleepValueLabel_, &knobify_text_font_28, 0);
+  lv_obj_set_style_text_font(sleepValueLabel_, &dialhard_text_font_28, 0);
   lv_obj_set_style_text_color(sleepValueLabel_, theme::ink(), 0);
   lv_obj_align(sleepValueLabel_, LV_ALIGN_TOP_MID, 0, kGlyphY + 60);
 
   lv_obj_t *hint = lv_label_create(screen_);
-  lv_obj_set_style_text_font(hint, &knobify_text_font_14, 0);
+  lv_obj_set_style_text_font(hint, &dialhard_text_font_14, 0);
   lv_obj_set_style_text_color(hint, theme::structure(), 0);
   lv_label_set_text(hint, "Turn to set");
   lv_obj_align(hint, LV_ALIGN_TOP_MID, 0, kGlyphY + 104);
@@ -708,11 +708,11 @@ void ScreenManager::renderTouchCalibration() {
   if (shownCalibrationPhase_ == CalibrationPhase::Verifying) {
     // The new calibration is already live: tapping Keep proves it works.
     // If it doesn't, Keep can't be hit and the ring runs out.
-    addLabel("Touch calibrated", &knobify_text_font_20, theme::ink(), -84);
+    addLabel("Touch calibrated", &dialhard_text_font_20, theme::ink(), -84);
     makeIconButton(screen_, "Keep", 96, 96, LV_ALIGN_CENTER, 0, 0,
                    &ScreenManager::onCalibrationKeepClicked, this,
-                   ButtonRole::Primary, &knobify_text_font_20);
-    addLabel("Reverts unless kept", &knobify_text_font_14, theme::structure(),
+                   ButtonRole::Primary, &dialhard_text_font_20);
+    addLabel("Reverts unless kept", &dialhard_text_font_14, theme::structure(),
              84);
     ui_widgets::EdgeArcConfig arcConfig;
     arcConfig.startAngle = 135;
@@ -740,15 +740,15 @@ void ScreenManager::renderTouchCalibration() {
     }
   }
   addLabel(shownCalibrationRejected_ ? "Didn't fit.\nTry again" : "Tap the cross",
-           &knobify_text_font_20, theme::ink(),
+           &dialhard_text_font_20, theme::ink(),
            shownCalibrationRejected_ ? -24 : -16);
   char progress[16];
   snprintf(progress, sizeof(progress), "%u of %u",
            static_cast<unsigned>(shownCalibrationTargets_ + 1),
            static_cast<unsigned>(TouchCalibrator::kTargetCount));
-  addLabel(progress, &knobify_text_font_14, theme::structure(), 18);
+  addLabel(progress, &dialhard_text_font_14, theme::structure(), 18);
   // The one exit, and it never depends on touch.
-  addLabel("Turn knob to cancel", &knobify_text_font_14, theme::structure(),
+  addLabel("Turn knob to cancel", &dialhard_text_font_14, theme::structure(),
            52);
 }
 
@@ -826,18 +826,18 @@ void ScreenManager::renderUsbDrive() {
     lv_obj_align(label, LV_ALIGN_CENTER, 0, dy);
     return label;
   };
-  addLabel("USB drive", &knobify_text_font_20, theme::ink(), -96);
+  addLabel("USB drive", &dialhard_text_font_20, theme::ink(), -96);
   addLabel(connected ? "Connected" : "Connect to a computer",
-           &knobify_text_font_14, connected ? theme::accent() : theme::structure(),
+           &dialhard_text_font_14, connected ? theme::accent() : theme::structure(),
            -66);
   makeIconButton(screen_, "Done", 96, 96, LV_ALIGN_CENTER, 0, 10,
                  &ScreenManager::onUsbDriveDoneClicked, this,
-                 ButtonRole::Primary, &knobify_text_font_20);
+                 ButtonRole::Primary, &dialhard_text_font_20);
   // Done doesn't wait for the computer: leaving before its writes are
   // flushed corrupts the card.
   if (connected) {
     addLabel("Eject on the computer\nbefore tapping Done",
-             &knobify_text_font_14, theme::structure(), 96);
+             &dialhard_text_font_14, theme::structure(), 96);
   }
 }
 
@@ -879,4 +879,4 @@ void ScreenManager::tickUsbDrive(uint32_t nowMs) {
   }
 }
 
-}  // namespace knobify::ui
+}  // namespace dialhard::ui

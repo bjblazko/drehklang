@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace knobify::power {
+namespace dialhard::power {
 
 // Lock state and the hold-button-while-turning unlock gesture (decision,
 // ADR 0005). This board's rotary encoder has no push button and there is
@@ -72,4 +72,4 @@ class LockController {
   int32_t accumulatedDetents_ = 0;
 };
 
-}  // namespace knobify::power
+}  // namespace dialhard::power

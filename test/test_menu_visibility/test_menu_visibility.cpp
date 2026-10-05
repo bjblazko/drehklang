@@ -2,7 +2,7 @@
 
 #include "MenuVisibility.h"
 
-using knobify::navigation::MenuVisibility;
+using dialhard::navigation::MenuVisibility;
 using ToggleResult = MenuVisibility::ToggleResult;
 
 void setUp() {}

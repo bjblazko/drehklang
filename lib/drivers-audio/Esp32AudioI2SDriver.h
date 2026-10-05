@@ -16,7 +16,7 @@
 #include "SdRawFile.h"
 #include "VorbisBackend.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // I2S pins for the PCM5100A DAC, per device.md's pinout.
 constexpr uint8_t kAudioBclkPin = 39;
@@ -339,4 +339,4 @@ class Esp32AudioI2SDriver : public playback::PlaybackDriver {
   TaskHandle_t taskHandle_ = nullptr;
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

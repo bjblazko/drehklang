@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <cstdint>
 
-namespace knobify::playback {
+namespace dialhard::playback {
 
-// The one place knobify decides how loud a sample is. Both decode paths
+// The one place DialHard decides how loud a sample is. Both decode paths
 // use it (ADR 0016, ADR 0017): the ESP32-audioI2S path applies the volume
 // itself inside the library and only needs the sleep timer's output gain,
 // while the Vorbis path gets raw PCM and applies both.
@@ -48,4 +48,4 @@ class AudioGain {
   }
 };
 
-}  // namespace knobify::playback
+}  // namespace dialhard::playback

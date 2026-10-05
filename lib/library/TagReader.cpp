@@ -10,7 +10,7 @@
 #include "Utf8.h"
 #include "VorbisCommentParser.h"
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace {
 
@@ -194,4 +194,4 @@ TagResult TagReader::read(RawFile &file, const std::string &filePath) {
   return result;
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

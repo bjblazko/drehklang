@@ -5,8 +5,8 @@
 
 #include "BrightnessSetting.h"
 
-using knobify::playback::KeyValueStore;
-using knobify::power::BrightnessSetting;
+using dialhard::playback::KeyValueStore;
+using dialhard::power::BrightnessSetting;
 
 void setUp() {}
 void tearDown() {}

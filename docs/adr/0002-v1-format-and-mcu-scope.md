@@ -4,14 +4,14 @@
 
 Accepted — 2026-09-11. **The format decision is superseded by
 [ADR 0016](0016-native-formats-and-usb-drive.md) (2026-09-16)**: M4A/AAC
-plays natively, and knobify is licensed GPL-3.0-or-later, matching the
+plays natively, and DialHard is licensed GPL-3.0-or-later, matching the
 audio library that has always bundled the AAC decoder. The MCU scope
 below still holds.
 
 ## Context
 
 The developer's actual music library (on a home NAS, to be copied to SD)
-includes M4A (AAC/ALAC) files. The developer wants to publish `knobify` as
+includes M4A (AAC/ALAC) files. The developer wants to publish `DialHard` as
 open source from Germany and is concerned about licensing complications
 from bundling an AAC decoder.
 
@@ -20,7 +20,7 @@ ESP32-U4WDH secondary, each with its own rotary encoder. Third-party
 research on this board (CNX-Software writeup, referenced in `device.md`)
 indicates the secondary MCU exists mainly to add Classic Bluetooth support
 — the ESP32-S3 doesn't support Classic Bluetooth, only BLE — which is
-already explicitly out of scope for `knobify` per `README.md`.
+already explicitly out of scope for `DialHard` per `README.md`.
 
 ## Decision
 

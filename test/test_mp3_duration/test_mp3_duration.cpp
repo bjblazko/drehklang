@@ -7,7 +7,7 @@
 #include "../test_library_tags/FakeRawFile.h"
 #include "Mp3Duration.h"
 
-using knobify::library::Mp3Duration;
+using dialhard::library::Mp3Duration;
 
 void setUp() {}
 void tearDown() {}

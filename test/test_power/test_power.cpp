@@ -4,9 +4,9 @@
 #include "IdleTimer.h"
 #include "LockController.h"
 
-using knobify::power::BatteryMonitor;
-using knobify::power::IdleTimer;
-using knobify::power::LockController;
+using dialhard::power::BatteryMonitor;
+using dialhard::power::IdleTimer;
+using dialhard::power::LockController;
 
 void setUp() {}
 void tearDown() {}

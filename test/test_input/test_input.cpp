@@ -16,31 +16,31 @@
 #include "GeneratorControl.h"
 #include "ToneSession.h"
 
-using knobify::input::CalibrationOutcome;
-using knobify::input::CalibrationPhase;
-using knobify::input::TouchCalibrationFlow;
-using knobify::input::TouchCalibrator;
-using knobify::resume::BlobStore;
-using knobify::input::GestureRecognizer;
-using knobify::input::GestureType;
-using knobify::input::InputRouter;
-using knobify::input::KnobSink;
-using knobify::input::TouchCalibration;
-using knobify::input::TouchLatch;
-using knobify::input::TouchSample;
-using knobify::navigation::Screen;
-using knobify::navigation::ScreenKind;
-using knobify::navigation::TabController;
-using knobify::power::BrightnessSetting;
-using knobify::power::SleepTimer;
-using knobify::playback::KeyValueStore;
-using knobify::playback::PlaybackDriver;
-using knobify::playback::PlaybackStateMachine;
-using knobify::playback::Shuttle;
-using knobify::playback::VolumePersistence;
-using knobify::signal::GeneratorOutput;
-using knobify::signal::OscillatorParams;
-using knobify::signal::ToneSession;
+using dialhard::input::CalibrationOutcome;
+using dialhard::input::CalibrationPhase;
+using dialhard::input::TouchCalibrationFlow;
+using dialhard::input::TouchCalibrator;
+using dialhard::resume::BlobStore;
+using dialhard::input::GestureRecognizer;
+using dialhard::input::GestureType;
+using dialhard::input::InputRouter;
+using dialhard::input::KnobSink;
+using dialhard::input::TouchCalibration;
+using dialhard::input::TouchLatch;
+using dialhard::input::TouchSample;
+using dialhard::navigation::Screen;
+using dialhard::navigation::ScreenKind;
+using dialhard::navigation::TabController;
+using dialhard::power::BrightnessSetting;
+using dialhard::power::SleepTimer;
+using dialhard::playback::KeyValueStore;
+using dialhard::playback::PlaybackDriver;
+using dialhard::playback::PlaybackStateMachine;
+using dialhard::playback::Shuttle;
+using dialhard::playback::VolumePersistence;
+using dialhard::signal::GeneratorOutput;
+using dialhard::signal::OscillatorParams;
+using dialhard::signal::ToneSession;
 
 void setUp() {}
 void tearDown() {}
@@ -60,7 +60,7 @@ class FakeDriver : public PlaybackDriver {
   void setOutputGain(uint16_t) override {}
   bool isRunning() override { return true; }
   uint32_t durationSeconds() override { return 0; }
-  knobify::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
+  dialhard::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
     return {};
   }
   void loop() override {}
@@ -141,7 +141,7 @@ void test_encoder_scrolls_list_on_browse_screen() {
   VolumePersistence volume(store);
   PlaybackStateMachine playback(driver, volume);
   TabController tabs;
-  tabs.openCollection(knobify::collection::CollectionId::Music);  // Library/Artists.
+  tabs.openCollection(dialhard::collection::CollectionId::Music);  // Library/Artists.
   RecordingListSink sink;
   BrightnessSetting brightness(store);
   Shuttle shuttle(playback);
@@ -284,7 +284,7 @@ void test_swipe_pops_when_possible() {
   VolumePersistence volume(store);
   PlaybackStateMachine playback(driver, volume);
   TabController tabs;
-  tabs.openCollection(knobify::collection::CollectionId::Music);
+  tabs.openCollection(dialhard::collection::CollectionId::Music);
   tabs.activeStack().push(Screen{ScreenKind::Albums, {}});
   RecordingListSink sink;
   BrightnessSetting brightness(store);
@@ -306,7 +306,7 @@ void test_swipe_switches_tab_at_root() {
   VolumePersistence volume(store);
   PlaybackStateMachine playback(driver, volume);
   TabController tabs;
-  tabs.openCollection(knobify::collection::CollectionId::Music);
+  tabs.openCollection(dialhard::collection::CollectionId::Music);
   RecordingListSink sink;
   BrightnessSetting brightness(store);
   Shuttle shuttle(playback);
@@ -327,7 +327,7 @@ void test_tap_is_not_routed_by_input_router() {
   VolumePersistence volume(store);
   PlaybackStateMachine playback(driver, volume);
   TabController tabs;
-  tabs.openCollection(knobify::collection::CollectionId::Music);
+  tabs.openCollection(dialhard::collection::CollectionId::Music);
   RecordingListSink sink;
   BrightnessSetting brightness(store);
   Shuttle shuttle(playback);

@@ -7,7 +7,7 @@
 #include "BlobStore.h"
 #include "KeyValueStore.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // Wraps ESP32 Preferences (NVS) for the handful of small persisted
 // values this project needs (volume, settings, the resume record) -- see
@@ -15,6 +15,8 @@ namespace knobify::drivers {
 class NvsKeyValueStore : public playback::KeyValueStore,
                          public resume::BlobStore {
  public:
+  static constexpr const char *kNamespace = "dialhard";
+
   bool getU8(const std::string &key, uint8_t &out) override {
     prefs_.begin(kNamespace, /*readOnly=*/true);
     bool found = prefs_.isKey(key.c_str());
@@ -59,8 +61,7 @@ class NvsKeyValueStore : public playback::KeyValueStore,
   }
 
  private:
-  static constexpr const char *kNamespace = "knobify";
   Preferences prefs_;
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

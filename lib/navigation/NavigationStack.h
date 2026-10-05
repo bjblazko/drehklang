@@ -5,7 +5,7 @@
 
 #include "ScreenId.h"
 
-namespace knobify::navigation {
+namespace dialhard::navigation {
 
 // A fixed-depth back-stack of screens, constructed with an injected root
 // screen. It never hardcodes which ScreenKind is "the" root — that's the
@@ -63,4 +63,4 @@ class NavigationStack {
   std::size_t depth_;
 };
 
-}  // namespace knobify::navigation
+}  // namespace dialhard::navigation

@@ -7,7 +7,7 @@
 
 #include "AudioOutputStage.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 namespace {
 constexpr i2s_port_t kI2sPort = I2S_NUM_0;
@@ -24,7 +24,7 @@ void ToneOutput::begin() {
 }
 
 void ToneOutput::blip(uint16_t frequencyHz, uint16_t durationMs) {
-#ifdef KNOBIFY_TONE_DEBUG
+#ifdef DIALHARD_TONE_DEBUG
   triggeredMicros_ = micros();
   measuring_ = true;
 #endif
@@ -32,7 +32,7 @@ void ToneOutput::blip(uint16_t frequencyHz, uint16_t durationMs) {
 }
 
 void ToneOutput::noise(uint16_t clockHz, uint16_t durationMs, int16_t level) {
-#ifdef KNOBIFY_TONE_DEBUG
+#ifdef DIALHARD_TONE_DEBUG
   triggeredMicros_ = micros();
   measuring_ = true;
 #endif
@@ -76,7 +76,7 @@ void ToneOutput::taskLoop() {
       continue;
     }
 
-#ifdef KNOBIFY_TONE_DEBUG
+#ifdef DIALHARD_TONE_DEBUG
     if (measuring_) {
       measuring_ = false;
       Serial.printf("[tone] trigger->write %luus (rate claim %s)\n",
@@ -95,7 +95,7 @@ void ToneOutput::taskLoop() {
       claimedRate_ = rate;
     }
 
-#ifdef KNOBIFY_TONE_DEBUG
+#ifdef DIALHARD_TONE_DEBUG
     if (rateClaimStart_ != 0) {
       Serial.printf("[tone] rate claim took %luus\n",
                     static_cast<unsigned long>(micros() - rateClaimStart_));
@@ -115,7 +115,7 @@ void ToneOutput::taskLoop() {
         chunk_[i * 2] = mono_[i];
         chunk_[i * 2 + 1] = mono_[i];
       }
-#ifdef KNOBIFY_GENERATOR_DEBUG
+#ifdef DIALHARD_GENERATOR_DEBUG
       logGenerator(rate);
 #endif
       ok = stage.writeFramesUnscaled(chunk_, kChunkFrames);
@@ -125,7 +125,7 @@ void ToneOutput::taskLoop() {
       for (size_t i = 0; i < kChunkFrames * 2; ++i) chunk_[i] = 0;
       ok = stage.writeFrames(chunk_, kChunkFrames);
     }
-#if defined(KNOBIFY_TONE_DEBUG) || defined(KNOBIFY_GENERATOR_DEBUG)
+#if defined(DIALHARD_TONE_DEBUG) || defined(DIALHARD_GENERATOR_DEBUG)
     if (!ok) Serial.println("[tone] i2s write FAILED");
 #else
     (void)ok;
@@ -135,7 +135,7 @@ void ToneOutput::taskLoop() {
   }
 }
 
-#ifdef KNOBIFY_GENERATOR_DEBUG
+#ifdef DIALHARD_GENERATOR_DEBUG
 // Once a second: the pitch and peak of what was actually written, measured
 // from the samples rather than taken from the settings -- the check that
 // the grid, the rate claim and the level all agree (ADR 0024).
@@ -169,4 +169,4 @@ void ToneOutput::logGenerator(uint32_t rate) {
 }
 #endif
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

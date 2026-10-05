@@ -6,7 +6,7 @@ Accepted — 2026-09-13
 
 ## Context
 
-knobify is used in two real contexts: sitting on a table (where a stray
+DialHard is used in two real contexts: sitting on a table (where a stray
 touch barely matters, but the display burning power for no reason does)
 and riding in a pocket while playing (where accidental touch/encoder
 input against fabric is a real problem). This extends

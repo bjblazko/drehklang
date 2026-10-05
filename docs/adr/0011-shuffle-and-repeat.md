@@ -9,7 +9,7 @@ simplification.
 
 Playback only played one album in order and stopped after its last track.
 The user wanted shuffle and repeat, scoped to the current album, the
-artist, or the whole library. knobify has no button to click and a small
+artist, or the whole library. DialHard has no button to click and a small
 round screen that already holds cover, title, transport row, time and lock.
 The Rams guidelines prefer context over modes you have to remember, one
 accent control per screen, and state shown honestly.

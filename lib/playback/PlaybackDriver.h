@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string>
 
-namespace knobify::playback {
+namespace dialhard::playback {
 
 // What PlaybackDriver::readRecentSamples() copied out. `count == 0` means
 // no new audio since the last read (paused, stopped, between tracks).
@@ -53,4 +53,4 @@ class PlaybackDriver {
   virtual void loop() = 0;
 };
 
-}  // namespace knobify::playback
+}  // namespace dialhard::playback

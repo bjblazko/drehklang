@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace knobify::power {
+namespace dialhard::power {
 
 enum class SleepPhase {
   Off,
@@ -25,7 +25,7 @@ class SleepTimer {
   // 10 s in volume steps sounded like no fade at all).
   static constexpr uint32_t kFadeMs = 30000;
   static constexpr uint16_t kUnityGain = 4096;
-#ifdef KNOBIFY_SLEEP_DEBUG
+#ifdef DIALHARD_SLEEP_DEBUG
   // A 1-minute preset, to try the fade and deep sleep on the device.
   static constexpr uint32_t kPresetsMin[] = {0, 1, 15, 30, 45, 60, 90, 120};
 #else
@@ -104,4 +104,4 @@ class SleepTimer {
   uint32_t durationMs_ = 0;
 };
 
-}  // namespace knobify::power
+}  // namespace dialhard::power

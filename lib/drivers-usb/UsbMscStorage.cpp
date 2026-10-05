@@ -185,7 +185,7 @@ bool onStartStop(uint8_t powerCondition, bool start, bool loadEject) {
 
 }  // namespace
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 void UsbMscStorage::begin() {
   g_bounce = static_cast<uint8_t *>(
@@ -194,7 +194,7 @@ void UsbMscStorage::begin() {
   g_writeBuf = static_cast<uint8_t *>(heap_caps_malloc(
       kWriteBufSectors * 512, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL));
   g_writeMutex = xSemaphoreCreateMutex();
-  g_msc.vendorID("knobify");
+  g_msc.vendorID("DialHard");
   g_msc.productID("Music");
   g_msc.productRevision("1.0");
   g_msc.onRead(onRead);
@@ -281,4 +281,4 @@ void UsbMscStorage::printEvents() {
   }
 }
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

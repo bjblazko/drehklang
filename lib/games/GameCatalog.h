@@ -2,7 +2,7 @@
 
 #include "ScreenId.h"
 
-namespace knobify::games {
+namespace dialhard::games {
 
 // The Games list (ADR 0022): one row per game, in the order they are
 // shown. Unlike kMenuEntries and CollectionId, nothing stores an index
@@ -20,4 +20,4 @@ constexpr GameEntry kGames[] = {
 
 constexpr int kGameCount = static_cast<int>(sizeof(kGames) / sizeof(kGames[0]));
 
-}  // namespace knobify::games
+}  // namespace dialhard::games

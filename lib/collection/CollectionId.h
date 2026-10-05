@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace knobify::collection {
+namespace dialhard::collection {
 
-// The audio collections the device browses. knobify used to be a music
+// The audio collections the device browses. DialHard used to be a music
 // player with one library rooted at "/Music"; a collection is that same
 // player parameterised by a root folder and a small behaviour profile, so
 // spoken-word material lives beside music instead of inside it -- see
@@ -30,4 +30,4 @@ constexpr bool isValidCollection(uint8_t value) {
   return value < kCollectionCount;
 }
 
-}  // namespace knobify::collection
+}  // namespace dialhard::collection

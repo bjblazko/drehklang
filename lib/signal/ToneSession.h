@@ -6,7 +6,7 @@
 #include "KeyValueStore.h"
 #include "ToneSettings.h"
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // One tone generator in use (ADR 0024): the settings, whether it sounds,
 // and where the sound goes. Every change reaches the output at once;
@@ -73,4 +73,4 @@ class ToneSession {
   uint32_t lastChangeMs_ = 0;
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal

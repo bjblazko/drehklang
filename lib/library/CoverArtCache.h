@@ -9,7 +9,7 @@
 #include "RawFile.h"
 #include "TagResult.h"
 
-namespace knobify::library {
+namespace dialhard::library {
 
 // Decodes a JPEG byte buffer into a fixed-size square RGB565 pixel
 // buffer (center-cropped/scaled as needed). Wraps JPEGDEC on
@@ -79,4 +79,4 @@ class CoverArtCache {
   static std::string albumFolderPathFor(const std::string &trackFilePath);
 };
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

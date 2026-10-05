@@ -9,7 +9,7 @@
 #include "RoundScreen.h"
 #include "TextFont.h"
 
-namespace knobify::ui_widgets {
+namespace dialhard::ui_widgets {
 
 // Where a message appears: the pill's center, in screen pixels. Each
 // screen picks a spot clear of the bezel and near what triggered it.
@@ -100,7 +100,7 @@ class MessageArea {
   static constexpr lv_coord_t kHeight = 36;
   static constexpr lv_coord_t kPadX = 16;
   static constexpr lv_coord_t kBezelMargin = 16;
-  static constexpr const lv_font_t &kFont = knobify_text_font_16;
+  static constexpr const lv_font_t &kFont = dialhard_text_font_16;
 
   lv_coord_t screenDiameter_ = 0;
   lv_obj_t *pill_ = nullptr;
@@ -108,4 +108,4 @@ class MessageArea {
   messaging::MessageTimer timer_;
 };
 
-}  // namespace knobify::ui_widgets
+}  // namespace dialhard::ui_widgets

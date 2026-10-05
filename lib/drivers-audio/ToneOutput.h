@@ -8,7 +8,7 @@
 #include "Oscillator.h"
 #include "SampleSource.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // Gets a game's blips to the DAC when *nothing is playing* (ADR 0022).
 //
@@ -80,7 +80,7 @@ class ToneOutput : public games::BlipPlayer,
   // The rate this task last clocked the port at, so switching between a
   // blip and the generator reprograms it but repeating either does not.
   uint32_t claimedRate_ = 0;
-#ifdef KNOBIFY_GENERATOR_DEBUG
+#ifdef DIALHARD_GENERATOR_DEBUG
   void logGenerator(uint32_t rate);
   uint32_t debugSamples_ = 0;
   uint32_t debugCrossings_ = 0;
@@ -90,11 +90,11 @@ class ToneOutput : public games::BlipPlayer,
   uint32_t lastSeenSamples_ = 0;
   uint32_t lastFlowMs_ = 0;
   bool rateIsOurs_ = false;
-#ifdef KNOBIFY_TONE_DEBUG
+#ifdef DIALHARD_TONE_DEBUG
   volatile uint32_t triggeredMicros_ = 0;
   volatile bool measuring_ = false;
   uint32_t rateClaimStart_ = 0;
 #endif
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

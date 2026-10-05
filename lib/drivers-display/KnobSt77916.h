@@ -18,7 +18,7 @@
 
 #include "St77916InitOps.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 #define KNOB_ST77916_MADCTL_MY 0x80
 #define KNOB_ST77916_MADCTL_MX 0x40
@@ -121,4 +121,4 @@ class KnobSt77916 : public Arduino_TFT {
   }
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers

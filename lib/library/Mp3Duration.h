@@ -4,7 +4,7 @@
 
 #include "RawFile.h"
 
-namespace knobify::library {
+namespace dialhard::library {
 
 // Exact duration of an MP3 from the frame count in its Xing/Info or VBRI
 // header, the header encoders write into the first audio frame.
@@ -21,4 +21,4 @@ class Mp3Duration {
   static uint32_t readSeconds(RawFile &file);
 };
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

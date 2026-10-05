@@ -5,7 +5,7 @@
 
 #include "AudioFileTypes.h"
 
-namespace knobify::library {
+namespace dialhard::library {
 
 namespace {
 
@@ -39,4 +39,4 @@ std::vector<FolderEntry> FolderBrowser::list(DirectoryReader &reader,
   return filtered;
 }
 
-}  // namespace knobify::library
+}  // namespace dialhard::library

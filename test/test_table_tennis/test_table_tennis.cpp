@@ -5,7 +5,7 @@
 
 #include "TableTennisGame.h"
 
-using knobify::games::TableTennisGame;
+using dialhard::games::TableTennisGame;
 using Phase = TableTennisGame::Phase;
 using Sound = TableTennisGame::Sound;
 

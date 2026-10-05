@@ -5,12 +5,12 @@
 
 #include "PlaybackStateMachine.h"
 
-using knobify::playback::KeyValueStore;
-using knobify::playback::PlaybackDriver;
-using knobify::playback::PlaybackState;
-using knobify::playback::PlaybackStateMachine;
-using knobify::playback::RepeatMode;
-using knobify::playback::VolumePersistence;
+using dialhard::playback::KeyValueStore;
+using dialhard::playback::PlaybackDriver;
+using dialhard::playback::PlaybackState;
+using dialhard::playback::PlaybackStateMachine;
+using dialhard::playback::RepeatMode;
+using dialhard::playback::VolumePersistence;
 
 void setUp() {}
 void tearDown() {}
@@ -41,7 +41,7 @@ class FakeDriver : public PlaybackDriver {
   void setOutputGain(uint16_t gain) override { lastOutputGain = gain; }
   bool isRunning() override { return running; }
   uint32_t durationSeconds() override { return duration; }
-  knobify::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
+  dialhard::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
     return {};
   }
   void loop() override {}
@@ -491,7 +491,7 @@ void test_track_generation_unchanged_by_pause_resume_and_cued_resume() {
   FakeDriver cuedDriver;
   PlaybackStateMachine cuedSm(cuedDriver, volume);
   cuedSm.begin();
-  cuedSm.cue({"/a.mp3"}, 0, false, knobify::playback::PlayScope::File, 1234, 5,
+  cuedSm.cue({"/a.mp3"}, 0, false, dialhard::playback::PlayScope::File, 1234, 5,
              0);
   uint32_t cuedGeneration = cuedSm.trackGeneration();
   cuedSm.togglePlayPause(0);  // Resumes the cued track -- not a new track.

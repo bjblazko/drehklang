@@ -35,7 +35,7 @@ Pure logic extracted from the driver so both decode paths compute identical loud
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `knobify::playback::AudioGain` with `static constexpr uint16_t kUnityOutputGain = 4096;`, `static constexpr uint8_t kMaxVolumeStep = 21;`, `static int16_t applyOutputGain(int16_t sample, uint16_t outputGain);`, `static int16_t applyVolume(int16_t sample, uint8_t volumeStep, uint16_t outputGain);`, `static float linearGain(uint8_t volumeStep, uint16_t outputGain);`
+- Produces: `dialhard::playback::AudioGain` with `static constexpr uint16_t kUnityOutputGain = 4096;`, `static constexpr uint8_t kMaxVolumeStep = 21;`, `static int16_t applyOutputGain(int16_t sample, uint16_t outputGain);`, `static int16_t applyVolume(int16_t sample, uint8_t volumeStep, uint16_t outputGain);`, `static float linearGain(uint8_t volumeStep, uint16_t outputGain);`
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -48,7 +48,7 @@ Create `test/test_audio_backends/test_audio_backends.cpp`:
 
 #include "AudioGain.h"
 
-using knobify::playback::AudioGain;
+using dialhard::playback::AudioGain;
 
 void setUp() {}
 void tearDown() {}
@@ -115,9 +115,9 @@ Create `lib/playback/AudioGain.h`:
 #include <algorithm>
 #include <cstdint>
 
-namespace knobify::playback {
+namespace dialhard::playback {
 
-// The one place knobify decides how loud a sample is. Both decode paths
+// The one place DialHard decides how loud a sample is. Both decode paths
 // use it (ADR 0016, ADR 0017): the ESP32-audioI2S path applies the volume
 // itself inside the library and only needs the sleep timer's output gain,
 // while the Vorbis path gets raw PCM and applies both.
@@ -160,7 +160,7 @@ class AudioGain {
   }
 };
 
-}  // namespace knobify::playback
+}  // namespace dialhard::playback
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**
@@ -237,11 +237,11 @@ Two pure additions, both host-tested, before any decoder exists.
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `knobify::playback::AudioBackendKind` (`enum class` with `Library`, `Vorbis`) and `knobify::playback::backendForPath(const std::string &path) -> AudioBackendKind`.
+- Produces: `dialhard::playback::AudioBackendKind` (`enum class` with `Library`, `Vorbis`) and `dialhard::playback::backendForPath(const std::string &path) -> AudioBackendKind`.
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `test/test_audio_backends/test_audio_backends.cpp` (and add the two `RUN_TEST` lines in `main()`, plus `#include "AudioBackendKind.h"` and `using knobify::playback::AudioBackendKind; using knobify::playback::backendForPath;` at the top):
+Append to `test/test_audio_backends/test_audio_backends.cpp` (and add the two `RUN_TEST` lines in `main()`, plus `#include "AudioBackendKind.h"` and `using dialhard::playback::AudioBackendKind; using dialhard::playback::backendForPath;` at the top):
 
 ```cpp
 void test_ogg_files_go_to_the_vorbis_backend() {
@@ -286,10 +286,10 @@ Create `lib/playback/AudioBackendKind.h`:
 #include <cctype>
 #include <string>
 
-namespace knobify::playback {
+namespace dialhard::playback {
 
 // Which decoder plays a file. ESP32-audioI2S 2.3.0 has no Vorbis decoder,
-// so Ogg goes to knobify's own backend (ADR 0017). Opus would be a third
+// so Ogg goes to DialHard's own backend (ADR 0017). Opus would be a third
 // value here and a second backend, nothing more.
 enum class AudioBackendKind { Library, Vorbis };
 
@@ -304,14 +304,14 @@ inline AudioBackendKind backendForPath(const std::string &path) {
   return AudioBackendKind::Library;
 }
 
-}  // namespace knobify::playback
+}  // namespace dialhard::playback
 ```
 
 In `lib/playback/PlaybackStateMachine.h`, update the comment and the check in `canSeek()`:
 
 ```cpp
   // Whether the current track can be shuttled: the library seeks within
-  // MP3, M4A and WAV, and knobify's own Vorbis backend seeks by sample
+  // MP3, M4A and WAV, and DialHard's own Vorbis backend seeks by sample
   // (ADR 0017). By extension, so it's known before a cued track loads.
   ...
     return ext == "mp3" || ext == "m4a" || ext == "wav" || ext == "ogg" ||
@@ -354,8 +354,8 @@ Moves the spectrum ring and gain state out of file-scope globals into an object 
 - Modify: `lib/drivers-audio/Esp32AudioI2SDriver.h` (`setVolume()` tells the stage the step)
 
 **Interfaces:**
-- Consumes: `knobify::playback::AudioGain` (Task 1).
-- Produces: `knobify::drivers::AudioOutputStage` with `void setVolumeStep(uint8_t step);`, `void setOutputGain(uint16_t gain);`, `uint16_t outputGain() const;`, `uint8_t volumeStep() const;`, `void noteMonoSample(int16_t mono);`, `bool writeFrames(const int16_t *interleaved, size_t frames);`, `playback::SampleWindow readRecentSamples(int16_t *dst, size_t maxSamples, uint32_t sampleRate);`, and `AudioOutputStage &audioOutputStage();` (the single instance the weak hook can reach).
+- Consumes: `dialhard::playback::AudioGain` (Task 1).
+- Produces: `dialhard::drivers::AudioOutputStage` with `void setVolumeStep(uint8_t step);`, `void setOutputGain(uint16_t gain);`, `uint16_t outputGain() const;`, `uint8_t volumeStep() const;`, `void noteMonoSample(int16_t mono);`, `bool writeFrames(const int16_t *interleaved, size_t frames);`, `playback::SampleWindow readRecentSamples(int16_t *dst, size_t maxSamples, uint32_t sampleRate);`, and `AudioOutputStage &audioOutputStage();` (the single instance the weak hook can reach).
 
 - [ ] **Step 1: Write the header**
 
@@ -370,7 +370,7 @@ Create `lib/drivers-audio/AudioOutputStage.h`:
 
 #include "PlaybackDriver.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 // Where every sample leaves for the DAC, whichever decoder produced it
 // (ADR 0017). Owns the volume step, the sleep timer's output gain and the
@@ -393,7 +393,7 @@ class AudioOutputStage {
   // only records what was heard.
   void noteMonoSample(int16_t mono);
 
-  // knobify's own decoders: applies volume and output gain, records the
+  // DialHard's own decoders: applies volume and output gain, records the
   // samples and writes them to the I2S port the library installed.
   // Blocks until the DMA buffers take the frames; false on an I2S error.
   bool writeFrames(const int16_t *interleaved, size_t frames);
@@ -416,7 +416,7 @@ class AudioOutputStage {
 // One instance; the weak audio_process_i2s() hook has no other way in.
 AudioOutputStage &audioOutputStage();
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers
 ```
 
 - [ ] **Step 2: Write the implementation**
@@ -432,10 +432,10 @@ Create `lib/drivers-audio/AudioOutputStage.cpp`:
 
 #include "AudioGain.h"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 namespace {
-// The port ESP32-audioI2S installs in Audio's constructor; knobify's own
+// The port ESP32-audioI2S installs in Audio's constructor; DialHard's own
 // decoders write to the same one rather than installing a second driver.
 constexpr i2s_port_t kI2sPort = I2S_NUM_0;
 }  // namespace
@@ -499,7 +499,7 @@ AudioOutputStage &audioOutputStage() {
   return stage;
 }
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers
 ```
 
 - [ ] **Step 3: Route the existing path through it**
@@ -525,7 +525,7 @@ void Esp32AudioI2SDriver::setOutputGain(uint16_t gain) {
 ```cpp
 void audio_process_i2s(uint32_t *sample, bool *continueI2S) {
   // Packed as Gain() returns it: left in the high 16 bits, right in the low.
-  auto &stage = knobify::drivers::audioOutputStage();
+  auto &stage = dialhard::drivers::audioOutputStage();
   const uint16_t gain = stage.outputGain();
   const int16_t left = compensate(static_cast<int16_t>(*sample >> 16), gain);
   const int16_t right = compensate(static_cast<int16_t>(*sample & 0xFFFF), gain);
@@ -564,7 +564,7 @@ Give both decode paths one output stage
 
 The spectrum ring and the gain state were file-scope globals next to the
 library's weak hook. They move into AudioOutputStage, which also knows how
-to write frames to the I2S port the library installed -- what knobify's
+to write frames to the I2S port the library installed -- what DialHard's
 own decoder will use. No behaviour change: the library path still writes
 its own samples and only reports them here.
 
@@ -589,7 +589,7 @@ No playback yet: open, report duration and sample rate, seek, close. Device-side
 
 **Interfaces:**
 - Consumes: `AudioOutputStage` (Task 3).
-- Produces: `knobify::drivers::DecoderBackend` (pure virtual: `bool open(const std::string &path, uint32_t startSample)`, `void close()`, `bool seekToSample(uint32_t sample)`, `uint32_t currentSample() const`, `uint32_t sampleRate() const`, `uint32_t durationSeconds() const`, `bool running() const`, `void setPaused(bool paused)`) and `knobify::drivers::VorbisBackend` implementing it.
+- Produces: `dialhard::drivers::DecoderBackend` (pure virtual: `bool open(const std::string &path, uint32_t startSample)`, `void close()`, `bool seekToSample(uint32_t sample)`, `uint32_t currentSample() const`, `uint32_t sampleRate() const`, `uint32_t durationSeconds() const`, `bool running() const`, `void setPaused(bool paused)`) and `dialhard::drivers::VorbisBackend` implementing it.
 
 - [ ] **Step 1: Vendor the decoder**
 
@@ -602,7 +602,7 @@ Prepend this comment to the file (keep everything below it unchanged):
 
 ```c
 // Vendored from https://github.com/nothings/stb (public domain / MIT).
-// knobify uses it for Ogg Vorbis playback because ESP32-audioI2S 2.3.0 has
+// DialHard uses it for Ogg Vorbis playback because ESP32-audioI2S 2.3.0 has
 // no Vorbis decoder -- see docs/adr/0017-two-audio-decode-paths.md.
 // Measured on the device 2026-09-15: 2.5x realtime, ~180 KB working set,
 // needs a task stack of ~32 KB.
@@ -618,9 +618,9 @@ Create `lib/drivers-audio/DecoderBackend.h`:
 #include <cstdint>
 #include <string>
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
-// A decoder knobify drives itself, as opposed to the ESP32-audioI2S path
+// A decoder DialHard drives itself, as opposed to the ESP32-audioI2S path
 // (ADR 0017). Positions are sample indices: that is what a Vorbis stream
 // can seek to, and PlaybackDriver's position is opaque above the driver.
 class DecoderBackend {
@@ -640,7 +640,7 @@ class DecoderBackend {
   virtual void setPaused(bool paused) = 0;
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers
 ```
 
 - [ ] **Step 3: Write the backend's open/close/metadata half**
@@ -661,9 +661,9 @@ Create `lib/drivers-audio/VorbisBackend.h`:
 
 struct stb_vorbis;
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
-// Ogg Vorbis playback on knobify's own decode path (ADR 0017): stb_vorbis
+// Ogg Vorbis playback on DialHard's own decode path (ADR 0017): stb_vorbis
 // reading through the filesystem, decoding on a task of its own because it
 // needs about 32 KB of stack -- far more than the shared audio task has,
 // and only worth committing while an Ogg actually plays. Its working set
@@ -707,7 +707,7 @@ class VorbisBackend : public DecoderBackend {
   static constexpr uint32_t kNoSeek = UINT32_MAX;
 };
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers
 ```
 
 Create `lib/drivers-audio/VorbisBackend.cpp` with the open/close half (the
@@ -724,12 +724,12 @@ decode task arrives in Task 5; `decodeLoop()` is written there):
 #define STB_VORBIS_HEADER_ONLY
 #include "stb_vorbis.c"
 
-namespace knobify::drivers {
+namespace dialhard::drivers {
 
 bool VorbisBackend::open(const std::string &path, uint32_t startSample) {
   close();
   // The SD card is mounted at /sdcard; stb_vorbis reads it through the
-  // normal filesystem rather than knobify's RawFile abstraction, which
+  // normal filesystem rather than DialHard's RawFile abstraction, which
   // exists for tag parsing on the host.
   const std::string fsPath = "/sdcard" + path;
   int error = 0;
@@ -788,7 +788,7 @@ bool VorbisBackend::seekToSample(uint32_t sample) {
   return true;
 }
 
-}  // namespace knobify::drivers
+}  // namespace dialhard::drivers
 ```
 
 - [ ] **Step 4: Build**
@@ -811,7 +811,7 @@ git add lib/drivers-audio/ THIRD-PARTY.md
 git commit -m "$(cat <<'EOF'
 Vendor stb_vorbis and open Ogg files with it
 
-DecoderBackend is the slot knobify's own decoders fill; VorbisBackend
+DecoderBackend is the slot DialHard's own decoders fill; VorbisBackend
 opens a stream, reports its exact duration and sample rate and accepts
 seek requests. No audio comes out yet -- the decode task is next.
 
@@ -1002,7 +1002,7 @@ Expected: build SUCCESS, all host tests pass.
 ```bash
 git add lib/drivers-audio/
 git commit -m "$(cat <<'EOF'
-Play Ogg Vorbis on knobify's own decode path
+Play Ogg Vorbis on DialHard's own decode path
 
 VorbisBackend decodes on a task of its own and writes through the shared
 output stage, so volume, the sleep-timer fade and the spectrum behave as
@@ -1092,7 +1092,7 @@ through `AudioOutputStage`, the single place where samples reach the DAC.
 
 - `docs/adr/README.md`: add `| [0017](0017-two-audio-decode-paths.md) | Two audio decode paths (Vorbis) | Accepted |`.
 - `README.md`: move Ogg Vorbis out of the backlog into the feature list, and note that embedded Ogg cover art is still unsupported.
-- `AGENTS.md`: add a bullet saying knobify has two decode paths, that `AudioGain`/`AudioOutputStage` keep them consistent, and that Ogg positions are sample indices rather than byte offsets.
+- `AGENTS.md`: add a bullet saying DialHard has two decode paths, that `AudioGain`/`AudioOutputStage` keep them consistent, and that Ogg positions are sample indices rather than byte offsets.
 - `lib/drivers-audio/Esp32AudioI2SDriver.h`: extend the class comment with one sentence pointing at ADR 0017.
 
 - [ ] **Step 3: Commit**
@@ -1102,7 +1102,7 @@ git add docs/ README.md AGENTS.md lib/drivers-audio/
 git commit -m "$(cat <<'EOF'
 Record the two-decode-path debt as ADR 0017
 
-Vorbis playback means knobify now decodes audio two ways. The ADR states
+Vorbis playback means DialHard now decodes audio two ways. The ADR states
 why (the pinned library has no Vorbis decoder, the alternative is a whole
 core migration), what it costs, and the four conditions under which the
 decision should be revisited.
@@ -1133,7 +1133,7 @@ Flash with `./scripts/flash-primary-mcu.sh`, then with the serial helpers
    (`INFO` reset reason stays 0/1, never 4 or 6).
 
 If anything crashes, `scripts/read-coredump.sh` decodes the panic; a hang
-needs a `-DKNOBIFY_LOOP_WDT` build first.
+needs a `-DDIALHARD_LOOP_WDT` build first.
 
 - [ ] **Step 6: Commit any fixes the device checks require, then report**
 

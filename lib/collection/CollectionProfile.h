@@ -5,7 +5,7 @@
 #include "CollectionId.h"
 #include "LibraryTypes.h"
 
-namespace knobify::collection {
+namespace dialhard::collection {
 
 using library::SortOrder;
 
@@ -36,13 +36,13 @@ struct CollectionProfile {
 };
 
 constexpr CollectionProfile kCollections[kCollectionCount] = {
-    {CollectionId::Music, "Music", "/Music", "/knobify/library.idx",
+    {CollectionId::Music, "Music", "/Music", "/dialhard/library.idx",
      /*hasShuffleRow=*/true, /*resumesWithinTitle=*/false, SortOrder::ByTag},
     {CollectionId::Audiobooks, "Audiobooks", "/Audiobooks",
-     "/knobify/audiobooks.idx", /*hasShuffleRow=*/false,
+     "/dialhard/audiobooks.idx", /*hasShuffleRow=*/false,
      /*resumesWithinTitle=*/true, SortOrder::ByName},
     {CollectionId::RadioPlays, "Radio Plays", "/RadioPlays",
-     "/knobify/radioplays.idx", /*hasShuffleRow=*/false,
+     "/dialhard/radioplays.idx", /*hasShuffleRow=*/false,
      /*resumesWithinTitle=*/true, SortOrder::ByName},
 };
 
@@ -50,4 +50,4 @@ constexpr const CollectionProfile &profileOf(CollectionId id) {
   return kCollections[indexOf(id)];
 }
 
-}  // namespace knobify::collection
+}  // namespace dialhard::collection

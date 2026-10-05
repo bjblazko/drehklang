@@ -8,14 +8,14 @@
 #include "CoverArtCache.h"
 #include "TagResult.h"
 
-using knobify::library::CoverArtCache;
-using knobify::library::CoverWriter;
-using knobify::library::DirectoryReader;
-using knobify::library::FileOpener;
-using knobify::library::FolderEntry;
-using knobify::library::JpegDecoder;
-using knobify::library::RawFile;
-using knobify::library::TagResult;
+using dialhard::library::CoverArtCache;
+using dialhard::library::CoverWriter;
+using dialhard::library::DirectoryReader;
+using dialhard::library::FileOpener;
+using dialhard::library::FolderEntry;
+using dialhard::library::JpegDecoder;
+using dialhard::library::RawFile;
+using dialhard::library::TagResult;
 
 void setUp() {}
 void tearDown() {}

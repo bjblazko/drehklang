@@ -12,7 +12,7 @@
 #include "ToneSession.h"
 #include "TouchCalibrator.h"
 
-namespace knobify::input {
+namespace dialhard::input {
 
 // What the knob does on a screen that reads it directly, forwarded to
 // whichever UI is currently showing (lib/ui/) so InputRouter never needs
@@ -120,4 +120,4 @@ class InputRouter {
   signal::ToneSession *toneSession_ = nullptr;
 };
 
-}  // namespace knobify::input
+}  // namespace dialhard::input

@@ -56,7 +56,7 @@
 - Test: `test/test_oscillator/test_oscillator.cpp`
 
 **Interfaces:**
-- Produces: `knobify::signal::Waveform { Sine, Square, Saw, Noise }`, `kWaveformCount = 4`, `struct OscillatorParams { Waveform waveform; float frequencyHz; float amplitude; float shape; }`, `class Oscillator { void setParams(const OscillatorParams&); void start(); void stop(); bool idle() const; void render(int16_t *out, size_t count, uint32_t sampleRate); static constexpr uint32_t kRampMs = 5; }`
+- Produces: `dialhard::signal::Waveform { Sine, Square, Saw, Noise }`, `kWaveformCount = 4`, `struct OscillatorParams { Waveform waveform; float frequencyHz; float amplitude; float shape; }`, `class Oscillator { void setParams(const OscillatorParams&); void start(); void stop(); bool idle() const; void render(int16_t *out, size_t count, uint32_t sampleRate); static constexpr uint32_t kRampMs = 5; }`
 
 - [ ] **Step 1: Write `Waveform.h`** (a plain type header, needed by the test to compile)
 
@@ -65,7 +65,7 @@
 
 #include <cstdint>
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // What the tone generator can play (ADR 0024). Stored in NVS by value, so
 // append-only.
@@ -85,7 +85,7 @@ struct OscillatorParams {
   float shape = 0.5f;
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal
 ```
 
 - [ ] **Step 2: Write the failing test** `test/test_oscillator/test_oscillator.cpp`
@@ -100,9 +100,9 @@ struct OscillatorParams {
 
 #include "Oscillator.h"
 
-using knobify::signal::Oscillator;
-using knobify::signal::OscillatorParams;
-using knobify::signal::Waveform;
+using dialhard::signal::Oscillator;
+using dialhard::signal::OscillatorParams;
+using dialhard::signal::Waveform;
 
 void setUp() {}
 void tearDown() {}
@@ -272,7 +272,7 @@ Expected: FAIL — `Oscillator.h: No such file or directory`.
 
 #include "Waveform.h"
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // The tone generator's voice (ADR 0024). Pure logic: the audio task calls
 // render() with a buffer and a rate, and nothing here knows about I2S.
@@ -403,7 +403,7 @@ class Oscillator {
   bool running_ = false;
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal
 ```
 
 - [ ] **Step 5: Run it to verify it passes**
@@ -427,7 +427,7 @@ git commit -m "Add the tone generator's oscillator" -m "Sine, square with duty, 
 - Test: `test/test_scope/test_scope.cpp`
 
 **Interfaces:**
-- Produces: `knobify::signal::TriggeredScope::trace(const int16_t *samples, size_t count, uint32_t sampleRate, float frequencyHintHz, int16_t *out, size_t width)` (static; `frequencyHintHz <= 0` = estimate), `TriggeredScope::kPeriods = 2`.
+- Produces: `dialhard::signal::TriggeredScope::trace(const int16_t *samples, size_t count, uint32_t sampleRate, float frequencyHintHz, int16_t *out, size_t width)` (static; `frequencyHintHz <= 0` = estimate), `TriggeredScope::kPeriods = 2`.
 
 - [ ] **Step 1: Write the failing test** `test/test_scope/test_scope.cpp`
 
@@ -441,7 +441,7 @@ git commit -m "Add the tone generator's oscillator" -m "Sine, square with duty, 
 
 #include "TriggeredScope.h"
 
-using knobify::signal::TriggeredScope;
+using dialhard::signal::TriggeredScope;
 
 void setUp() {}
 void tearDown() {}
@@ -530,7 +530,7 @@ Expected: FAIL — `TriggeredScope.h: No such file or directory`.
 #include <cstdint>
 #include <cstdlib>
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // Turns a window of recent samples into an oscilloscope trace (ADR 0024):
 // `width` values, each a sample value, starting on a rising zero crossing
@@ -629,7 +629,7 @@ class TriggeredScope {
   }
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal
 ```
 
 - [ ] **Step 4: Run it to verify it passes**
@@ -653,7 +653,7 @@ git commit -m "Add a triggered scope for sample windows" -m "Starts every trace 
 - Test: `test/test_tone_settings/test_tone_settings.cpp`
 
 **Interfaces:**
-- Consumes: `Waveform`, `OscillatorParams` (Task 1); `knobify::playback::KeyValueStore` (`lib/playback/KeyValueStore.h`: `bool getU8(const std::string&, uint8_t&)`, `void setU8(const std::string&, uint8_t)`).
+- Consumes: `Waveform`, `OscillatorParams` (Task 1); `dialhard::playback::KeyValueStore` (`lib/playback/KeyValueStore.h`: `bool getU8(const std::string&, uint8_t&)`, `void setU8(const std::string&, uint8_t)`).
 - Produces: `enum class ToneParam : uint8_t { Waveform, Frequency, Level, Shape }`, `kToneParamCount = 4`, and `class ToneSettings` with: `waveform()`, `frequencyStep()`, `frequencyHz()`, `levelDb()`, `dutyPercent()`, `symmetryPercent()`, `selected()`, `select(ToneParam)`, `bool turn(int delta, uint32_t nowMs)`, `OscillatorParams params() const`, `static bool visible(ToneParam, Waveform)`, `static float dbToLinear(int)`, `static const char *waveformName(Waveform)`, `static const char *chipLabel(ToneParam, Waveform)`, `void valueText(ToneParam, char *out, size_t size) const`, `void load(playback::KeyValueStore&)`, `void save(playback::KeyValueStore&) const`.
 
 - [ ] **Step 1: Write the failing test** `test/test_tone_settings/test_tone_settings.cpp`
@@ -667,10 +667,10 @@ git commit -m "Add a triggered scope for sample windows" -m "Starts every trace 
 
 #include "ToneSettings.h"
 
-using knobify::playback::KeyValueStore;
-using knobify::signal::ToneParam;
-using knobify::signal::ToneSettings;
-using knobify::signal::Waveform;
+using dialhard::playback::KeyValueStore;
+using dialhard::signal::ToneParam;
+using dialhard::signal::ToneSettings;
+using dialhard::signal::Waveform;
 
 void setUp() {}
 void tearDown() {}
@@ -882,7 +882,7 @@ Expected: FAIL — `ToneSettings.h: No such file or directory`.
 #include "KeyValueStore.h"
 #include "Waveform.h"
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // What the knob can be set to adjust on the tone generator (ADR 0024) --
 // one touch chip each.
@@ -1126,7 +1126,7 @@ class ToneSettings {
   bool turnedBefore_ = false;
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal
 ```
 
 - [ ] **Step 4: Run it to verify it passes**
@@ -1164,14 +1164,14 @@ git commit -m "Add the tone generator's settings model" -m "Frequency on a 1/48-
 #include "GeneratorControl.h"
 #include "ToneSession.h"
 
-using knobify::playback::KeyValueStore;
-using knobify::signal::GeneratorControl;
-using knobify::signal::GeneratorOutput;
-using knobify::signal::OscillatorParams;
-using knobify::signal::ToneParam;
-using knobify::signal::ToneSession;
-using knobify::signal::ToneSettings;
-using knobify::signal::Waveform;
+using dialhard::playback::KeyValueStore;
+using dialhard::signal::GeneratorControl;
+using dialhard::signal::GeneratorOutput;
+using dialhard::signal::OscillatorParams;
+using dialhard::signal::ToneParam;
+using dialhard::signal::ToneSession;
+using dialhard::signal::ToneSettings;
+using dialhard::signal::Waveform;
 
 void setUp() {}
 void tearDown() {}
@@ -1310,7 +1310,7 @@ Expected: FAIL — `GeneratorControl.h: No such file or directory`.
 
 #include "Waveform.h"
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // The rate the generator claims the DAC at (ADR 0024): high enough for a
 // 20 kHz tone, and one the PCM5100A takes natively.
@@ -1369,7 +1369,7 @@ class GeneratorControl {
   std::atomic<bool> running_{false};
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal
 ```
 
 - [ ] **Step 4: Write `lib/signal/ToneSession.h`**
@@ -1383,7 +1383,7 @@ class GeneratorControl {
 #include "KeyValueStore.h"
 #include "ToneSettings.h"
 
-namespace knobify::signal {
+namespace dialhard::signal {
 
 // One tone generator in use (ADR 0024): the settings, whether it sounds,
 // and where the sound goes. Every change reaches the output at once;
@@ -1450,7 +1450,7 @@ class ToneSession {
   uint32_t lastChangeMs_ = 0;
 };
 
-}  // namespace knobify::signal
+}  // namespace dialhard::signal
 ```
 
 - [ ] **Step 5: Run it to verify it passes**
@@ -1485,9 +1485,9 @@ git commit -m "Add the tone session and its lock-free handover" -m "The session 
 #include "GeneratorControl.h"
 #include "ToneSession.h"
 // With the other usings:
-using knobify::signal::GeneratorOutput;
-using knobify::signal::OscillatorParams;
-using knobify::signal::ToneSession;
+using dialhard::signal::GeneratorOutput;
+using dialhard::signal::OscillatorParams;
+using dialhard::signal::ToneSession;
 ```
 
 ```cpp
@@ -1714,7 +1714,7 @@ Private, next to `chunk_`:
         chunk_[i * 2] = mono_[i];
         chunk_[i * 2 + 1] = mono_[i];
       }
-#ifdef KNOBIFY_GENERATOR_DEBUG
+#ifdef DIALHARD_GENERATOR_DEBUG
       logGenerator(rate);
 #endif
       ok = stage.writeFramesUnscaled(chunk_, kChunkFrames);
@@ -1724,7 +1724,7 @@ Private, next to `chunk_`:
       for (size_t i = 0; i < kChunkFrames * 2; ++i) chunk_[i] = 0;
       ok = stage.writeFrames(chunk_, kChunkFrames);
     }
-#if defined(KNOBIFY_TONE_DEBUG) || defined(KNOBIFY_GENERATOR_DEBUG)
+#if defined(DIALHARD_TONE_DEBUG) || defined(DIALHARD_GENERATOR_DEBUG)
     if (!ok) Serial.println("[tone] i2s write FAILED");
 #else
     (void)ok;
@@ -1733,12 +1733,12 @@ Private, next to `chunk_`:
     lastSeenSamples_ = stage.samplesWritten();
 ```
 
-Keep the existing `KNOBIFY_TONE_DEBUG` measurement blocks that sat before the rate claim (the `measuring_` print and `rateClaimStart_` print) in place around the new rate claim, unchanged.
+Keep the existing `DIALHARD_TONE_DEBUG` measurement blocks that sat before the rate claim (the `measuring_` print and `rateClaimStart_` print) in place around the new rate claim, unchanged.
 
-Add the debug helper (declared privately in `ToneOutput.h` under `#ifdef KNOBIFY_GENERATOR_DEBUG` as `void logGenerator(uint32_t rate);` plus members `uint32_t debugSamples_ = 0; uint32_t debugCrossings_ = 0; int16_t debugPeak_ = 0; int16_t debugLast_ = 0;`) at the end of `ToneOutput.cpp`, inside the namespace:
+Add the debug helper (declared privately in `ToneOutput.h` under `#ifdef DIALHARD_GENERATOR_DEBUG` as `void logGenerator(uint32_t rate);` plus members `uint32_t debugSamples_ = 0; uint32_t debugCrossings_ = 0; int16_t debugPeak_ = 0; int16_t debugLast_ = 0;`) at the end of `ToneOutput.cpp`, inside the namespace:
 
 ```cpp
-#ifdef KNOBIFY_GENERATOR_DEBUG
+#ifdef DIALHARD_GENERATOR_DEBUG
 // Once a second: the pitch and peak of what was actually written, measured
 // from the samples rather than taken from the settings -- the check that
 // the grid, the rate claim and the level all agree (ADR 0024).
@@ -1819,7 +1819,7 @@ git commit -m "Play the tone generator from the idle audio task" -m "ToneOutput 
 
 **Interfaces:**
 - Consumes: `ToneSession`, `ToneSettings`, `ToneParam`, `Waveform`, `TriggeredScope`, `kGeneratorSampleRate` (Tasks 1–4); `ScreenKind::ToneGenerator`, `InputRouter::setToneSession` (Task 5); `ToneOutput` as `GeneratorOutput`, `AudioOutputStage::kSampleRingSize` (Task 6).
-- Produces: `ScreenManager::setToneSession`, `updateToneGeneratorDisplay()`, `tickToneGenerator(uint32_t nowMs, bool visible)`; `ui_widgets::ScopeTrace`; `KNOBIFY_ICON_TONES`.
+- Produces: `ScreenManager::setToneSession`, `updateToneGeneratorDisplay()`, `tickToneGenerator(uint32_t nowMs, bool visible)`; `ui_widgets::ScopeTrace`; `DIALHARD_ICON_TONES`.
 
 - [ ] **Step 1: Write `lib/ui-widgets/ScopeTrace.h`**
 
@@ -1833,7 +1833,7 @@ git commit -m "Play the tone generator from the idle audio task" -m "ToneOutput 
 #include <cstddef>
 #include <cstdint>
 
-namespace knobify::ui_widgets {
+namespace dialhard::ui_widgets {
 
 // An oscilloscope trace (ADR 0024): one lv_line over a zero line. A line
 // rather than a canvas, for the reason ADR 0022 gives -- LVGL redraws only
@@ -1907,7 +1907,7 @@ class ScopeTrace {
   std::array<lv_point_t, 2> zeroPoints_{};
 };
 
-}  // namespace knobify::ui_widgets
+}  // namespace dialhard::ui_widgets
 ```
 
 - [ ] **Step 2: `ScreenManager.h`** additions.
@@ -2029,7 +2029,7 @@ In `captionTextFor()`, next to `case ScreenKind::Games: return "Games";`:
 #include "ToneSettings.h"
 #include "TriggeredScope.h"
 
-namespace knobify::ui {
+namespace dialhard::ui {
 
 using signal::ToneParam;
 using signal::ToneSettings;
@@ -2064,7 +2064,7 @@ void ScreenManager::renderToneGenerator() {
                     kScopeWidth, kScopeHeight, theme::ink(), theme::surfaceAlt());
 
   toneValueLabel_ = lv_label_create(screen_);
-  lv_obj_set_style_text_font(toneValueLabel_, &knobify_text_font_28, 0);
+  lv_obj_set_style_text_font(toneValueLabel_, &dialhard_text_font_28, 0);
   lv_obj_set_style_text_color(toneValueLabel_, theme::ink(), 0);
   lv_obj_align(toneValueLabel_, LV_ALIGN_TOP_MID, 0, kValueY);
 
@@ -2075,7 +2075,7 @@ void ScreenManager::renderToneGenerator() {
     lv_obj_set_ext_click_area(chip, kChipGap / 2);
     theme::styleSecondaryButton(chip);
     lv_obj_t *label = lv_label_create(chip);
-    lv_obj_set_style_text_font(label, &knobify_text_font_16, 0);
+    lv_obj_set_style_text_font(label, &dialhard_text_font_16, 0);
     lv_obj_center(label);
     // On the press, not the click: holding a chip and turning the knob
     // with the other hand is this device's two-handed gesture (§7).
@@ -2192,7 +2192,7 @@ void ScreenManager::tickToneGenerator(uint32_t nowMs, bool visible) {
   toneScope_.setSamples(toneScopeTrace_.data(), toneScopeTrace_.size(), fullScale);
 }
 
-}  // namespace knobify::ui
+}  // namespace dialhard::ui
 ```
 
 - [ ] **Step 5: The Home tile's glyph.** Pick a Material Symbols waveform glyph and add it to `IconFont48.c`:
@@ -2210,17 +2210,17 @@ curl -sL -o MaterialSymbolsOutlined.ttf 'https://raw.githubusercontent.com/googl
 npx --yes lv_font_conv@latest --font MaterialSymbolsOutlined.ttf \
   --range 0xE405,0xE8B8,0xE518,0xEF44,0xEA19,0xEA66,0xEA28,0xNNNN \
   --size 48 --bpp 4 --no-compress --format lvgl --lv-include lvgl.h \
-  --lv-font-name knobify_icon_font_48 -o IconFont48.c
+  --lv-font-name dialhard_icon_font_48 -o IconFont48.c
 ```
 
 Replace everything in `lib/ui-widgets/IconFont48.c` **below** its header comment block with the new file's content below *its* header, keep the project header, update its `Opts:` line to the new range, and append to the header: `Extended 2026-09-18 (same source) with U+NNNN "<name>" for the Tones tile (ADR 0024).` Then check the old glyphs are byte-identical: `git diff --stat lib/ui-widgets/IconFont48.c` should show only additions around the new glyph plus the cmap/range tables.
 
-Add to `lib/ui-widgets/IconFont.h` after `KNOBIFY_ICON_GAMES`:
+Add to `lib/ui-widgets/IconFont.h` after `DIALHARD_ICON_GAMES`:
 
 ```cpp
 // The tone generator ("<name>"), ADR 0024: one wave line, which says
 // "a tone" where the equalizer bars would say "spectrum".
-#define KNOBIFY_ICON_TONES "<UTF-8 bytes of U+NNNN>"  // U+NNNN
+#define DIALHARD_ICON_TONES "<UTF-8 bytes of U+NNNN>"  // U+NNNN
 ```
 
 (UTF-8 of a U+E000–U+FFFF codepoint is `\xEE..\x..\x..`; compute with `python3 -c "print(''.join('\\\\x%02X'%b for b in chr(0xNNNN).encode()))"`.)
@@ -2228,7 +2228,7 @@ Add to `lib/ui-widgets/IconFont.h` after `KNOBIFY_ICON_GAMES`:
 - [ ] **Step 6: The Home entry** — append to `kMenuEntries` in `lib/ui/ScreenManagerMenu.cpp`, after the Games row (append-only: the row order is the `menuVis` bit order):
 
 ```cpp
-    {KNOBIFY_ICON_TONES, "Tones",
+    {DIALHARD_ICON_TONES, "Tones",
      [](navigation::TabController &tabs) {
        tabs.activeStack().push(Screen{ScreenKind::ToneGenerator, {}});
      }},
@@ -2238,12 +2238,12 @@ Add to `lib/ui-widgets/IconFont.h` after `KNOBIFY_ICON_GAMES`:
 
 Includes: `#include "ToneSession.h"`.
 
-Globals, directly after `knobify::drivers::ToneOutput g_toneOutput;`:
+Globals, directly after `dialhard::drivers::ToneOutput g_toneOutput;`:
 
 ```cpp
 // The tone generator (ADR 0024): its settings and whether it sounds. The
 // sound itself goes through g_toneOutput's task.
-knobify::signal::ToneSession g_toneSession(g_toneOutput, g_nvsStore);
+dialhard::signal::ToneSession g_toneSession(g_toneOutput, g_nvsStore);
 ```
 
 In `setup()`, directly after `g_brightness.begin();`:
@@ -2334,7 +2334,7 @@ git commit -m "Document the tone generator" -m "ADR 0024 records the decisions a
 
 Inline, with the user at the board (memory: UI iteration loop — flash, screenshot, serial capture; no subagents).
 
-- [ ] **Step 1:** Flash with the `flash-device` skill using `PLATFORMIO_BUILD_FLAGS=-DKNOBIFY_GENERATOR_DEBUG`. Send `INFO` over serial; note `internal free` and compare with a pre-branch build. If internal RAM became tight, move the ring to PSRAM (`EXT_RAM_BSS_ATTR`) or drop it to 2048 and note it in ADR 0024.
+- [ ] **Step 1:** Flash with the `flash-device` skill using `PLATFORMIO_BUILD_FLAGS=-DDIALHARD_GENERATOR_DEBUG`. Send `INFO` over serial; note `internal free` and compare with a pre-branch build. If internal RAM became tight, move the ring to PSRAM (`EXT_RAM_BSS_ATTR`) or drop it to 2048 and note it in ADR 0024.
 - [ ] **Step 2:** Home → Tones. `SCREENSHOT` for Sine, Square, Saw, Noise; confirm nothing clips at the round edge on the physical screen (chips row and Play button are the tight ones).
 - [ ] **Step 3:** ▶ at 1 kHz / −20 dB; serial must show `[generator] ~1000 Hz, peak ~3277 (-20.0 dBFS) at 48000 Hz`. Repeat at the grid ends (~20.3 Hz, ~19.9 kHz) and at 0 dB.
 - [ ] **Step 4:** The user listens: no clicks on turning, starting, stopping or switching waveform; the acceleration feels right (tune `kMidDetentsPerSecond`, `kFastDetentsPerSecond` in `ToneSettings.h` by `KNOB n` injections and by hand; update the test in Task 3 if the tiers change).
