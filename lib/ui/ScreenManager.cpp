@@ -608,7 +608,7 @@ std::vector<std::string> ScreenManager::letterKeysFor(
 const char *ScreenManager::emptyListText(const navigation::Screen &screen) const {
   if (screen.kind == ScreenKind::Bluetooth) return bluetoothEmptyText();
   if (screen.kind == ScreenKind::Folder) return "Empty folder";
-  if (library().tracks.empty()) return "Nothing scanned yet\nSettings > Rescan";
+  if (library().tracks.empty()) return "Nothing scanned yet\nSettings > Rescan SD card";
   switch (screen.kind) {
     case ScreenKind::Genres:
       return "No genres in these tags";
@@ -742,7 +742,7 @@ std::string ScreenManager::captionTextFor(
     case ScreenKind::Settings:
       return "Settings";
     case ScreenKind::RescanPicker:
-      return "Rescan";
+      return "Rescan SD card";
     case ScreenKind::MenuVisibility:
       return "Main menu";
     case ScreenKind::Bluetooth:

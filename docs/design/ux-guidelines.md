@@ -272,7 +272,7 @@ Full architecture: [ADR 0004](../adr/0004-navigation-library-and-index-architect
 - **Settings is a list; each setting has its own screen** when it's set by
   the knob. A row ends in its current value as plain text. Brightness
   applies live while turning, with no confirm step. Maintenance actions
-  (Rescan library) live here, not in content headers. The last row is
+  (Rescan SD card) live here, not in content headers. The last row is
   About: the version, the author, the source address, the licence, the
   no-warranty sentence and what leaves the device (nothing). Its one
   button, a Secondary circle, opens Licences: one row per component,

@@ -80,6 +80,8 @@ serial; Settings > Touch calibration now re-fits it on the device. Rows:
 Brightness, Touch calibration, Rescan library. *(ADR 0018: the rows are a
 table now — Brightness, Touch calibration, Rescan, Main menu, USB drive —
 and "Rescan library" opens a picker rather than rescanning immediately.)*
+*(2026-10-06: ordered by how often a row is wanted -- Rescan SD card, USB
+drive, Bluetooth, Brightness, Main menu, Touch calibration, About.)*
 
 - **Capture.** Four accent crosses, one at a time, at top (180,70), right
   (290,180), bottom (180,290) and left (70,180) — never corners, which the

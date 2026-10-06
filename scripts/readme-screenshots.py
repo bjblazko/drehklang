@@ -222,8 +222,7 @@ def sleep_timer(dev):
 def settings(dev):
     dev.open_from_home("Settings", "Settings")
     dev.shot("settings")
-    dev.knob(5)  # Down to Bluetooth, which then sits in the bottom row.
-    dev.tap(150, 243)
+    dev.tap(150, 190)  # Bluetooth, the third row.
     dev.expect("Bluetooth")
     dev.shot("bluetooth")
 

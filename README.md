@@ -410,7 +410,7 @@ Each collection is its own top-level folder, laid out
 
 A collection whose folder is missing simply shows up empty; hide it in
 Settings > Main menu if you do not want it on the home screen. Indexes are
-built on demand — Settings > Rescan, or automatically after a USB drive
+built on demand — Settings > Rescan SD card, or automatically after a USB drive
 session — never at boot, so the device is usable the moment it powers on.
 
 ## License

@@ -436,7 +436,7 @@ void setup() {
                        static_cast<unsigned>(state.index.albums.size()),
                        static_cast<unsigned>(state.index.tracks.size()));
       } else {
-        Serial.printf("%s: no cache yet -- use Settings > Rescan to build one.\n",
+        Serial.printf("%s: no cache yet -- use Settings > Rescan SD card to build one.\n",
                        state.profile.label);
       }
     }

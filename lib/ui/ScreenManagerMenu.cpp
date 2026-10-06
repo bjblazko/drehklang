@@ -249,33 +249,14 @@ void ScreenManager::goHome() {
 
 // Settings' rows. A table, so adding one never renumbers the handler for
 // the rows after it -- which is exactly what the two ADR 0018 rows would
-// otherwise have done to USB drive.
+// otherwise have done to USB drive. Ordered by how often a row is wanted:
+// the card first (rescan, copy over USB), then Bluetooth, then what is
+// set once; About last.
 const ScreenManager::SettingsRow
     ScreenManager::kSettingsRows[ScreenManager::kSettingsRowCount] = {
-        {"Brightness",
-         [](ScreenManager &self) {
-           self.tabs_.activeStack().push(Screen{ScreenKind::Brightness, {}});
-           self.render();
-         },
-         [](const ScreenManager &self) {
-           return std::to_string(self.brightness_.percent()) + "%";
-         }},
-        {"Touch calibration",
-         [](ScreenManager &self) {
-           self.touchCalibration_.start(millis());
-           self.tabs_.activeStack().push(
-               Screen{ScreenKind::TouchCalibration, {}});
-           self.render();
-         }},
-        {"Rescan",
+        {"Rescan SD card",
          [](ScreenManager &self) {
            self.tabs_.activeStack().push(Screen{ScreenKind::RescanPicker, {}});
-           self.render();
-         }},
-        {"Main menu",
-         [](ScreenManager &self) {
-           self.tabs_.activeStack().push(
-               Screen{ScreenKind::MenuVisibility, {}});
            self.render();
          }},
         {"USB drive", [](ScreenManager &self) { self.startUsbDrive(); }},
@@ -285,6 +266,27 @@ const ScreenManager::SettingsRow
            self.render();
          },
          [](const ScreenManager &self) { return self.bluetoothSettingsValue(); }},
+        {"Brightness",
+         [](ScreenManager &self) {
+           self.tabs_.activeStack().push(Screen{ScreenKind::Brightness, {}});
+           self.render();
+         },
+         [](const ScreenManager &self) {
+           return std::to_string(self.brightness_.percent()) + "%";
+         }},
+        {"Main menu",
+         [](ScreenManager &self) {
+           self.tabs_.activeStack().push(
+               Screen{ScreenKind::MenuVisibility, {}});
+           self.render();
+         }},
+        {"Touch calibration",
+         [](ScreenManager &self) {
+           self.touchCalibration_.start(millis());
+           self.tabs_.activeStack().push(
+               Screen{ScreenKind::TouchCalibration, {}});
+           self.render();
+         }},
         {"About", [](ScreenManager &self) { self.openAbout(); }},
 };
 
