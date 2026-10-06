@@ -68,6 +68,8 @@ enum class ScreenKind {
   BluetoothSearch,
   // Settings > Screen rotation. Appended like everything above.
   Rotation,
+  // Settings > Equalizer (ADR 0029). Appended like everything above.
+  Equalizer,
 };
 
 // Parameters a screen needs to render itself. Only the fields relevant

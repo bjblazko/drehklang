@@ -17,13 +17,53 @@
 #include "AudioOutputStage.h"
 #include "AudioTap.h"
 
+#ifdef DREHKLANG_EQ_DEBUG
+#include <esp_timer.h>
+#endif
+
 namespace drehklang::drivers {
 namespace {
 std::atomic<bool> g_holdOutput{false};
 std::atomic<bool> g_producedSinceHold{false};
 std::atomic<drehklang::bluetooth::AudioTap *> g_bluetoothTap{nullptr};
 std::atomic<uint32_t> g_decoderRate{44100};
+// Internal RAM: the decode task runs it on every chunk.
+signal::GraphicEqualizer g_equalizer;
+#ifdef DREHKLANG_EQ_DEBUG
+std::atomic<uint32_t> g_worstEqualizerUs{0};
+std::atomic<uint32_t> g_worstEqualizerWords{0};
+std::atomic<uint32_t> g_totalEqualizerUs{0};
+std::atomic<uint32_t> g_totalEqualizerWords{0};
+#endif
 }  // namespace
+
+signal::GraphicEqualizer &musicEqualizer() { return g_equalizer; }
+
+#ifdef DREHKLANG_EQ_DEBUG
+uint32_t takeWorstEqualizerUs(uint32_t &words) {
+  words = g_worstEqualizerWords.load(std::memory_order_relaxed);
+  return g_worstEqualizerUs.exchange(0, std::memory_order_relaxed);
+}
+
+uint32_t takeTotalEqualizerUs(uint32_t &words) {
+  words = g_totalEqualizerWords.exchange(0, std::memory_order_relaxed);
+  return g_totalEqualizerUs.exchange(0, std::memory_order_relaxed);
+}
+
+namespace {
+void runEqualizerMeasured(int32_t *samples, size_t words, uint32_t rate) {
+  const int64_t start = esp_timer_get_time();
+  g_equalizer.process(samples, words, rate);
+  const auto took = static_cast<uint32_t>(esp_timer_get_time() - start);
+  g_totalEqualizerUs.fetch_add(took, std::memory_order_relaxed);
+  g_totalEqualizerWords.fetch_add(static_cast<uint32_t>(words), std::memory_order_relaxed);
+  if (took > g_worstEqualizerUs.load(std::memory_order_relaxed)) {
+    g_worstEqualizerUs.store(took, std::memory_order_relaxed);
+    g_worstEqualizerWords.store(static_cast<uint32_t>(words), std::memory_order_relaxed);
+  }
+}
+}  // namespace
+#endif
 
 void setHoldOutput(bool hold) {
   if (hold) g_producedSinceHold.store(false, std::memory_order_relaxed);
@@ -46,14 +86,22 @@ uint32_t decoderRate() { return g_decoderRate.load(std::memory_order_relaxed); }
 
 }  // namespace drehklang::drivers
 
-// Before the volume: what the spectrum analyses (ADR 0009), so it never
-// has to divide the volume back out.
+// Before the volume: the equalizer (ADR 0029), then what the spectrum
+// analyses (ADR 0009) -- after the equalizer, so it shows what is heard,
+// and before the volume, so it never has to divide the volume back out.
 void audio_process_raw_samples(int32_t *samples, int16_t words) {
-  if (drehklang::drivers::holdingOutput()) {
-    if (words > 0) drehklang::drivers::g_producedSinceHold.store(true, std::memory_order_relaxed);
+  using namespace drehklang::drivers;
+  if (holdingOutput()) {
+    if (words > 0) g_producedSinceHold.store(true, std::memory_order_relaxed);
     return;
   }
-  drehklang::drivers::audioOutputStage().noteStereo32(samples, static_cast<size_t>(words));
+  const auto count = static_cast<size_t>(words);
+#ifdef DREHKLANG_EQ_DEBUG
+  runEqualizerMeasured(samples, count, decoderRate());
+#else
+  g_equalizer.process(samples, count, decoderRate());
+#endif
+  audioOutputStage().noteStereo32(samples, count);
 }
 
 // After the volume: the sleep timer's fade (ADR 0015), silence while a

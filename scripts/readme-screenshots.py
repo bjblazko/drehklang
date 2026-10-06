@@ -41,6 +41,7 @@ KIND = {
     "Home": 0, "Settings": 1, "Artists": 3, "Albums": 4, "Tracks": 5,
     "NowPlaying": 7, "SleepTimer": 9, "Games": 18, "TableTennis": 19,
     "Gravity": 20, "ToneGenerator": 21, "About": 24, "Bluetooth": 25,
+    "Equalizer": 28,
 }
 
 # Home's carousel, from its first entry (HOME selects that one).
@@ -230,9 +231,20 @@ def sleep_timer(dev):
 def settings(dev):
     dev.open_from_home("Settings", "Settings")
     dev.shot("settings")
-    dev.tap(150, 190)  # Bluetooth, the third row.
+    dev.tap(150, 234)  # Bluetooth, the fourth row.
     dev.expect("Bluetooth")
     dev.shot("bluetooth")
+    dev.open_from_home("Settings", "Settings")
+    dev.tap(150, 190)  # Equalizer, the third row.
+    dev.expect("Equalizer")
+    dev.tap(180, 308)  # Flat, so the curve below is the whole curve.
+    # A gentle smile: deep bass and air up, the middle left alone.
+    for band, db in ((0, 6), (1, 3), (5, 2), (6, 4)):
+        dev.tap(180 + (band - 3) * 36, 184)  # Selects the band.
+        dev.knob(db)
+    dev.tap(180 + (1 - 3) * 36, 184)
+    dev.shot("equalizer")
+    dev.tap(180, 308)  # Flat again: the tour leaves no setting behind.
 
 
 def games(dev):

@@ -30,6 +30,10 @@ duplicating it.
   (~2 ms measured 2026-09-14). The spectrum taps the decoder's samples
   *before* the volume (`audio_process_raw_samples`, ADR 0026), so it has no
   gain to divide out. See ADR 0009.
+- **Equalizer cost**: build with `-DDREHKLANG_EQ_DEBUG` to log its share
+  of core 0 every 5 s (8.6% with all seven bands on, 2026-10-06). It runs
+  on the decode task in `audio_process_raw_samples`; flat is skipped
+  (ADR 0029).
 - **This board's rotary encoder is rotation-only** (no click/push) and,
   more subtly, **is not a standard 4-state quadrature encoder** — its
   raw pin states never visit `00` (both contacts closed), only `11`

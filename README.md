@@ -21,6 +21,7 @@ tap to choose. No app, no account, no cloud: nothing leaves the device.
 - Jog/shuttle like a CD player: hold the time and turn
 - Bluetooth headphones next to the 3.5 mm jack, with Play/Pause on the
   headphones
+- A seven-band equalizer from 31 Hz to 16 kHz that never clips
 - Cover, dot-matrix spectrum, oscilloscope or spectrum in Now Playing,
   swiped through; a tone generator with oscilloscope, a
   sleep timer, and two games for the knob
@@ -53,8 +54,8 @@ Now Playing shows its other pages in their place.
 | <img src="docs/screenshots/tones.png" alt="The tone generator: a wave on the oscilloscope, its frequency large, the parameter chips and the stop button" width="240"> | <img src="docs/screenshots/tones-spectrum.png" alt="The tone generator's band swiped to the spectrum" width="240"> | <img src="docs/screenshots/settings.png" alt="Settings: a list, each row ending in its value" width="240"> |
 | **Bluetooth** | **About** | **Table Tennis** |
 | <img src="docs/screenshots/bluetooth.png" alt="Settings, Bluetooth: the switch, the paired headphones, find and forget" width="240"> | <img src="docs/screenshots/about.png" alt="About: version, author, source, licence" width="240"> | <img src="docs/screenshots/table-tennis.png" alt="Table Tennis: paddles, the net and the score, white on black" width="240"> |
-| **Gravity** |  |  |
-| <img src="docs/screenshots/gravity.png" alt="Gravity: a lander above a landscape with three landing pads" width="240"> |  |  |
+| **Gravity** | **Equalizer** |  |
+| <img src="docs/screenshots/gravity.png" alt="Gravity: a lander above a landscape with three landing pads" width="240"> | <img src="docs/screenshots/equalizer.png" alt="The equalizer: seven sliders from 31 Hz to 16 kHz on a 0 dB line, the selected one in orange, and Flat" width="240"> |  |
 
 ## Contents
 

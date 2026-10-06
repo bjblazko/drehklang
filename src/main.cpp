@@ -15,6 +15,7 @@
 #include "BatteryMonitor.h"
 #include "BrightnessSetting.h"
 #include "RotationSetting.h"
+#include "EqualizerSetting.h"
 #include "BtController.h"
 #include "BtLink.h"
 #include "CoverArtCache.h"
@@ -251,6 +252,8 @@ drehklang::playback::Shuttle g_shuttle(g_playback);
 drehklang::navigation::TabController g_tabs;
 drehklang::power::BrightnessSetting g_brightness(g_nvsStore);
 drehklang::display::RotationSetting g_rotation(g_nvsStore);
+drehklang::signal::EqualizerSetting g_equalizer(g_nvsStore,
+                                                drehklang::drivers::musicEqualizer());
 // What the panel was last told, so a turn of the knob on Settings >
 // Rotation is applied once, not every loop().
 uint8_t g_appliedRotation = 0;
@@ -331,6 +334,7 @@ void SdCollectionSet::rescan(drehklang::collection::CollectionId id,
   g_playback.tick(now + drehklang::playback::PlaybackStateMachine::kVolumeSaveDebounceMs);
   g_brightness.tick(now + drehklang::power::BrightnessSetting::kSaveDebounceMs);
   g_rotation.tick(now + drehklang::display::RotationSetting::kSaveDebounceMs);
+  g_equalizer.tick(now + drehklang::signal::EqualizerSetting::kSaveDebounceMs);
   g_display.setBacklight(0);
   if (g_display.gfx()) g_display.gfx()->displayOff();
   g_touch.armWakeOnTouch();
@@ -380,6 +384,9 @@ void setup() {
   g_playback.setRandomSeed(esp_random());
   g_brightness.begin();
   g_rotation.begin();
+  g_equalizer.begin();
+  g_inputRouter.setEqualizer(g_equalizer);
+  g_screenManager.setEqualizer(g_equalizer);
   g_toneSession.begin();
   g_inputRouter.setToneSession(g_toneSession);
   g_inputRouter.setRotation(g_rotation);
@@ -838,6 +845,7 @@ void loop() {
       if (!g_shuttle.isHeld()) g_screenManager.updateVolumeDisplay(now);
       g_screenManager.updateBrightnessDisplay();
       g_screenManager.updateRotationDisplay();
+      g_screenManager.updateEqualizerDisplay();
       applyRotation();
       g_screenManager.updateToneGeneratorDisplay();
     }
@@ -896,6 +904,27 @@ void loop() {
   g_bookmarkKeeper.tick(now);
   g_brightness.tick(now);
   g_rotation.tick(now);
+  g_equalizer.tick(now);
+#ifdef DREHKLANG_EQ_DEBUG
+  {
+    // The decode task's worst equalizer chunk, every 5 s (ADR 0029).
+    static uint32_t lastEqLogMs = 0;
+    if (now - lastEqLogMs >= 5000) {
+      lastEqLogMs = now;
+      uint32_t words = 0;
+      const uint32_t worstUs = drehklang::drivers::takeWorstEqualizerUs(words);
+      uint32_t allWords = 0;
+      const uint32_t allUs = drehklang::drivers::takeTotalEqualizerUs(allWords);
+      // Of one core: the time taken over the time those samples last.
+      const uint32_t rate = drehklang::drivers::decoderRate();
+      const double audioUs = rate ? allWords / 2.0 * 1e6 / rate : 0.0;
+      Serial.printf("[eq] worst %lu us for %lu words, %.1f%% of a core at %lu Hz\n",
+                    static_cast<unsigned long>(worstUs), static_cast<unsigned long>(words),
+                    audioUs > 0 ? 100.0 * allUs / audioUs : 0.0,
+                    static_cast<unsigned long>(rate));
+    }
+  }
+#endif
   g_toneSession.tick(now);
   // Locking silences a tone: the lock screen shows no Stop button, and a
   // pocket is no place for a 1 kHz sine.

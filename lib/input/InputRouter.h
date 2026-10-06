@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "BrightnessSetting.h"
+#include "EqualizerSetting.h"
 #include "RotationSetting.h"
 #include "GestureRecognizer.h"
 #include "PlaybackStateMachine.h"
@@ -73,6 +74,9 @@ class InputRouter {
       case navigation::ScreenKind::Rotation:
         if (rotation_) rotation_->adjust(delta, nowMs);
         break;
+      case navigation::ScreenKind::Equalizer:
+        if (equalizer_) equalizer_->adjust(delta, nowMs);
+        break;
       case navigation::ScreenKind::SleepTimer:
         sleepTimer_.step(delta, nowMs);
         break;
@@ -114,6 +118,8 @@ class InputRouter {
   void setToneSession(signal::ToneSession &session) { toneSession_ = &session; }
   // Optional too: without it the knob does nothing on Settings > Screen rotation.
   void setRotation(display::RotationSetting &rotation) { rotation_ = &rotation; }
+  // And on Settings > Equalizer.
+  void setEqualizer(signal::EqualizerSetting &equalizer) { equalizer_ = &equalizer; }
 
  private:
   navigation::TabController &tabs_;
@@ -125,6 +131,7 @@ class InputRouter {
   KnobSink &knobSink_;
   signal::ToneSession *toneSession_ = nullptr;
   display::RotationSetting *rotation_ = nullptr;
+  signal::EqualizerSetting *equalizer_ = nullptr;
 };
 
 }  // namespace drehklang::input

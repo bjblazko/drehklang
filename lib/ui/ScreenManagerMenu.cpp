@@ -250,8 +250,8 @@ void ScreenManager::goHome() {
 // Settings' rows. A table, so adding one never renumbers the handler for
 // the rows after it -- which is exactly what the two ADR 0018 rows would
 // otherwise have done to USB drive. Ordered by how often a row is wanted:
-// the card first (rescan, copy over USB), then Bluetooth, then what is
-// set once; About last.
+// the card first (rescan, copy over USB), then the sound (equalizer,
+// Bluetooth), then what is set once; About last.
 const ScreenManager::SettingsRow
     ScreenManager::kSettingsRows[ScreenManager::kSettingsRowCount] = {
         {"Rescan SD card",
@@ -260,6 +260,15 @@ const ScreenManager::SettingsRow
            self.render();
          }},
         {"USB drive", [](ScreenManager &self) { self.startUsbDrive(); }},
+        {"Equalizer",
+         [](ScreenManager &self) {
+           self.tabs_.activeStack().push(Screen{ScreenKind::Equalizer, {}});
+           self.render();
+         },
+         [](const ScreenManager &self) {
+           if (!self.equalizer_) return std::string();
+           return std::string(self.equalizer_->flat() ? "Flat" : "On");
+         }},
         {"Bluetooth",
          [](ScreenManager &self) {
            self.tabs_.activeStack().push(Screen{ScreenKind::Bluetooth, {}});

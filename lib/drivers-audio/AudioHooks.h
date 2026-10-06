@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "GraphicEqualizer.h"
+
 namespace drehklang::bluetooth {
 class AudioTap;
 }
@@ -28,5 +30,18 @@ bluetooth::AudioTap *bluetoothTap();
 // Esp32AudioI2SDriver's loop task.
 void setDecoderRate(uint32_t rate);
 uint32_t decoderRate();
+
+// Settings > Equalizer (ADR 0029): run on the music before the volume and
+// before the spectrum's tap, so what is shown is what is heard. The tone
+// generator owns the DAC on its own path and stays flat.
+signal::GraphicEqualizer &musicEqualizer();
+
+#ifdef DREHKLANG_EQ_DEBUG
+// The longest one equalizer chunk took since the last call, in us, and how
+// many words it held. For loop() to print -- the decode task never prints.
+uint32_t takeWorstEqualizerUs(uint32_t &words);
+// The time all chunks took since the last call, in us, and their words.
+uint32_t takeTotalEqualizerUs(uint32_t &words);
+#endif
 
 }  // namespace drehklang::drivers

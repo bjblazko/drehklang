@@ -126,6 +126,9 @@ void ScreenManager::render() {
   brightnessArcHost_ = nullptr;
   brightnessLabel_ = nullptr;
   rotationLabel_ = nullptr;
+  eqValueLabel_ = nullptr;
+  eqArea_ = nullptr;
+  eqHandles_.fill(nullptr);
   sleepArcHost_ = nullptr;
   sleepValueLabel_ = nullptr;
   sleepTileLabel_ = nullptr;
@@ -193,6 +196,8 @@ void ScreenManager::render() {
     renderBrightness();
   } else if (current.kind == ScreenKind::Rotation) {
     renderRotation();
+  } else if (current.kind == ScreenKind::Equalizer) {
+    renderEqualizer();
   } else if (current.kind == ScreenKind::SleepTimer) {
     renderSleepTimer();
   } else if (current.kind == ScreenKind::ToneGenerator) {
@@ -766,6 +771,8 @@ std::string ScreenManager::captionTextFor(
       return "Brightness";
     case ScreenKind::Rotation:
       return "Screen rotation";
+    case ScreenKind::Equalizer:
+      return "Equalizer";
     case ScreenKind::SleepTimer:
       return "Sleep timer";
     case ScreenKind::Albums:
@@ -934,8 +941,9 @@ bool ScreenManager::swipeStartsOnControl(int16_t x, int16_t y) const {
   constexpr lv_coord_t kSlop = 10;
   // The tone generator's band takes swipes of its own: they turn its
   // page between scope and spectrum (ADR 0024).
-  // So does Now Playing's cover slot (ADR 0028).
-  for (lv_obj_t *control : {caption_, toneBand_.raw(), slotSwipeBox_}) {
+  // So does Now Playing's cover slot (ADR 0028), and the equalizer's
+  // sliders take vertical drags that may wander sideways (ADR 0029).
+  for (lv_obj_t *control : {caption_, toneBand_.raw(), slotSwipeBox_, eqArea_}) {
     if (!control) continue;
     lv_area_t area;
     lv_obj_get_coords(control, &area);

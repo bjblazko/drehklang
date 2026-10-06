@@ -37,3 +37,4 @@ supersedes the old one (and the old one is marked "Superseded by NNNN").
 | [0026](0026-arduino-esp32-3-and-upstream-audioi2s.md) | Arduino-ESP32 3.x, upstream ESP32-audioI2S, and one owner of the DAC | Accepted (supersedes 0017, 0020; amends 0001, 0006, 0013, 0022, 0024) |
 | [0027](0027-bluetooth-headphones.md) | Bluetooth headphones through the second chip | Accepted (amends 0026) |
 | [0028](0028-now-playing-slot-pages.md) | Now Playing's cover slot as swiped pages | Accepted (amends 0009, 0014, 0024) |
+| [0029](0029-equalizer.md) | A seven-band equalizer | Accepted |

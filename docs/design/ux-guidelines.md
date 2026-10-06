@@ -278,6 +278,9 @@ Full architecture: [ADR 0004](../adr/0004-navigation-library-and-index-architect
   button, a Secondary circle, opens Licences: one row per component,
   ending in its licence, each opening a page with the notice that licence
   requires (ADR 0026).
+  Equalizer (ADR 0029) is seven sliders on a 0 dB line: tap one to select
+  it (its handle turns accent, the value being set), turn the knob to set
+  it in 1 dB steps, or drag it; Flat is the screen's one secondary button.
   Bluetooth (ADR 0027) is a row like the others, ending in its state or
   the connected headphones' name. Its screen is a list -- the switch, the
   paired headphones with their state, Find headphones, Forget headphones

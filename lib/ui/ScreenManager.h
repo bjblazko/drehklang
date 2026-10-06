@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "BrightnessSetting.h"
+#include "EqualizerSetting.h"
 #include "RotationSetting.h"
 #include "BtController.h"
 #include "CoverArtCache.h"
@@ -159,6 +160,8 @@ class ScreenManager : public input::KnobSink {
   void updateBrightnessDisplay();
   // The same for the Rotation screen's angle.
   void updateRotationDisplay();
+  // And for the equalizer's handles and the selected band's value.
+  void updateEqualizerDisplay();
 
   // Keeps the sleep timer's time left current (ADR 0015): the Sleep
   // screen's value and ring, and the Home tile's label. Redraws only when
@@ -209,6 +212,10 @@ class ScreenManager : public input::KnobSink {
   // Settings > Screen rotation. Optional like Bluetooth: without it the row shows
   // no value and its screen nothing to turn.
   void setRotation(display::RotationSetting &rotation) { rotation_ = &rotation; }
+
+  // Settings > Equalizer (ADR 0029). Optional: without it the row shows no
+  // value and its screen nothing.
+  void setEqualizer(signal::EqualizerSetting &equalizer) { equalizer_ = &equalizer; }
 
   // Messages for connect/disconnect, the headphone button, the search's
   // lifetime, and redraws when what the Bluetooth screens show changed.
@@ -262,6 +269,10 @@ class ScreenManager : public input::KnobSink {
   void renderWordmark();
   void renderBrightness();
   void renderRotation();
+  void renderEqualizer();
+  static void onEqColumnPressed(lv_event_t *e);
+  static void onEqColumnPressing(lv_event_t *e);
+  static void onEqFlatClicked(lv_event_t *e);
   void renderSleepTimer();
   void renderLicenceDetail();
   void renderAbout();
@@ -364,7 +375,7 @@ class ScreenManager : public input::KnobSink {
     void (*open)(ScreenManager &self);
     std::string (*value)(const ScreenManager &self) = nullptr;
   };
-  static constexpr int kSettingsRowCount = 8;
+  static constexpr int kSettingsRowCount = 9;
   static const SettingsRow kSettingsRows[kSettingsRowCount];
   // Music's browse axes (ADR 0021): which shelf the Library tab is
   // rooted on, remembered across reboots.
@@ -570,6 +581,22 @@ class ScreenManager : public input::KnobSink {
   ui_widgets::EdgeArc brightnessArc_;
   lv_obj_t *rotationLabel_ = nullptr;
   display::RotationSetting *rotation_ = nullptr;
+
+  // Equalizer screen (ADR 0029). lv_line keeps pointers to its points, so
+  // they live here.
+  struct EqColumnContext {
+    ScreenManager *self = nullptr;
+    size_t band = 0;
+  };
+  signal::EqualizerSetting *equalizer_ = nullptr;
+  lv_obj_t *eqValueLabel_ = nullptr;
+  lv_obj_t *eqArea_ = nullptr;
+  std::array<lv_obj_t *, signal::GraphicEqualizer::kBands> eqHandles_{};
+  std::array<EqColumnContext, signal::GraphicEqualizer::kBands> eqColumnContexts_{};
+  std::array<std::array<lv_point_t, 2>, signal::GraphicEqualizer::kBands> eqTracks_{};
+  std::array<lv_point_t, 2> eqCentreLine_{};
+  lv_coord_t eqPressY_ = 0;
+  bool eqDragging_ = false;
   // The Sleep screen's value and ring, and the Home tile label that shows
   // the time left; what they show, to redraw only on change.
   lv_obj_t *sleepArcHost_ = nullptr;
