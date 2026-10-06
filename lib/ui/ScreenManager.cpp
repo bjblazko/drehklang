@@ -125,6 +125,7 @@ void ScreenManager::render() {
   caption_ = nullptr;
   brightnessArcHost_ = nullptr;
   brightnessLabel_ = nullptr;
+  rotationLabel_ = nullptr;
   sleepArcHost_ = nullptr;
   sleepValueLabel_ = nullptr;
   sleepTileLabel_ = nullptr;
@@ -189,6 +190,8 @@ void ScreenManager::render() {
     renderHome();
   } else if (current.kind == ScreenKind::Brightness) {
     renderBrightness();
+  } else if (current.kind == ScreenKind::Rotation) {
+    renderRotation();
   } else if (current.kind == ScreenKind::SleepTimer) {
     renderSleepTimer();
   } else if (current.kind == ScreenKind::ToneGenerator) {
@@ -760,6 +763,8 @@ std::string ScreenManager::captionTextFor(
       return "Tones";
     case ScreenKind::Brightness:
       return "Brightness";
+    case ScreenKind::Rotation:
+      return "Screen rotation";
     case ScreenKind::SleepTimer:
       return "Sleep timer";
     case ScreenKind::Albums:

@@ -48,6 +48,9 @@ LV_FONT_DECLARE(drehklang_icon_font_48);
 // The tone generator ("airwave"), ADR 0024: one wave line, which says
 // "a tone" where the equalizer bars would say "spectrum".
 #define DREHKLANG_ICON_TONES "\xEF\x85\x94"           // U+F154
+// Settings > Screen rotation's screen ("screen_rotation"), like light_mode on
+// Brightness's.
+#define DREHKLANG_ICON_SCREEN_ROTATION "\xEE\x87\x81"  // U+E1C1
 
 // 16px fast_rewind/fast_forward for Now Playing's time pill shuttle marks
 // (ADR 0013) -- IconFont16.c, same source font. Only carries these two

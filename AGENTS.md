@@ -395,7 +395,8 @@ duplicating it.
   fonts, `TextFont.h`'s). The exact invocation is in each `IconFont*.c`
   and `TextFont*.c` header comment — keep `--no-compress` (see above).
 - **Don't name a member function `bit()`** (or any other Arduino.h macro:
-  `bit`, `_BV`, `abs`, `min`, `max`, `round`). A header that compiles fine
+  `bit`, `_BV`, `abs`, `min`, `max`, `round`, `degrees`,
+  `radians` -- `degrees()` bit 2026-10-06). A header that compiles fine
   host-side in `pio test -e native` fails inside the firmware build with a
   baffling error pointing at Arduino.h itself, not at your code. Found
   2026-09-16 writing `navigation::MenuVisibility`.

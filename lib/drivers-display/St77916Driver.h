@@ -43,6 +43,11 @@ class St77916Driver {
 
   Arduino_TFT *gfx() const { return gfx_; }
 
+  // Turns the picture `quarterTurns` x 90 degrees clockwise, in the panel
+  // itself (MADCTL): nothing is drawn differently, and partial updates keep
+  // working. Content already on the glass stays until it is redrawn.
+  void setRotation(uint8_t quarterTurns) { gfx_->setRotation(kGfxRotation[quarterTurns & 3]); }
+
   // 0-255.
   void setBacklight(uint8_t duty) {
     ledc_set_duty(LEDC_LOW_SPEED_MODE, kBacklightChannel, duty);
@@ -50,6 +55,8 @@ class St77916Driver {
   }
 
  private:
+  // Arduino_GFX's rotation for each clockwise quarter turn.
+  static constexpr uint8_t kGfxRotation[4] = {0, 1, 2, 3};
   static constexpr ledc_channel_t kBacklightChannel = LEDC_CHANNEL_1;
   static constexpr ledc_timer_t kBacklightTimer = LEDC_TIMER_3;
 

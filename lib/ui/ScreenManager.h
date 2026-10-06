@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "BrightnessSetting.h"
+#include "RotationSetting.h"
 #include "BtController.h"
 #include "CoverArtCache.h"
 #include "DotMatrixSpectrum.h"
@@ -152,6 +153,8 @@ class ScreenManager : public input::KnobSink {
   // Cheap live update of the Brightness screen's ring and percentage --
   // call after any encoder tick. A no-op on every other screen.
   void updateBrightnessDisplay();
+  // The same for the Rotation screen's angle.
+  void updateRotationDisplay();
 
   // Keeps the sleep timer's time left current (ADR 0015): the Sleep
   // screen's value and ring, and the Home tile's label. Redraws only when
@@ -198,6 +201,10 @@ class ScreenManager : public input::KnobSink {
   // Bluetooth headphones (ADR 0027). Optional: without a controller
   // Settings shows no Bluetooth row content and the button does nothing.
   void setBluetooth(bluetooth::BtController &bt) { bluetooth_ = &bt; }
+
+  // Settings > Screen rotation. Optional like Bluetooth: without it the row shows
+  // no value and its screen nothing to turn.
+  void setRotation(display::RotationSetting &rotation) { rotation_ = &rotation; }
 
   // Messages for connect/disconnect, the headphone button, the search's
   // lifetime, and redraws when what the Bluetooth screens show changed.
@@ -250,6 +257,7 @@ class ScreenManager : public input::KnobSink {
   void renderHome();
   void renderWordmark();
   void renderBrightness();
+  void renderRotation();
   void renderSleepTimer();
   void renderLicenceDetail();
   void renderAbout();
@@ -352,7 +360,7 @@ class ScreenManager : public input::KnobSink {
     void (*open)(ScreenManager &self);
     std::string (*value)(const ScreenManager &self) = nullptr;
   };
-  static constexpr int kSettingsRowCount = 7;
+  static constexpr int kSettingsRowCount = 8;
   static const SettingsRow kSettingsRows[kSettingsRowCount];
   // Music's browse axes (ADR 0021): which shelf the Library tab is
   // rooted on, remembered across reboots.
@@ -554,6 +562,8 @@ class ScreenManager : public input::KnobSink {
   lv_obj_t *brightnessArcHost_ = nullptr;
   lv_obj_t *brightnessLabel_ = nullptr;
   ui_widgets::EdgeArc brightnessArc_;
+  lv_obj_t *rotationLabel_ = nullptr;
+  display::RotationSetting *rotation_ = nullptr;
   // The Sleep screen's value and ring, and the Home tile label that shows
   // the time left; what they show, to redraw only on change.
   lv_obj_t *sleepArcHost_ = nullptr;

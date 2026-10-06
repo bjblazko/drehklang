@@ -274,6 +274,15 @@ const ScreenManager::SettingsRow
          [](const ScreenManager &self) {
            return std::to_string(self.brightness_.percent()) + "%";
          }},
+        {"Screen rotation",
+         [](ScreenManager &self) {
+           self.tabs_.activeStack().push(Screen{ScreenKind::Rotation, {}});
+           self.render();
+         },
+         [](const ScreenManager &self) {
+           return self.rotation_ ? std::to_string(self.rotation_->clockwiseDegrees()) + "\xC2\xB0"
+                                 : std::string();
+         }},
         {"Main menu",
          [](ScreenManager &self) {
            self.tabs_.activeStack().push(
@@ -654,6 +663,39 @@ void ScreenManager::updateBrightnessDisplay() {
   lv_label_set_text(brightnessLabel_, text);
 }
 
+void ScreenManager::renderRotation() {
+  // Laid out like Brightness, without its ring: four positions are no
+  // range. The knob is the control, so a turned picture with touch that
+  // somehow missed can always be turned back.
+  constexpr lv_coord_t kGlyphY = 104;
+
+  lv_obj_t *glyph = lv_label_create(screen_);
+  lv_obj_set_style_text_font(glyph, &drehklang_icon_font_48, 0);
+  lv_obj_set_style_text_color(glyph, theme::structure(), 0);
+  lv_label_set_text(glyph, DREHKLANG_ICON_SCREEN_ROTATION);
+  lv_obj_align(glyph, LV_ALIGN_TOP_MID, 0, kGlyphY);
+
+  rotationLabel_ = lv_label_create(screen_);
+  lv_obj_set_style_text_font(rotationLabel_, &drehklang_text_font_28, 0);
+  lv_obj_set_style_text_color(rotationLabel_, theme::ink(), 0);
+  lv_obj_align(rotationLabel_, LV_ALIGN_TOP_MID, 0, kGlyphY + 60);
+
+  lv_obj_t *hint = lv_label_create(screen_);
+  lv_obj_set_style_text_font(hint, &drehklang_text_font_14, 0);
+  lv_obj_set_style_text_color(hint, theme::structure(), 0);
+  lv_label_set_text(hint, "Turn to rotate");
+  lv_obj_align(hint, LV_ALIGN_TOP_MID, 0, kGlyphY + 104);
+
+  updateRotationDisplay();
+}
+
+void ScreenManager::updateRotationDisplay() {
+  if (!rotationLabel_ || !rotation_) return;
+  char text[8];
+  snprintf(text, sizeof(text), "%d\xC2\xB0", rotation_->clockwiseDegrees());
+  lv_label_set_text(rotationLabel_, text);
+}
+
 namespace {
 
 // A centred, wrapping column of text lines inside the round glass, below
@@ -862,8 +904,14 @@ void ScreenManager::renderTouchCalibration() {
   }
 
   // Capturing: one accent cross at a time, taken targets as quiet dots.
+  // The targets are points on the panel, which the fit compares raw
+  // touches against; with the picture turned they are drawn where the
+  // turn put them.
+  const uint8_t turns = rotation_ ? rotation_->quarterTurns() : 0;
   for (size_t i = 0; i < TouchCalibrator::kTargetCount; ++i) {
-    const auto &t = TouchCalibrator::kTargets[i];
+    const display::Point t = display::RotationSetting::toLogical(
+        {TouchCalibrator::kTargets[i].x, TouchCalibrator::kTargets[i].y}, turns,
+        drivers::kLcdHorRes);
     if (i < shownCalibrationTargets_) {
       makeMark(screen_, t.x, t.y, 10, 10, theme::structure());
     } else if (i == shownCalibrationTargets_) {

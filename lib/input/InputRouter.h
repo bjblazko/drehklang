@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "BrightnessSetting.h"
+#include "RotationSetting.h"
 #include "GestureRecognizer.h"
 #include "PlaybackStateMachine.h"
 #include "ScreenId.h"
@@ -69,6 +70,9 @@ class InputRouter {
       case navigation::ScreenKind::Brightness:
         brightness_.adjust(delta, nowMs);
         break;
+      case navigation::ScreenKind::Rotation:
+        if (rotation_) rotation_->adjust(delta, nowMs);
+        break;
       case navigation::ScreenKind::SleepTimer:
         sleepTimer_.step(delta, nowMs);
         break;
@@ -108,6 +112,8 @@ class InputRouter {
   // Optional, like a game's sounds: without one the knob does nothing on
   // the tone generator, which is all a host-side build needs.
   void setToneSession(signal::ToneSession &session) { toneSession_ = &session; }
+  // Optional too: without it the knob does nothing on Settings > Screen rotation.
+  void setRotation(display::RotationSetting &rotation) { rotation_ = &rotation; }
 
  private:
   navigation::TabController &tabs_;
@@ -118,6 +124,7 @@ class InputRouter {
   TouchCalibrationFlow &calibration_;
   KnobSink &knobSink_;
   signal::ToneSession *toneSession_ = nullptr;
+  display::RotationSetting *rotation_ = nullptr;
 };
 
 }  // namespace drehklang::input

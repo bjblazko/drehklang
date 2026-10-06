@@ -14,6 +14,7 @@
 #include "BatteryIndicator.h"
 #include "BatteryMonitor.h"
 #include "BrightnessSetting.h"
+#include "RotationSetting.h"
 #include "BtController.h"
 #include "BtLink.h"
 #include "CoverArtCache.h"
@@ -249,6 +250,10 @@ drehklang::playback::PlaybackStateMachine g_playback(g_audioDriver, g_volume);
 drehklang::playback::Shuttle g_shuttle(g_playback);
 drehklang::navigation::TabController g_tabs;
 drehklang::power::BrightnessSetting g_brightness(g_nvsStore);
+drehklang::display::RotationSetting g_rotation(g_nvsStore);
+// What the panel was last told, so a turn of the knob on Settings >
+// Rotation is applied once, not every loop().
+uint8_t g_appliedRotation = 0;
 drehklang::power::SleepTimer g_sleepTimer;
 drehklang::input::TouchCalibrationFlow g_touchCalibration(g_nvsStore);
 drehklang::drivers::UsbMscStorage g_usbStorage;
@@ -325,6 +330,7 @@ void SdCollectionSet::rescan(drehklang::collection::CollectionId id,
   // Volume and brightness changes still inside their save debounce.
   g_playback.tick(now + drehklang::playback::PlaybackStateMachine::kVolumeSaveDebounceMs);
   g_brightness.tick(now + drehklang::power::BrightnessSetting::kSaveDebounceMs);
+  g_rotation.tick(now + drehklang::display::RotationSetting::kSaveDebounceMs);
   g_display.setBacklight(0);
   if (g_display.gfx()) g_display.gfx()->displayOff();
   g_touch.armWakeOnTouch();
@@ -373,8 +379,11 @@ void setup() {
   // RNG, seeded from RF/bootloader entropy).
   g_playback.setRandomSeed(esp_random());
   g_brightness.begin();
+  g_rotation.begin();
   g_toneSession.begin();
   g_inputRouter.setToneSession(g_toneSession);
+  g_inputRouter.setRotation(g_rotation);
+  g_screenManager.setRotation(g_rotation);
   g_touchCalibration.begin();
 
   if (!g_touch.begin()) {
@@ -391,6 +400,8 @@ void setup() {
   lv_obj_t *bootLabel = nullptr;
   bool displayOk = g_lvglGlue.begin(g_display);
   if (displayOk) {
+    g_appliedRotation = g_rotation.quarterTurns();
+    g_display.setRotation(g_appliedRotation);
     g_backlightDuty = g_brightness.duty();
     g_display.setBacklight(g_backlightDuty);
   }
@@ -625,6 +636,16 @@ void armLoopWatchdog() {
 }  // namespace
 #endif
 
+// Turns the panel to Settings > Screen rotation's value once it changed, and
+// redraws everything: LVGL's picture is the same, the panel's frame is not.
+void applyRotation() {
+  if (g_rotation.quarterTurns() == g_appliedRotation) return;
+  g_appliedRotation = g_rotation.quarterTurns();
+  g_display.setRotation(g_appliedRotation);
+  lv_obj_invalidate(lv_scr_act());
+  lv_obj_invalidate(lv_layer_top());
+}
+
 void loop() {
 #ifdef DREHKLANG_LOOP_WDT
   armLoopWatchdog();
@@ -653,6 +674,15 @@ void loop() {
   // Kept raw for Settings > Touch calibration, which fits from raw points.
   const drehklang::input::TouchSample rawTouchSample = touchSample;
   touchSample = g_touchCalibration.active().apply(rawTouchSample);
+  // From the panel's frame into the one the picture is drawn in (Settings
+  // > Rotation), so LVGL and the swipe detector both see what the user
+  // sees. Injected taps below are already in that frame.
+  {
+    const drehklang::display::Point turned = drehklang::display::RotationSetting::toLogical(
+        {touchSample.x, touchSample.y}, g_appliedRotation, drehklang::drivers::kLcdHorRes);
+    touchSample.x = turned.x;
+    touchSample.y = turned.y;
+  }
   if (g_injectedTapUntilMs != 0) {
     const uint32_t nowMs = millis();
     if (nowMs < g_injectedTapUntilMs) {
@@ -807,6 +837,8 @@ void loop() {
       // other than Now Playing, and skipped while the knob shuttles.
       if (!g_shuttle.isHeld()) g_screenManager.updateVolumeDisplay(now);
       g_screenManager.updateBrightnessDisplay();
+      g_screenManager.updateRotationDisplay();
+      applyRotation();
       g_screenManager.updateToneGeneratorDisplay();
     }
   }
@@ -863,6 +895,7 @@ void loop() {
   g_resumeScheduler.tick(now);
   g_bookmarkKeeper.tick(now);
   g_brightness.tick(now);
+  g_rotation.tick(now);
   g_toneSession.tick(now);
   // Locking silences a tone: the lock screen shows no Stop button, and a
   // pocket is no place for a 1 kHz sine.

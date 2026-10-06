@@ -66,6 +66,8 @@ enum class ScreenKind {
   // everything above; past NowPlaying, so a resume never lands on them.
   Bluetooth,
   BluetoothSearch,
+  // Settings > Screen rotation. Appended like everything above.
+  Rotation,
 };
 
 // Parameters a screen needs to render itself. Only the fields relevant
