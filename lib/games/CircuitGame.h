@@ -90,6 +90,7 @@ class CircuitGame {
     raceMs_ = lapStartMs_ = bestLapMs_ = 0;
     laps_ = 0;
     squealing_ = false;
+    heading_ = 0;
     soundCount_ = 0;
   }
 
@@ -153,6 +154,9 @@ class CircuitGame {
   uint32_t bestLapMs() const { return bestLapMs_; }
   bool offRoad() const { return std::abs(x_) > CircuitTrack::kRoadHalfWidth; }
   bool squealing() const { return squealing_; }
+  // How far the road has turned, in 1/256 curve-segments: the backdrop
+  // scrolls by it.
+  int32_t heading() const { return heading_; }
   int carCount() const { return traffic_.count(); }
   const CircuitCar &car(int i) const { return traffic_.car(i); }
 
@@ -243,6 +247,9 @@ class CircuitGame {
     const int32_t travelled = speed_ * ms + zRemainder_;
     z_ += travelled / 1000;
     zRemainder_ = travelled % 1000;
+    // Which way the road has turned so far: the backdrop scrolls by it.
+    const int32_t curve = track_.segment(z_ / CircuitTrack::kSegmentLength).curve;
+    heading_ += curve * (travelled / 1000) / CircuitTrack::kSegmentLength;
   }
 
   // At most one segment per slice: kTopSpeed * kSubStepMs is under a
@@ -363,6 +370,7 @@ class CircuitGame {
   int steering_ = 0;
   bool braking_ = false;
   bool squealing_ = false;
+  int32_t heading_ = 0;
   int32_t damageMilli_ = 0;
   int32_t crashLeftMs_ = 0;
   int bumps_ = 0;

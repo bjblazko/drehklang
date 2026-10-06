@@ -89,7 +89,7 @@ class CircuitTrack {
     switch (kind) {
       case Scenery::Sign: return 1350;
       case Scenery::Lamp: return 1400;
-      case Scenery::Tower: return 2200;
+      case Scenery::Tower: return 2600;
       default: return 1600;
     }
   }
