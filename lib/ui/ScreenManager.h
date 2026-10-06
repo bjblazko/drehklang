@@ -13,6 +13,7 @@
 #include "RotationSetting.h"
 #include "BtController.h"
 #include "CoverArtCache.h"
+#include "CoverSlotPages.h"
 #include "DotMatrixSpectrum.h"
 #include "EdgeArc.h"
 #include "FolderBrowser.h"
@@ -94,7 +95,8 @@ class ScreenManager : public input::KnobSink {
         usbDrive_(usbDrive),
         messages_(messages),
         bookmarks_(bookmarks),
-        menuVisibility_(makeMenuVisibility()) {}
+        menuVisibility_(makeMenuVisibility()),
+        slotPages_(settings) {}
 
   void begin();
 
@@ -385,6 +387,8 @@ class ScreenManager : public input::KnobSink {
   static void onTimePillPressed(lv_event_t *e);
   static void onTimePillReleased(lv_event_t *e);
   void applyCoverSlotMode();
+  // One frame of the scope or spectrum page over the music.
+  void tickSlotBand(uint32_t dtMs);
   // Tag metadata for a playing file, falling back to friendlyName() for
   // the title and empty strings otherwise (e.g. untagged Files-tab files).
   struct TrackInfo {
@@ -410,7 +414,8 @@ class ScreenManager : public input::KnobSink {
   static void onHomeTileClicked(lv_event_t *e);
   // Options panel on Now Playing (ADR 0014).
   void renderOptionsPanel(bool animate);
-  static void onCoverSwitchClicked(lv_event_t *e);
+  static void onSlotPressed(lv_event_t *e);
+  static void onSlotReleased(lv_event_t *e);
   static void onOptionsHandleClicked(lv_event_t *e);
   static void onOptionsPanelCloseClicked(lv_event_t *e);
   // Feedback in the message area for what a toggle now does (ADR 0011).
@@ -507,9 +512,10 @@ class ScreenManager : public input::KnobSink {
   // far from the bottom edge as the back chevron from the top.
   static constexpr lv_coord_t kOptionsHandleH = 24;
   static constexpr lv_coord_t kOptionsHandleBottom = 12;
-  // Top edge of the options sheet: just below the cover slot, so messages
-  // and the volume readout (centered on the slot) stay visible above it.
-  static constexpr lv_coord_t kOptionsPanelY = 146;
+  // Top edge of the options sheet: just below the cover slot and its page
+  // dots (ADR 0028), so messages and the volume readout (centered on the
+  // slot) stay visible above it.
+  static constexpr lv_coord_t kOptionsPanelY = 152;
   static constexpr uint32_t kOptionsPanelAnimMs = 200;
   // How long a shuttle hint/speed message may stay while the pill is held.
   static constexpr uint32_t kShuttleHintMs = 10000;
@@ -520,8 +526,6 @@ class ScreenManager : public input::KnobSink {
   // audio decoder keeps its share of the loop.
   static constexpr uint32_t kTableTennisFrameMs = 33;
   static constexpr uint32_t kGravityFrameMs = 33;
-  // Persisted cover-slot choice: 1 = spectrum, 0 = cover.
-  static constexpr char kSpectrumSettingKey[] = "npSpectrum";
   // Persisted repeat mode (playback::RepeatMode). Shuffle isn't persisted:
   // it's set by how playback started (ADR 0011).
   static constexpr char kRepeatSettingKey[] = "repeat";
@@ -591,12 +595,18 @@ class ScreenManager : public input::KnobSink {
   // long as it's on screen, well past that function returning.
   lv_img_dsc_t coverImgDsc_{};
   std::vector<uint16_t> coverPixels_;
-  // The cover slot shows either the cover or the spectrum; always the
-  // spectrum when there's no cover (user decision, ADR 0009).
+  // The cover slot's pages (ADR 0028): the cover, the dot matrix, and the
+  // tone generator's scope and spectrum over the music, swiped through on
+  // a transparent box over the slot that takes the swipe (so the app-wide
+  // back swipe does not start there).
   ui_widgets::DotMatrixSpectrum spectrum_;
   visualizer::SpectrumAnalyzer analyzer_;
   std::array<int16_t, visualizer::SpectrumAnalyzer::kFftSize> spectrumSamples_{};
-  bool preferSpectrum_ = false;
+  visualizer::CoverSlotPages slotPages_;
+  SignalBand slotBand_;
+  lv_obj_t *slotSwipeBox_ = nullptr;
+  lv_coord_t slotSwipeStartX_ = 0;
+  ui_widgets::PageDots slotDots_;
   uint32_t lastSpectrumTickMs_ = 0;
 
   // Table Tennis (ADR 0022). The game itself is pure logic; these are the six

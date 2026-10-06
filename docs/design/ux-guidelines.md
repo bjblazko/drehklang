@@ -319,13 +319,11 @@ Full architecture: [ADR 0004](../adr/0004-navigation-library-and-index-architect
   what is on screen behind the panel. A glyph alone didn't say
   which mode was active, so every tap also shows a message naming what now
   happens ("Shuffle on - album", "Repeat this track").
-- **The cover slot switches from the options panel.** Its Cover /
-  Spectrum button swaps the cover for the dot-matrix spectrum and back; the
-  choice persists. Without a cover the spectrum always shows and the button
-  is greyed out. The slot itself isn't tappable — nothing said it was
-  (ADR 0014).
-  No separate visualizer screen — it would need an undiscoverable gesture
-  ([ADR 0009](../adr/0009-now-playing-spectrum-analyzer.md)).
+- **The cover slot is swiped through, like the tone generator's band.**
+  Cover (when there is one), the dot-matrix spectrum, the scope and the
+  absolute spectrum, with page dots under the slot; the page swiped to
+  persists. The swipe stays inside the slot, so back still works
+  everywhere else ([ADR 0028](../adr/0028-now-playing-slot-pages.md)).
 - **Always-visible back button, in addition to swipe.** Swipe-to-back
   alone wasn't discoverable in real usage (a user reaching Now Playing had
   no visible way back at all) — a supplementary, always-visible quiet

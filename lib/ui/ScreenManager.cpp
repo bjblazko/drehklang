@@ -86,7 +86,7 @@ const collection::CollectionProfile &ScreenManager::playingProfile() const {
 
 void ScreenManager::begin() {
   uint8_t stored = 0;
-  preferSpectrum_ = settings_.getU8(kSpectrumSettingKey, stored) && stored != 0;
+  slotPages_.begin();
   if (settings_.getU8(kRepeatSettingKey, stored) && stored <= 2) {
     playback_.setRepeat(static_cast<playback::RepeatMode>(stored));
   }
@@ -155,6 +155,9 @@ void ScreenManager::render() {
   elapsedLabel_ = nullptr;
   coverImg_ = nullptr;
   spectrum_.detach();
+  slotBand_.detach();
+  slotSwipeBox_ = nullptr;
+  slotDots_.detach();
   volumeArcHost_ = nullptr;
   volumeHudPill_ = nullptr;
   volumeHudLabel_ = nullptr;
@@ -174,6 +177,7 @@ void ScreenManager::render() {
     if (toneSession_ && toneSession_->running()) toneSession_->stop();
     toneBand_.release();
   }
+  if (current.kind != ScreenKind::NowPlaying) slotBand_.release();
   if (current.kind != renderedKind_) {
     renderedKind_ = current.kind;
     messages_.dismissScreenMessage();
@@ -930,7 +934,8 @@ bool ScreenManager::swipeStartsOnControl(int16_t x, int16_t y) const {
   constexpr lv_coord_t kSlop = 10;
   // The tone generator's band takes swipes of its own: they turn its
   // page between scope and spectrum (ADR 0024).
-  for (lv_obj_t *control : {caption_, toneBand_.raw()}) {
+  // So does Now Playing's cover slot (ADR 0028).
+  for (lv_obj_t *control : {caption_, toneBand_.raw(), slotSwipeBox_}) {
     if (!control) continue;
     lv_area_t area;
     lv_obj_get_coords(control, &area);
@@ -1044,12 +1049,29 @@ void ScreenManager::renderNowPlaying() {
   lv_obj_t *spectrum = spectrum_.create(screen_, theme::ink(),
                                         theme::surfaceAlt(), theme::surface());
   lv_obj_align(spectrum, LV_ALIGN_TOP_MID, 0, kCoverY);
-  // Switched from the options panel (ADR 0014), no longer by tapping the
-  // slot itself: nothing on screen said the cover was tappable.
+  const lv_coord_t slotSize = ui_widgets::DotMatrixSpectrum::kSize;
+  // The scope and the spectrum are as wide as the bezel allows at this
+  // height: 20 Hz - 20 kHz on 96 px would not read.
+  constexpr lv_coord_t kSlotBandWidth = 200;
+  lv_obj_t *band = slotBand_.create(screen_, kSlotBandWidth, slotSize, theme::ink(),
+                                    theme::surfaceAlt());
+  lv_obj_align(band, LV_ALIGN_TOP_MID, 0, kCoverY);
+  // Swiped like the tone generator's band (ADR 0028): a transparent box
+  // over the whole slot takes the finger.
+  slotSwipeBox_ = lv_obj_create(screen_);
+  lv_obj_remove_style_all(slotSwipeBox_);
+  lv_obj_set_size(slotSwipeBox_, kSlotBandWidth, slotSize);
+  lv_obj_align(slotSwipeBox_, LV_ALIGN_TOP_MID, 0, kCoverY);
+  lv_obj_clear_flag(slotSwipeBox_, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(slotSwipeBox_, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_event_cb(slotSwipeBox_, onSlotPressed, LV_EVENT_PRESSED, this);
+  lv_obj_add_event_cb(slotSwipeBox_, onSlotReleased, LV_EVENT_RELEASED, this);
+  lv_obj_add_event_cb(slotSwipeBox_, onSlotReleased, LV_EVENT_PRESS_LOST, this);
+  slotDots_.create(screen_, slotPages_.count(coverImg_ != nullptr), kCoverY + slotSize + 3,
+                   theme::ink(), theme::surfaceAlt());
   applyCoverSlotMode();
   lastSpectrumTickMs_ = millis();
 
-  const lv_coord_t slotSize = ui_widgets::DotMatrixSpectrum::kSize;
   lv_coord_t titleY = kCoverY + slotSize + 10;
   TrackInfo info = trackInfoFor(playback_.currentPath());
 
@@ -1303,12 +1325,10 @@ void ScreenManager::renderOptionsPanel(bool animate) {
     const char *glyph;
     const char *label;
     bool active;
-    bool enabled;
     lv_event_cb_t cb;
   };
   playback::RepeatMode repeat = playback_.repeat();
-  bool showingSpectrum = preferSpectrum_ || !coverImg_;
-  Option options[4];
+  Option options[3];
   int kCount = 0;
   // No Shuffle for spoken word (ADR 0018). The lists already drop their
   // Shuffle row; leaving the toggle here was the one way left to shuffle
@@ -1317,20 +1337,14 @@ void ScreenManager::renderOptionsPanel(bool animate) {
   // browsing Music while a book plays, and these buttons act on playback.
   if (playingProfile().hasShuffleRow) {
     options[kCount++] = {DREHKLANG_ICON_SHUFFLE, "Shuffle", playback_.shuffle(),
-                         true, &ScreenManager::onShuffleClicked};
+                         &ScreenManager::onShuffleClicked};
   }
   options[kCount++] = {repeat == playback::RepeatMode::One
                            ? DREHKLANG_ICON_REPEAT_ONE
                            : DREHKLANG_ICON_REPEAT,
-                       "Repeat", repeat != playback::RepeatMode::Off, true,
+                       "Repeat", repeat != playback::RepeatMode::Off,
                        &ScreenManager::onRepeatClicked};
-  // Shows what a tap switches to; only switchable when there is a cover.
-  options[kCount++] = {showingSpectrum ? DREHKLANG_ICON_IMAGE
-                                       : DREHKLANG_ICON_EQUALIZER,
-                       showingSpectrum ? "Cover" : "Spectrum", false,
-                       coverImg_ != nullptr,
-                       &ScreenManager::onCoverSwitchClicked};
-  options[kCount++] = {DREHKLANG_ICON_LOCK, "Lock", false, true,
+  options[kCount++] = {DREHKLANG_ICON_LOCK, "Lock", false,
                        &ScreenManager::onLockClicked};
   for (int i = 0; i < kCount; ++i) {
     const Option &option = options[i];
@@ -1347,11 +1361,6 @@ void ScreenManager::renderOptionsPanel(bool animate) {
     lv_obj_align(label, LV_ALIGN_TOP_MID, x, kButtonTop + kButtonSize + 6);
     if (option.active) {
       lv_obj_set_style_text_color(lv_obj_get_child(btn, 0), theme::confirm(), 0);
-    }
-    if (!option.enabled) {
-      lv_obj_add_state(btn, LV_STATE_DISABLED);
-      lv_obj_set_style_opa(btn, LV_OPA_40, 0);
-      lv_obj_set_style_opa(label, LV_OPA_40, 0);
     }
   }
 
@@ -1402,25 +1411,32 @@ void ScreenManager::applyHighlight() {
 }
 
 void ScreenManager::applyCoverSlotMode() {
-  bool showSpectrum = preferSpectrum_ || !coverImg_;
-  if (coverImg_) {
-    if (showSpectrum) {
-      lv_obj_add_flag(coverImg_, LV_OBJ_FLAG_HIDDEN);
+  using visualizer::SlotView;
+  const bool hasCover = coverImg_ != nullptr;
+  const SlotView view = slotPages_.shown(hasCover);
+  auto show = [](lv_obj_t *obj, bool visible) {
+    if (!obj) return;
+    if (visible) {
+      lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
     } else {
-      lv_obj_clear_flag(coverImg_, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
     }
+  };
+  show(coverImg_, view == SlotView::Cover);
+  show(spectrum_.raw(), view == SlotView::DotMatrix);
+  const bool band = view == SlotView::Scope || view == SlotView::Spectrum;
+  show(slotBand_.raw(), band);
+  if (band) {
+    slotBand_.setView(view == SlotView::Scope ? SignalBand::View::Scope
+                                              : SignalBand::View::Spectrum);
   }
-  if (!spectrum_.raw()) return;
-  if (showSpectrum) {
-    lv_obj_clear_flag(spectrum_.raw(), LV_OBJ_FLAG_HIDDEN);
-  } else {
-    lv_obj_add_flag(spectrum_.raw(), LV_OBJ_FLAG_HIDDEN);
-  }
+  slotDots_.setCurrent(slotPages_.shownIndex(hasCover));
 }
 
 void ScreenManager::tickSpectrum(uint32_t nowMs, bool visible) {
-  lv_obj_t *canvas = spectrum_.raw();
-  if (!canvas || lv_obj_has_flag(canvas, LV_OBJ_FLAG_HIDDEN)) return;
+  auto shown = [](lv_obj_t *obj) { return obj && !lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN); };
+  const bool band = shown(slotBand_.raw());
+  if (!shown(spectrum_.raw()) && !band) return;
   if (!visible) {
     lastSpectrumTickMs_ = nowMs;
     return;
@@ -1429,6 +1445,10 @@ void ScreenManager::tickSpectrum(uint32_t nowMs, bool visible) {
   if (dtMs < kSpectrumFrameMs) return;
   lastSpectrumTickMs_ = nowMs;
   if (dtMs > 100) dtMs = 100;  // After a stall, don't jump straight to empty.
+  if (band) {
+    tickSlotBand(dtMs);
+    return;
+  }
 
 #ifdef DREHKLANG_SPECTRUM_DEBUG
   int64_t startUs = esp_timer_get_time();
@@ -1451,6 +1471,31 @@ void ScreenManager::tickSpectrum(uint32_t nowMs, bool visible) {
     worstUs = 0;
   }
 #endif
+}
+
+// The tone generator's scope and spectrum over the music (ADR 0028). The
+// samples are from before the volume, so the spectrum reads the track's
+// own dBFS; muted or paused shows nothing, as the dot matrix does.
+void ScreenManager::tickSlotBand(uint32_t dtMs) {
+  // Music has no pitch to choose a timebase for: 20 ms, two periods of
+  // 100 Hz, like the tone generator's noise.
+  constexpr float kMusicTimebaseHz = 100.0f;
+  const playback::SampleWindow window =
+      playback_.readRecentSamples(slotBand_.buffer(), slotBand_.capacity());
+  const size_t count = window.gain > 0.0f ? window.count : 0;
+  if (slotBand_.view() == SignalBand::View::Spectrum) {
+    slotBand_.showSpectrum(count, window.sampleRate, dtMs);
+    return;
+  }
+  if (count == 0) {
+    slotBand_.clearScope();
+    return;
+  }
+  // The level range follows the loudest sample on screen, in the same
+  // 10 dB steps and with the same hold as a set level.
+  const size_t span = std::min<size_t>(count, window.sampleRate / 50);
+  const int levelDb = SignalBand::peakDb(slotBand_.buffer() + count - span, span);
+  slotBand_.showScope(count, window.sampleRate, kMusicTimebaseHz, levelDb);
 }
 
 void ScreenManager::setProgressRingVisible(bool visible) {
@@ -1935,13 +1980,26 @@ void ScreenManager::onNextClicked(lv_event_t *e) {
   self->render();
 }
 
-void ScreenManager::onCoverSwitchClicked(lv_event_t *e) {
+void ScreenManager::onSlotPressed(lv_event_t *e) {
   auto *self = static_cast<ScreenManager *>(lv_event_get_user_data(e));
-  self->preferSpectrum_ = !self->preferSpectrum_;
-  self->settings_.setU8(kSpectrumSettingKey, self->preferSpectrum_ ? 1 : 0);
-  // Re-render rather than applyCoverSlotMode(): the panel's switch shows
-  // what it switches to next, so it changes too.
-  self->render();
+  lv_point_t point;
+  lv_indev_get_point(lv_indev_get_act(), &point);
+  if (self) self->slotSwipeStartX_ = point.x;
+}
+
+// Right to left turns to the next page, left to right back, like the tone
+// generator's band; a tap does nothing.
+void ScreenManager::onSlotReleased(lv_event_t *e) {
+  constexpr lv_coord_t kSwipeMinPx = 40;
+  auto *self = static_cast<ScreenManager *>(lv_event_get_user_data(e));
+  if (!self) return;
+  lv_point_t point;
+  lv_indev_get_point(lv_indev_get_act(), &point);
+  const lv_coord_t dx = point.x - self->slotSwipeStartX_;
+  if (dx > -kSwipeMinPx && dx < kSwipeMinPx) return;
+  if (self->slotPages_.step(dx < 0 ? 1 : -1, self->coverImg_ != nullptr)) {
+    self->applyCoverSlotMode();
+  }
 }
 
 void ScreenManager::onOptionsHandleClicked(lv_event_t *e) {
