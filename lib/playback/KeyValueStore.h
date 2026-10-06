@@ -14,6 +14,10 @@ class KeyValueStore {
   virtual ~KeyValueStore() = default;
   virtual bool getU8(const std::string &key, uint8_t &out) = 0;
   virtual void setU8(const std::string &key, uint8_t value) = 0;
+  // Wider values (Circuit's lap records, ADR 0030). Not every store needs
+  // them, so they default to "nothing stored" and a no-op.
+  virtual bool getU32(const std::string &, uint32_t &) { return false; }
+  virtual void setU32(const std::string &, uint32_t) {}
 };
 
 }  // namespace drehklang::playback

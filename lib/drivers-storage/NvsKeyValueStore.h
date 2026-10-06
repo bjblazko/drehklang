@@ -33,6 +33,20 @@ class NvsKeyValueStore : public playback::KeyValueStore,
     prefs_.end();
   }
 
+  bool getU32(const std::string &key, uint32_t &out) override {
+    prefs_.begin(kNamespace, /*readOnly=*/true);
+    bool found = prefs_.isKey(key.c_str());
+    if (found) out = prefs_.getULong(key.c_str());
+    prefs_.end();
+    return found;
+  }
+
+  void setU32(const std::string &key, uint32_t value) override {
+    prefs_.begin(kNamespace, /*readOnly=*/false);
+    prefs_.putULong(key.c_str(), value);
+    prefs_.end();
+  }
+
   // NVS writes a changed blob to fresh entries and only then invalidates
   // the old ones, so a power cut leaves one or the other (ADR 0012).
   bool getBlob(const std::string &key, std::vector<uint8_t> &out) override {
