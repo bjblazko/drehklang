@@ -17,10 +17,15 @@ void AudioOutputStage::noteMonoSample(int16_t mono) {
   samplesWritten_.store(written + 1, std::memory_order_relaxed);
 }
 
-void AudioOutputStage::noteStereo32(const int32_t *interleaved, size_t words) {
+void AudioOutputStage::noteStereo32(const int32_t *interleaved, size_t words, float gain) {
   for (size_t i = 0; i + 1 < words; i += 2) {
     const int64_t sum = static_cast<int64_t>(interleaved[i]) + interleaved[i + 1];
-    noteMonoSample(static_cast<int16_t>(sum >> 17));  // Average, then top 16 bits.
+    int32_t mono = static_cast<int32_t>(sum >> 17);  // Average, then top 16 bits.
+    if (gain != 1.0f) {
+      mono = std::clamp<int32_t>(static_cast<int32_t>(static_cast<float>(mono) * gain),
+                                 INT16_MIN, INT16_MAX);
+    }
+    noteMonoSample(static_cast<int16_t>(mono));
   }
 }
 

@@ -28,7 +28,9 @@ class AudioOutputStage {
   void noteMonoSample(int16_t mono);
   // The decoder library's samples: interleaved left/right, full-scale
   // 32-bit, before volume -- so the spectrum needs no gain divided out.
-  void noteStereo32(const int32_t *interleaved, size_t words);
+  // `gain` undoes the equalizer's headroom (ADR 0029), so the pictures
+  // show the music at its own level.
+  void noteStereo32(const int32_t *interleaved, size_t words, float gain = 1.0f);
 
   // Samples kept for whoever reads them back: the Now Playing spectrum
   // takes its 1024, the tone generator's scope up to all of them -- two

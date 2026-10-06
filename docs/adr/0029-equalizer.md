@@ -25,10 +25,30 @@ is squeezed out of shape, and "air" is a shelf anyway. A band at or above
 
 ### It never clips
 
-Everything is lowered by the curve's highest point, found on a 256-point
-log grid plus the band centres (overlapping bells add up). Lifting the
-bass therefore lowers the rest; nothing is pushed past full scale. Tested
+Before the volume, everything is lowered by the curve's highest point,
+found on a 256-point log grid plus the band centres (overlapping bells add
+up), so nothing is pushed past full scale in the 32-bit samples. Tested
 with every band at +12 dB.
+
+After the volume, that headroom is given back as far as the volume step
+leaves room: `min(headroom, 64 / kVolumeTable[step])`
+(`GraphicEqualizer::makeup()`, `applyEqualizerMakeup()`), before the
+sleep fade and the Bluetooth copy. At a listening volume the music keeps
+its level and only the curve changes; near full volume a lift lowers the
+rest, because there is no room left. It can never clip: the makeup never
+exceeds what the volume took. The spectrum's tap gets the same, so the
+pictures do not look quieter either.
+
+Found on the device the same day, both as "the equalizer makes
+everything quieter, whatever I set":
+
+- **Headroom without makeup.** The first version only lowered: +12 dB at
+  31 Hz made the whole song 12 dB quieter, at any volume.
+- **The headroom itself was wrong at low frequencies.** |H|^2 in its
+  expanded form in cos(w) cancels to rounding noise near DC in float:
+  +12 dB at 31 Hz was taken as +21.6. The RBJ cookbook's factored form in
+  sin^2(w/2) is exact; a test now holds the headroom to the lift, not just
+  above it.
 
 ### Where it runs
 

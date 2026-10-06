@@ -39,6 +39,19 @@ std::atomic<uint32_t> g_totalEqualizerWords{0};
 
 signal::GraphicEqualizer &musicEqualizer() { return g_equalizer; }
 
+void applyEqualizerMakeup(int32_t *samples, size_t words) {
+  using playback::AudioGain;
+  const uint8_t step = std::min(audioOutputStage().volumeStep(), AudioGain::kMaxVolumeStep);
+  const float makeup = g_equalizer.makeup(AudioGain::kVolumeTable[step] / 64.0f);
+  if (makeup <= 1.0f) return;
+  for (size_t i = 0; i < words; ++i) {
+    const float scaled = static_cast<float>(samples[i]) * makeup;
+    samples[i] = scaled >= 2147483647.0f    ? INT32_MAX
+                 : scaled <= -2147483648.0f ? INT32_MIN
+                                            : static_cast<int32_t>(scaled);
+  }
+}
+
 #ifdef DREHKLANG_EQ_DEBUG
 uint32_t takeWorstEqualizerUs(uint32_t &words) {
   words = g_worstEqualizerWords.load(std::memory_order_relaxed);
@@ -101,18 +114,20 @@ void audio_process_raw_samples(int32_t *samples, int16_t words) {
 #else
   g_equalizer.process(samples, count, decoderRate());
 #endif
-  audioOutputStage().noteStereo32(samples, count);
+  audioOutputStage().noteStereo32(samples, count, g_equalizer.headroom());
 }
 
-// After the volume: the sleep timer's fade (ADR 0015), silence while a
-// resume position is still being applied, and a copy for Bluetooth
-// headphones -- exactly what the jack gets (ADR 0027).
+// After the volume: the equalizer's headroom given back as far as the
+// volume leaves room (ADR 0029), the sleep timer's fade (ADR 0015),
+// silence while a resume position is still being applied, and a copy for
+// Bluetooth headphones -- exactly what the jack gets (ADR 0027).
 void audio_process_i2s(int32_t *samples, int16_t words, bool *continueI2S) {
   *continueI2S = true;
   if (drehklang::drivers::holdingOutput()) {
     std::fill(samples, samples + words, 0);
     return;
   }
+  drehklang::drivers::applyEqualizerMakeup(samples, static_cast<size_t>(words));
   const uint16_t gain = drehklang::drivers::audioOutputStage().outputGain();
   if (gain < drehklang::playback::AudioGain::kUnityOutputGain) {
     for (int16_t i = 0; i < words; ++i) {

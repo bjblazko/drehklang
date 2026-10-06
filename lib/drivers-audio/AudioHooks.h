@@ -36,6 +36,11 @@ uint32_t decoderRate();
 // generator owns the DAC on its own path and stays flat.
 signal::GraphicEqualizer &musicEqualizer();
 
+// After the volume: multiplies by the equalizer's makeup for the current
+// volume step. Never past full scale -- the makeup is capped at what the
+// volume step took.
+void applyEqualizerMakeup(int32_t *samples, size_t words);
+
 #ifdef DREHKLANG_EQ_DEBUG
 // The longest one equalizer chunk took since the last call, in us, and how
 // many words it held. For loop() to print -- the decode task never prints.

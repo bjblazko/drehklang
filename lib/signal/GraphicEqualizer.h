@@ -18,7 +18,10 @@ namespace drehklang::signal {
 //   is squeezed out of shape, and "air" is a shelf anyway. The bottom is a
 //   bell, not a shelf, so nothing below hearing is lifted.
 // - Never clips: everything is lowered by the curve's highest point,
-//   found on a fine grid, so a lift lowers the rest instead.
+//   found on a fine grid (headroom()), and given back after the volume as
+//   far as the volume leaves room (makeup()). At a listening volume the
+//   music keeps its level; only near full volume does a lift lower the
+//   rest, because there is no room left.
 // - A band at or above 0.45 x the sample rate is left out (a 22.05 kHz
 //   audiobook has no 16 kHz).
 // - Flat costs nothing: the samples are not touched at all.
@@ -49,6 +52,17 @@ class GraphicEqualizer {
       if (g.load(std::memory_order_relaxed) != 0) return false;
     }
     return true;
+  }
+
+  // How far process() lowered everything, as a linear factor >= 1: the
+  // curve's highest point. Read from any task; set by process().
+  float headroom() const { return headroom_.load(std::memory_order_relaxed); }
+
+  // What to multiply by after a volume of `volumeLinear` (0..1): the
+  // headroom back, but never past what keeps full scale at full scale.
+  float makeup(float volumeLinear) const {
+    if (volumeLinear <= 0.0f) return 1.0f;
+    return std::max(1.0f, std::min(headroom(), 1.0f / volumeLinear));
   }
 
   // `words` interleaved left/right samples, in place, at `sampleRate`.
@@ -107,12 +121,17 @@ class GraphicEqualizer {
       state[1] = {rx1, rx2, ry1, ry2};
     }
 
-    // |H|^2 at a frequency, given cos(w) and cos(2w) there.
-    float magnitudeSquared(float cos1, float cos2) const {
-      const float num = b0 * b0 + b1 * b1 + b2 * b2 + 2.0f * (b0 * b1 + b1 * b2) * cos1 +
-                        2.0f * b0 * b2 * cos2;
+    // |H|^2 at a frequency, given phi = sin^2(w/2) there. The RBJ
+    // cookbook's factored form: the expanded one in cos(w) cancels to
+    // rounding noise near DC in float, and put +12 dB at 31 Hz at +21.6
+    // (found 2026-10-06, the music came out far too quiet).
+    float magnitudeSquared(float phi) const {
+      const float bs = b0 + b1 + b2;
+      const float as = 1.0f + a1 + a2;
+      const float num =
+          bs * bs - 4.0f * (b0 * b1 + 4.0f * b0 * b2 + b1 * b2) * phi + 16.0f * b0 * b2 * phi * phi;
       const float den =
-          1.0f + a1 * a1 + a2 * a2 + 2.0f * (a1 + a1 * a2) * cos1 + 2.0f * a2 * cos2;
+          as * as - 4.0f * (a1 + 4.0f * a2 + a1 * a2) * phi + 16.0f * a2 * phi * phi;
       return num / den;
     }
   };
@@ -180,7 +199,9 @@ class GraphicEqualizer {
       filters_[b] = next;
       order_[active_++] = b;
     }
-    preGain_ = active_ == 0 ? 1.0f : 1.0f / std::max(1.0f, peakMagnitude(rate));
+    const float peak = active_ == 0 ? 1.0f : std::max(1.0f, peakMagnitude(rate));
+    preGain_ = 1.0f / peak;
+    headroom_.store(peak, std::memory_order_relaxed);
   }
 
   // The curve's highest point: a log grid from 20 Hz, plus the band
@@ -189,11 +210,10 @@ class GraphicEqualizer {
     const float top = std::min(20000.0f, kHighestUsable * rate);
     float peak = 0.0f;
     auto at = [&](float hz) {
-      const float w = 2.0f * static_cast<float>(M_PI) * hz / rate;
-      const float cos1 = std::cos(w);
-      const float cos2 = 2.0f * cos1 * cos1 - 1.0f;
+      const float half = std::sin(static_cast<float>(M_PI) * hz / rate);
+      const float phi = half * half;
       float m = 1.0f;
-      for (size_t i = 0; i < active_; ++i) m *= filters_[order_[i]].magnitudeSquared(cos1, cos2);
+      for (size_t i = 0; i < active_; ++i) m *= filters_[order_[i]].magnitudeSquared(phi);
       peak = std::max(peak, m);
     };
     for (size_t i = 0; i < kGridPoints; ++i) {
@@ -223,6 +243,7 @@ class GraphicEqualizer {
   std::array<size_t, kBands> order_{};
   size_t active_ = 0;
   float preGain_ = 1.0f;
+  std::atomic<float> headroom_{1.0f};
   std::array<float, kBlockWords> block_{};
 };
 
