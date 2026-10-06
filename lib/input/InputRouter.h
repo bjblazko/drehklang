@@ -82,9 +82,10 @@ class InputRouter {
         break;
       case navigation::ScreenKind::TableTennis:
       case navigation::ScreenKind::Gravity:
+      case navigation::ScreenKind::Circuit:
         // The knob is the controller both originals were played with: an
         // Atari paddle is a potentiometer (ADR 0022), and a lander turns
-        // (ADR 0023).
+        // (ADR 0023). In Circuit it is the wheel (ADR 0030).
         knobSink_.onGameKnob(delta);
         break;
       case navigation::ScreenKind::ToneGenerator:

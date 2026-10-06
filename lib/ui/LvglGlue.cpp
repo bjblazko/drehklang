@@ -79,6 +79,13 @@ void LvglGlue::flushCb(lv_disp_drv_t *drv, const lv_area_t *area,
   auto *self = static_cast<LvglGlue *>(drv->user_data);
   int32_t w = area->x2 - area->x1 + 1;
   int32_t h = area->y2 - area->y1 + 1;
+  // The game draws the panel itself (ADR 0030): LVGL still runs -- touch,
+  // timers -- but what it renders must not land between the game's
+  // stripes.
+  if (self->panelOwnedByGame_) {
+    lv_disp_flush_ready(drv);
+    return;
+  }
   // Arduino_GFX's generic draw16bitRGBBitmap writes one pixel at a time
   // (its own writeAddrWindow(x,y,1,1) call per pixel) -- correct but far
   // too slow for a responsive UI. Setting the address window once for
@@ -94,20 +101,36 @@ void LvglGlue::flushCb(lv_disp_drv_t *drv, const lv_area_t *area,
   // -- LVGL only ever flushes partial stripes (kBufHeight rows at a
   // time), so there's no single existing buffer that already holds a
   // complete frame to just read back.
-  if (self->shadowFrame_) {
-    const uint16_t *src = reinterpret_cast<uint16_t *>(colorMap);
-    for (int32_t row = 0; row < h; ++row) {
-      uint16_t *dst = self->shadowFrame_ +
-                       (area->y1 + row) * drivers::kLcdHorRes + area->x1;
-      memcpy(dst, src + row * w, w * sizeof(uint16_t));
-    }
-  }
+  self->mirror(area->x1, area->y1, w, h, reinterpret_cast<uint16_t *>(colorMap));
 
   // This call is synchronous (blocks until the QSPI transaction
   // completes), so flush_ready is called immediately after -- no async
   // "transfer done" callback needed, unlike the esp_lcd-based approach
   // this replaced.
   lv_disp_flush_ready(drv);
+}
+
+void LvglGlue::mirror(int x0, int y0, int width, int rows, const uint16_t *pixels) {
+  if (!shadowFrame_) return;
+  for (int row = 0; row < rows; ++row) {
+    uint16_t *dst = shadowFrame_ + (y0 + row) * drivers::kLcdHorRes + x0;
+    memcpy(dst, pixels + row * width, width * sizeof(uint16_t));
+  }
+}
+
+void LvglGlue::setPanelOwnedByGame(bool owned) {
+  if (owned == panelOwnedByGame_) return;
+  panelOwnedByGame_ = owned;
+  if (!owned) lv_obj_invalidate(lv_scr_act());
+}
+
+void LvglGlue::pushStripe(int x0, int y0, int width, int rows, const uint16_t *pixels) {
+  if (width <= 0 || rows <= 0) return;
+  gfx_->startWrite();
+  gfx_->writeAddrWindow(x0, y0, width, rows);
+  gfx_->writePixels(const_cast<uint16_t *>(pixels), width * rows);
+  gfx_->endWrite();
+  mirror(x0, y0, width, rows, pixels);
 }
 
 void LvglGlue::writeScreenshotToSerial() const {

@@ -42,6 +42,15 @@ class LvglGlue {
   // Triggered by main.cpp on receiving "SCREENSHOT\n" over Serial.
   void writeScreenshotToSerial() const;
 
+  // While a game owns the panel (Circuit, ADR 0030), LVGL's flushes are
+  // dropped and the game pushes its own stripes with pushStripe(). Giving
+  // the panel back invalidates the screen so LVGL repaints all of it.
+  void setPanelOwnedByGame(bool owned);
+  bool panelOwnedByGame() const { return panelOwnedByGame_; }
+  // Blocks until the QSPI transfer is done; mirrored into the screenshot
+  // buffer like an LVGL flush.
+  void pushStripe(int x0, int y0, int width, int rows, const uint16_t *pixels);
+
  private:
   static void flushCb(lv_disp_drv_t *drv, const lv_area_t *area,
                        lv_color_t *colorMap);
@@ -61,6 +70,9 @@ class LvglGlue {
   // PSRAM-backed (8MB available per device.md; too big to justify from
   // the tight 320KB internal SRAM budget for a diagnostic feature).
   uint16_t *shadowFrame_ = nullptr;
+  bool panelOwnedByGame_ = false;
+
+  void mirror(int x0, int y0, int width, int rows, const uint16_t *pixels);
 };
 
 }  // namespace drehklang::ui

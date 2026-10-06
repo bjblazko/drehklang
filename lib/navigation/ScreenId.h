@@ -70,6 +70,9 @@ enum class ScreenKind {
   Rotation,
   // Settings > Equalizer (ADR 0029). Appended like everything above.
   Equalizer,
+  // Games > Circuit (ADR 0030). Appended like everything above; past
+  // NowPlaying, so a resume never lands mid-race.
+  Circuit,
 };
 
 // Parameters a screen needs to render itself. Only the fields relevant

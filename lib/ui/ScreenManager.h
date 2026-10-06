@@ -29,6 +29,9 @@
 #include "MessageArea.h"
 #include "PlaybackStateMachine.h"
 #include "BlipPlayer.h"
+#include "CircuitGame.h"
+#include "CircuitRecords.h"
+#include "CircuitSounds.h"
 #include "GravityGame.h"
 #include "TableTennisGame.h"
 #include "SampleSource.h"
@@ -48,6 +51,8 @@
 #include "UsbDriveSession.h"
 
 namespace drehklang::ui {
+
+class CircuitPresenter;
 
 // Renders whatever screen TabController's active stack currently shows,
 // and forwards taps into navigation/playback. Also implements
@@ -199,6 +204,13 @@ class ScreenManager : public input::KnobSink {
   // progress so loop() can hold the display awake through a long descent.
   bool tickGravity(uint32_t nowMs, bool visible);
 
+  // Circuit (ADR 0030): the presenter that puts it on the panel, and the
+  // per-loop tick. Without a presenter the game cannot be drawn and its
+  // screen stays dark. True while a race (or its countdown) runs, to hold
+  // the display awake.
+  void setCircuitPresenter(CircuitPresenter &presenter) { circuitPresenter_ = &presenter; }
+  bool tickCircuit(uint32_t nowMs, bool visible);
+
   // The tone generator (ADR 0024). Optional like the blips: without a
   // session the screen shows nothing to play.
   void setToneSession(signal::ToneSession &session) { toneSession_ = &session; }
@@ -293,6 +305,16 @@ class ScreenManager : public input::KnobSink {
   static void onGravityPressed(lv_event_t *e);
   static void onGravityReleased(lv_event_t *e);
   static void onGravityTapped(lv_event_t *e);
+  // ScreenManagerCircuit.cpp.
+  void renderCircuit();
+  void onCircuitKnob(int16_t delta);
+  void drainCircuitSounds(uint32_t nowMs);
+  void presentCircuit(uint32_t nowMs);
+  void finishCircuitRace();
+  void leaveCircuit();
+  static void onCircuitPressed(lv_event_t *e);
+  static void onCircuitReleased(lv_event_t *e);
+  static void onCircuitTapped(lv_event_t *e);
   // ScreenManagerToneGenerator.cpp.
   void renderToneGenerator();
   void layoutToneChips();
@@ -537,6 +559,7 @@ class ScreenManager : public input::KnobSink {
   // audio decoder keeps its share of the loop.
   static constexpr uint32_t kTableTennisFrameMs = 33;
   static constexpr uint32_t kGravityFrameMs = 33;
+  static constexpr uint32_t kCircuitFrameMs = 33;
   // Persisted repeat mode (playback::RepeatMode). Shuffle isn't persisted:
   // it's set by how playback started (ADR 0011).
   static constexpr char kRepeatSettingKey[] = "repeat";
@@ -680,6 +703,21 @@ class ScreenManager : public input::KnobSink {
       games::GravityGame::Phase::Ready;
   uint32_t lastGravityDrawMs_ = 0;
   bool gravityThrustSounding_ = false;
+
+  // Circuit (ADR 0030). The picture is the presenter's; the only LVGL
+  // object is the invisible brake that covers the screen.
+  CircuitPresenter *circuitPresenter_ = nullptr;
+  lv_obj_t *circuitBrake_ = nullptr;
+  games::CircuitGame circuit_;
+  games::CircuitRecords circuitRecords_;
+  int circuitTrack_ = 0;
+  uint32_t circuitFrame_ = 0;
+  uint32_t lastCircuitDrawMs_ = 0;
+  uint32_t circuitBonusAtMs_ = 0;
+  bool circuitBonusSeen_ = false;
+  bool circuitNewRecord_ = false;
+  games::CircuitGame::Phase shownCircuitPhase_ = games::CircuitGame::Phase::Select;
+  games::circuit_sound::Held circuitHeld_{};
 
   // Tone generator (ADR 0024). Chips are created once per render in
   // kToneChipOrder and shown or hidden per waveform, never recreated on a

@@ -36,6 +36,7 @@
 #include "LibraryScanner.h"
 #include "LockController.h"
 #include "LockOverlay.h"
+#include "CircuitPresenter.h"
 #include "LvglGlue.h"
 #include "BookmarkKeeper.h"
 #include "Bookmarks.h"
@@ -265,6 +266,8 @@ drehklang::usbdrive::UsbDriveSession g_usbDrive(g_usbStorage);
 drehklang::drivers::St77916Driver g_display;
 drehklang::drivers::Cst816Driver g_touch;
 drehklang::ui::LvglGlue g_lvglGlue;
+// Circuit draws the panel itself (ADR 0030); it allocates only while open.
+drehklang::ui::CircuitPresenter g_circuitPresenter(g_lvglGlue);
 drehklang::power::IdleTimer g_idleTimer;
 drehklang::power::LockController g_lockController;
 drehklang::ui_widgets::MessageArea g_messageArea;
@@ -484,6 +487,7 @@ void setup() {
 
   if (displayOk) {
     g_screenManager.setBlipPlayer(g_toneOutput);
+    g_screenManager.setCircuitPresenter(g_circuitPresenter);
     g_screenManager.setToneSession(g_toneSession);
     g_screenManager.setBluetooth(g_btController);
     g_screenManager.setScopeSource(g_toneOutput);
@@ -957,6 +961,10 @@ void loop() {
   }
   if (g_screenManager.tickGravity(now,
                                   displayOn && !g_lockController.isLocked())) {
+    g_idleTimer.noteActivity(now);
+  }
+  // A race holds the display awake like a rally (ADR 0030).
+  if (g_screenManager.tickCircuit(now, displayOn && !g_lockController.isLocked())) {
     g_idleTimer.noteActivity(now);
   }
 

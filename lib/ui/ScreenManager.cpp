@@ -142,6 +142,8 @@ void ScreenManager::render() {
   tableTennisPlayerPaddle_ = nullptr;
   tableTennisAiPaddle_ = nullptr;
   tableTennisHint_ = nullptr;
+  // Circuit gives the panel back to LVGL and stops its engine.
+  if (circuitBrake_) leaveCircuit();
   // Same for Gravity: an engine must not keep running into the next screen.
   if (gravityWidgets_.craft && blips_) blips_->silence();
   gravityWidgets_ = GravityWidgets{};
@@ -209,6 +211,10 @@ void ScreenManager::render() {
   } else if (current.kind == ScreenKind::UsbDrive) {
     // Modal: no back button or caption. Done, eject or unplug end it.
     renderUsbDrive();
+    return;
+  } else if (current.kind == ScreenKind::Circuit) {
+    // Modal like the other games; drawn by its own presenter (ADR 0030).
+    renderCircuit();
     return;
   } else if (current.kind == ScreenKind::Gravity) {
     // Modal like the others (ADR 0023).
@@ -1655,6 +1661,9 @@ void ScreenManager::onGameKnob(int16_t delta) {
       break;
     case ScreenKind::Gravity:
       onGravityKnob(delta);
+      break;
+    case ScreenKind::Circuit:
+      onCircuitKnob(delta);
       break;
     default:
       break;
