@@ -98,6 +98,25 @@ void test_a_lopsided_square_shows_no_bass_it_does_not_have() {
   TEST_ASSERT_TRUE(levelAt(spectrum, 1000) > -12.0f);
 }
 
+void test_nothing_is_drawn_above_half_the_sample_rate() {
+  // An audiobook at 22.05 kHz has nothing above 11 kHz. The columns up
+  // there used to repeat the last bin's level as a flat plateau; with
+  // broadband sound that plateau stood well above the floor.
+  constexpr uint32_t kLowRate = 22050;
+  Spectrum spectrum(kColumns);
+  std::vector<int16_t> s(4096);
+  uint32_t state = 12345;
+  for (auto &sample : s) {
+    state = state * 1664525u + 1013904223u;
+    sample = static_cast<int16_t>(static_cast<int32_t>(state >> 16) - 32768) / 4;
+  }
+  spectrum.update(s.data(), s.size(), kLowRate, 33);
+  TEST_ASSERT_TRUE(levelAt(spectrum, 5000) > -60.0f);
+  for (float hz : {12000.0f, 15000.0f, 19000.0f}) {
+    TEST_ASSERT_EQUAL_FLOAT(Spectrum::kFloorDb, levelAt(spectrum, hz));
+  }
+}
+
 int main(int argc, char **argv) {
   UNITY_BEGIN();
   RUN_TEST(test_columns_span_the_audible_band_on_a_log_axis);
@@ -106,5 +125,6 @@ int main(int argc, char **argv) {
   RUN_TEST(test_a_lopsided_square_shows_no_bass_it_does_not_have);
   RUN_TEST(test_silence_is_the_floor);
   RUN_TEST(test_a_tone_that_stops_falls_away_rather_than_vanishing);
+  RUN_TEST(test_nothing_is_drawn_above_half_the_sample_rate);
   return UNITY_END();
 }

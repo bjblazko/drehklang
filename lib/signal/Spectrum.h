@@ -134,6 +134,9 @@ class Spectrum {
   // bin, low down -- the power interpolated at its centre.
   float columnPower(float loBin, float hiBin) const {
     const size_t last = kFftSize / 2 - 1;
+    // Above half the sample rate there is nothing: a 22.05 kHz audiobook
+    // has no 15 kHz, and the last bin is not a stand-in for it.
+    if (loBin > static_cast<float>(last)) return 0.0f;
     auto first = static_cast<size_t>(std::ceil(loBin));
     auto end = static_cast<size_t>(std::ceil(hiBin));
     end = std::min(end, last + 1);
