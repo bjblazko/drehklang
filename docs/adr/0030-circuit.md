@@ -69,7 +69,9 @@ it host-tested in `test/test_circuit`.
   are `constexpr` tables in `CircuitTracks.h`, with their start time and
   checkpoint bonus. A fourth track is one more table.
 - **Player**: position `z` along the track, lateral `x` in road
-  half-widths, speed, steering angle in detents (clamped to ±12 to start with; tuned on the device). Throttle
+  half-widths, speed, steering angle in detents (clamped to ±12 to start with; tuned on the device). The innermost ±2 detents count as straight: the knob is
+  not always exact (user, 2026-10-06), and a click of jitter must not
+  steer. Throttle
   is on from GO; braking is the only pedal. The automatic gearbox derives
   the gear from speed and exposes engine revs for the sound.
 - **Lateral motion** per slice: steering × speed minus curve × speed²
@@ -157,9 +159,9 @@ Frequency and level change live, without resetting phase (no clicks),
 handed from the main loop to the audio task through atomics as
 `ToneGenerator` does. The voices are summed and hard-limited; the engine
 sits below the effects because it never stops (Gravity's thrust at ⅓, for
-the same reason). `ToneOutput` takes a small "sample source" interface so
-it plays either `ToneGenerator` or `ChipVoices`; nothing changes for the
-other games. A `CHIP <voice> <hz>` serial command plays a voice, so the
+the same reason). `ToneOutput` owns a `ChipVoices` next to its `ToneGenerator`
+and sums the two at the blip rate; nothing changes for the other
+games. A `CHIP <voice> <hz>` serial command plays a voice, so the
 sounds can be tuned by ear (as `BLIP` does).
 
 ### One screen, four phases
@@ -211,8 +213,8 @@ existing `KeyValueStore`, zero meaning none; written only on a new record.
 - A game may now own the panel. Anything else that wants to draw outside
   LVGL must use the same switch and invalidate on the way out, or LVGL's
   picture and the game's will interleave.
-- `ToneOutput` plays one of two sources; a fourth game picks one or the
-  other rather than adding a third path.
+- `ToneOutput` sums two sources at the blip rate; a fourth game uses
+  one or both rather than adding a third path.
 - Not settled until played: steering degrees per detent, the
   centrifugal factor, start time and checkpoint bonus per track. Table
   Tennis's knob took three attempts (ADR 0022); expect the same here.

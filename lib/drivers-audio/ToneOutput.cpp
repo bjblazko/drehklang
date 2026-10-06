@@ -44,6 +44,23 @@ void ToneOutput::noise(uint16_t clockHz, uint16_t durationMs, int16_t level) {
   tone_.triggerNoise(clockHz, durationMs, level);
 }
 
+// A held voice set to 0 needs no DAC; anything audible claims it, the
+// same as a blip does.
+void ToneOutput::chipEngine(uint16_t hz, int16_t level) {
+  if (level > 0) claimDac(kBlipSampleRate);
+  chip_.setEngine(hz, level);
+}
+
+void ToneOutput::chipNoise(uint16_t clockHz, int16_t level) {
+  if (level > 0) claimDac(kBlipSampleRate);
+  chip_.setNoise(clockHz, level);
+}
+
+void ToneOutput::chipEffect(const playback::ChipEffect &effect) {
+  claimDac(kBlipSampleRate);
+  chip_.play(effect);
+}
+
 void ToneOutput::start() {
   claimDac(signal::kGeneratorSampleRate);
   control_.setRunning(true);
@@ -113,7 +130,7 @@ void ToneOutput::taskLoop() {
     // The generator keeps writing through its fade-out after stop(), so
     // the last thing the DAC hears is silence rather than a cut.
     const bool generating = control_.running() || !oscillator_.idle();
-    if (!generating && !tone_.active()) {
+    if (!generating && !tone_.active() && !chip_.active()) {
       if (!feedBluetoothSilence()) vTaskDelay(pdMS_TO_TICKS(kPollMs));
       continue;
     }
@@ -141,7 +158,7 @@ bool ToneOutput::writeChunk(uint32_t rate) {
 #endif
   } else {
     for (size_t i = 0; i < kChunkFrames; ++i) {
-      mono_[i] = playback::AudioGain::applyVolume(tone_.nextSample(rate),
+      mono_[i] = playback::AudioGain::applyVolume(nextBlipSample(rate),
                                                   stage.volumeStep(), stage.outputGain());
     }
   }
@@ -159,6 +176,14 @@ bool ToneOutput::writeChunk(uint32_t rate) {
   // Bluetooth gets what the jack gets (ADR 0027).
   if (auto *tap = bluetoothTap()) tap->pushStereo16(chunk_, kChunkFrames * 2, rate);
   return true;
+}
+
+// The blips and the chip together, clipped rather than wrapped.
+int16_t ToneOutput::nextBlipSample(uint32_t rate) {
+  const int32_t sum = static_cast<int32_t>(tone_.nextSample(rate)) + chip_.nextSample(rate);
+  if (sum > 32767) return 32767;
+  if (sum < -32767) return -32767;
+  return static_cast<int16_t>(sum);
 }
 
 // With headphones connected, silence between sounds keeps the stream to

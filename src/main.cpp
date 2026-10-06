@@ -583,6 +583,17 @@ void pollSerialCommands() {
           // (ADR 0022) -- the pitches are assigned by ear, so tuning them
           // means hearing them back to back.
           g_toneOutput.blip(static_cast<uint16_t>(x), 240);
+        } else if (char voice = 0; sscanf(buf, "CHIP %c %d", &voice, &x) == 2) {
+          // Circuit's chip voices one at a time (ADR 0030), for tuning by
+          // ear: "CHIP e 120" engine, "CHIP n 3000" noise, "CHIP x 880" a
+          // falling effect, "CHIP s 0" silence.
+          if (voice == 'e') g_toneOutput.chipEngine(static_cast<uint16_t>(x), 6000);
+          if (voice == 'n') g_toneOutput.chipNoise(static_cast<uint16_t>(x), 4000);
+          if (voice == 'x') {
+            g_toneOutput.chipEffect(drehklang::playback::ChipEffect{
+                static_cast<uint16_t>(x), static_cast<uint16_t>(x / 4), 600, 8000, false});
+          }
+          if (voice == 's') g_toneOutput.silence();
         } else if (strcmp(buf, "HOME") == 0) {
           // Back to Home from anywhere, for scripted tours of the UI
           // (scripts/readme-screenshots.py): a known place to start from.

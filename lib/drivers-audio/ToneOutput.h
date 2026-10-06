@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "BlipPlayer.h"
+#include "ChipVoices.h"
 #include "DacArbiter.h"
 #include "GeneratorControl.h"
 #include "Oscillator.h"
@@ -38,8 +39,15 @@ class ToneOutput : public games::BlipPlayer,
   // games::BlipPlayer -- main loop only (they may claim the DAC).
   void blip(uint16_t frequencyHz, uint16_t durationMs) override;
   void noise(uint16_t clockHz, uint16_t durationMs, int16_t level) override;
-  // Drops anything pending and stops a sounding blip, for leaving a game.
-  void silence() override { tone_.silence(); }
+  void chipEngine(uint16_t hz, int16_t level) override;
+  void chipNoise(uint16_t clockHz, int16_t level) override;
+  void chipEffect(const playback::ChipEffect &effect) override;
+  // Drops anything pending and stops a sounding blip or chip voice, for
+  // leaving a game.
+  void silence() override {
+    tone_.silence();
+    chip_.silence();
+  }
 
   // signal::GeneratorOutput -- main loop only. The task picks each
   // change up at its next chunk.
@@ -68,6 +76,7 @@ class ToneOutput : public games::BlipPlayer,
   bool openChannel(uint32_t rate);
   void closeChannel();
   bool writeChunk(uint32_t rate);
+  int16_t nextBlipSample(uint32_t rate);
   bool feedBluetoothSilence();
   [[noreturn]] void taskLoop();
   static void taskTrampoline(void *self);
@@ -80,6 +89,8 @@ class ToneOutput : public games::BlipPlayer,
   uint32_t channelRate_ = 0;
 
   playback::ToneGenerator tone_;
+  // Circuit's voices (ADR 0030), summed with tone_ at the blip rate.
+  playback::ChipVoices chip_;
   // The generator's side of the handover and its voice. The oscillator is
   // touched only by the task.
   signal::GeneratorControl control_;
