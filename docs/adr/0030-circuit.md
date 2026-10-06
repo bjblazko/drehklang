@@ -2,7 +2,8 @@
 
 ## Status
 
-Proposed — 2026-10-06. The third entry in ADR 0022's Games menu. Gives a
+Accepted — 2026-10-06 (running on the device; steering, centrifugal
+force, time budget and sounds still to be tuned by playing). The third entry in ADR 0022's Games menu. Gives a
 game the panel to itself (bypassing LVGL's drawing) and adds a
 three-voice sound source next to `playback::ToneGenerator`.
 
@@ -68,11 +69,11 @@ it host-tested in `test/test_circuit`.
   scenery placements (kind, side, offset); checkpoints. The three tracks
   are `constexpr` tables in `CircuitTracks.h`, with their start time and
   checkpoint bonus. A fourth track is one more table.
-- **Player**: position `z` along the track, lateral `x` in road
-  half-widths, speed, steering angle in detents (clamped to ±12 to start with; tuned on the device). The innermost ±2 detents count as straight: the knob is
-  not always exact (user, 2026-10-06), and a click of jitter must not
-  steer. Throttle
-  is on from GO; braking is the only pedal. The automatic gearbox derives
+- **Player**: position `z` along the track, lateral `x` in world units
+  (the road is ±1000), speed, steering angle in detents (clamped to ±12
+  to start with; tuned on the device). The innermost ±2 detents count as
+  straight: the knob is not always exact (user, 2026-10-06), and a click
+  of jitter must not steer. Throttle is on from GO; braking is the only pedal. The automatic gearbox derives
   the gear from speed and exposes engine revs for the sound.
 - **Lateral motion** per slice: steering × speed minus curve × speed²
   (centrifugal), so a curve has to be held against.
@@ -220,3 +221,27 @@ existing `KeyValueStore`, zero meaning none; written only on a new record.
   Tennis's knob took three attempts (ADR 0022); expect the same here.
 - Deliberately absent: manual gears, repair, pit stops, a qualifying lap,
   music, two players, collisions between computer cars.
+
+## Implementation notes (2026-10-06)
+
+- **Measured on the device:** 37 ms per frame at first, of which 35 ms was
+  "push". The extra over the probe was not the bus: every stripe was also
+  copied into the PSRAM screenshot buffer. Copying only every eighth frame
+  brought it to **31.5 ms (~30 fps)**; worst render 21 ms, hidden behind
+  the push. A screenshot is at most a quarter second old.
+- **Internal heap while racing: ~21.7 KB free**, the two stripe buffers
+  being 23 KB. Music is paused, so the SD path that needs internal heap
+  (AGENTS.md) is idle; everything is freed when the game is left, locked
+  or dimmed.
+- **LVGL cannot show messages on this screen** (its flushes are dropped),
+  so "Swipe right to leave" is drawn by the game on track select instead
+  of the usual screen message.
+- **Braking lights the car's tail lights** instead of a glow at the screen
+  edges: the same signal, inside the picture.
+- `ToneOutput` sums `ChipVoices` with the blips at 22050 Hz rather than
+  switching sources, and `KeyValueStore` gained `getU32`/`setU32` (default:
+  nothing stored) for the records.
+- Previews: `scripts/generate-circuit-sprites.py --preview sheet.png`
+  shows every sprite in every palette before flashing.
+- The design system's rules do not apply to games (user, 2026-10-06): the
+  80s look decides.

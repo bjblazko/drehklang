@@ -335,6 +335,11 @@ duplicating it.
     waits ~1 s after each tap (knob detents sent before the next screen
     has rendered went to the old one) and retries a step from Home, since
     a serial line now and then goes missing.
+  - **A reader of this port must assert DTR** (pyserial's default). With
+    `dtr=False` the firmware hears commands but nothing it prints arrives
+    -- TinyUSB CDC only sends to a host that has DTR up. The
+    `dtr = rts = False` rule below is for the U4WDH's CH340 only
+    (2026-10-06).
   - Bulk transfer over the old USB-Serial-JTAG CDC dropped bytes; TinyUSB
     CDC with an 8 KB ack per chunk was reliable but slow (0.14 MB/s) and
     stalled once after ~30 MB. Use USB drive mode for files.
@@ -344,6 +349,13 @@ duplicating it.
   removable storage right after probing it** (START STOP UNIT with eject,
   ~1.5 s after export) -- check `CGSSessionScreenIsLocked` before
   debugging the firmware.
+- **Circuit draws the panel itself** (ADR 0030): while it is on screen,
+  `LvglGlue::setPanelOwnedByGame(true)` drops every LVGL flush, so LVGL
+  messages and overlays do not show there (its "swipe to leave" hint is
+  drawn by the game). Anything else that draws outside LVGL must use the
+  same switch. A frame is bus-bound (~31.5 ms, 2026-10-06); build with
+  `-DDREHKLANG_CIRCUIT_DEBUG` for frame, render and push times. Racing
+  leaves ~21 KB internal heap (two 11.5 KB DMA stripes).
 - **UI colors must be judged on the device, not a monitor or a
   screenshot's hex values.** The panel is RGB565 (subtle neutrals get
   rounded — `#F4F4F0` arrived as neutral `#F6F6F6`) and visibly shifts

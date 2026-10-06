@@ -352,7 +352,7 @@ Settings > USB drive, at about 0.8 MB/s writing and 0.9 MB/s reading
 - Gapless playback (for live albums, concept albums, etc.)
 - On-device firmware updates from a file on the SD card (no Wi-Fi
   needed, fits the offline-first goal)
-- More games beyond Table Tennis and Gravity (ADR 0022, ADR 0023) -- the
+- More games beyond Table Tennis, Gravity and Circuit (ADR 0022, 0023, 0030) -- the
   Games list is a table a row wide, but each game is its own screen and
   its own rules. The two that still suit a knob and a round screen best,
   with names chosen to avoid the trademarks the originals carry:

@@ -38,4 +38,4 @@ supersedes the old one (and the old one is marked "Superseded by NNNN").
 | [0027](0027-bluetooth-headphones.md) | Bluetooth headphones through the second chip | Accepted (amends 0026) |
 | [0028](0028-now-playing-slot-pages.md) | Now Playing's cover slot as swiped pages | Accepted (amends 0009, 0014, 0024) |
 | [0029](0029-equalizer.md) | A seven-band equalizer | Accepted |
-| [0030](0030-circuit.md) | Circuit, a pseudo-3D racer with its own renderer | Proposed (extends 0022) |
+| [0030](0030-circuit.md) | Circuit, a pseudo-3D racer with its own renderer | Accepted (extends 0022) |
