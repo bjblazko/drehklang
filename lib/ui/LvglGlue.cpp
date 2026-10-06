@@ -124,13 +124,14 @@ void LvglGlue::setPanelOwnedByGame(bool owned) {
   if (!owned) lv_obj_invalidate(lv_scr_act());
 }
 
-void LvglGlue::pushStripe(int x0, int y0, int width, int rows, const uint16_t *pixels) {
+void LvglGlue::pushStripe(int x0, int y0, int width, int rows, const uint16_t *pixels,
+                          bool mirrored) {
   if (width <= 0 || rows <= 0) return;
   gfx_->startWrite();
   gfx_->writeAddrWindow(x0, y0, width, rows);
   gfx_->writePixels(const_cast<uint16_t *>(pixels), width * rows);
   gfx_->endWrite();
-  mirror(x0, y0, width, rows, pixels);
+  if (mirrored) mirror(x0, y0, width, rows, pixels);
 }
 
 void LvglGlue::writeScreenshotToSerial() const {

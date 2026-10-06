@@ -41,6 +41,10 @@ class CircuitPresenter {
   static constexpr int kStripes =
       (games::CircuitRenderer::kSize + kStripeRows - 1) / kStripeRows;
   static constexpr uint32_t kStripeTimeoutMs = 200;
+  // Every this many frames the picture is also kept for SCREENSHOT: the
+  // copy costs ~3 ms a frame, and a screenshot a quarter second old is
+  // as good as a fresh one.
+  static constexpr uint32_t kMirrorEvery = 8;
 
   struct Stripe {
     uint16_t *pixels = nullptr;
@@ -71,6 +75,7 @@ class CircuitPresenter {
   TaskHandle_t task_ = nullptr;
   // Set while a frame is being rendered: close() waits it out.
   SemaphoreHandle_t frameDone_ = nullptr;
+  uint32_t frames_ = 0;
 };
 
 }  // namespace drehklang::ui

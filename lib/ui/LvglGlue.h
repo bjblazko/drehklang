@@ -47,9 +47,10 @@ class LvglGlue {
   // the panel back invalidates the screen so LVGL repaints all of it.
   void setPanelOwnedByGame(bool owned);
   bool panelOwnedByGame() const { return panelOwnedByGame_; }
-  // Blocks until the QSPI transfer is done; mirrored into the screenshot
-  // buffer like an LVGL flush.
-  void pushStripe(int x0, int y0, int width, int rows, const uint16_t *pixels);
+  // Blocks until the QSPI transfer is done. `mirror` also copies it into
+  // the screenshot buffer, which costs a PSRAM write per pixel -- a game
+  // asks for it on only some frames.
+  void pushStripe(int x0, int y0, int width, int rows, const uint16_t *pixels, bool mirror);
 
  private:
   static void flushCb(lv_disp_drv_t *drv, const lv_area_t *area,

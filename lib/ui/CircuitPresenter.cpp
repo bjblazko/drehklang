@@ -81,12 +81,13 @@ void CircuitPresenter::present(const games::CircuitScene &scene) {
   scene_ = scene;
   xTaskNotifyGive(task_);
   int64_t pushUs = 0;
+  const bool mirror = ++frames_ % kMirrorEvery == 0;
   for (int k = 0; k < kStripes; ++k) {
     Stripe &stripe = stripes_[k & 1];
     if (xSemaphoreTake(stripe.filled, pdMS_TO_TICKS(kStripeTimeoutMs)) != pdTRUE) break;
     const int64_t before = esp_timer_get_time();
     glue_.pushStripe(stripe.span.x0, stripe.y0, stripe.span.width, stripe.rows,
-                     stripe.pixels);
+                     stripe.pixels, mirror);
     pushUs += esp_timer_get_time() - before;
     xSemaphoreGive(stripe.freed);
   }
