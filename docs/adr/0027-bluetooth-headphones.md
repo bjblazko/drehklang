@@ -199,6 +199,26 @@ found:
    - Pairing, reconnecting after the headphones are switched off and on,
      and reconnecting after pairing mode all work.
 
+7. **Marshall Major V, 2026-10-06: hanging "Connecting" and flapping,
+   again** (logs on the U4WDH):
+   - A pairing's first attempt could still sit 30 s and fail
+     authentication (status 9, ACL 0x122 LMP response timeout), with the
+     bond already removed and with the search finished. So neither the old
+     key (6.) nor the running search explains it. Why is still open; it
+     did not recur once the fixes below were in.
+   - The real hang came after that: the 10 s retry fired in the same
+     millisecond as the disconnect, into the link still being torn down.
+     Authentication then succeeded, but A2DP stayed "connecting" for good,
+     and Bluedroid answered every later connect with ESP_OK and did
+     nothing. A disconnect freed it (Forget did).
+   - **Fixes:** after any disconnect the chip waits 3 s before connecting
+     itself (`kAfterDisconnectMs`), which also leaves room for headphones
+     switched back on to connect to us; a connect given up after 60 s is
+     also dropped in Bluedroid with a disconnect.
+   - Pairing (1 s), three times off and on (back after 6-15 s, no
+     flapping), and a 0x122 drop 30 s after a connect (the headphones
+     connected back within 1 s) all checked on the device.
+
 ## Open
 
 - **Legal check (2026-10-05) before merging.**

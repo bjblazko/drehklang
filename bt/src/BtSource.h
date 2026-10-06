@@ -39,7 +39,8 @@ class BtSource {
   // False when Bluedroid refused to start the connection; the link is then
   // Idle again, so the 10 s retry picks it up.
   bool connect(const btlink::Address &address);
-  // A connection attempt that never reported back: Idle again. Call from
+  // A connection attempt that never reported back: Idle again, and the
+  // attempt dropped in Bluedroid too. Call from
   // loop() when Connecting has lasted too long.
   void abandonConnect();
   // Since when the link has been Connecting, either side having started it.

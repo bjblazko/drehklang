@@ -120,6 +120,11 @@ void BtSource::abandonConnect() {
   if (link_.load() != btlink::LinkState::Connecting) return;
   log("connect never answered, giving up");
   link_.store(btlink::LinkState::Idle);
+  // Bluedroid's A2DP can be stuck in "connecting" itself, and then ignores
+  // every later connect while saying ESP_OK; a disconnect frees it (seen on
+  // the device 2026-10-06).
+  btlink::Address copy = peer_;
+  esp_a2d_source_disconnect(copy.data());
 }
 
 void BtSource::disconnect() {

@@ -39,11 +39,18 @@ constexpr uint32_t kReconnectIntervalMs = 10000;
 // timeouts (authentication takes up to ~30 s): at 20 s it cut into a
 // pairing still in progress, and the second connect left A2DP stuck.
 constexpr uint32_t kConnectTimeoutMs = 60000;
+// After a disconnect, before connecting again ourselves. Connecting in the
+// same moment, while the old link was still being torn down, left A2DP
+// stuck in "connecting" after a failed pairing (seen on the device
+// 2026-10-06 with Marshall Major V). The pause also leaves room for
+// headphones switched back on to connect to us themselves.
+constexpr uint32_t kAfterDisconnectMs = 3000;
 
 bool g_enabled = false;
 uint32_t g_lastStateMs = 0;
 uint32_t g_lastStatsMs = 0;
-uint32_t g_lastConnectMs = 0;
+// When we may next connect to the peer ourselves.
+uint32_t g_nextConnectMs = 0;
 
 void sendState() {
   btlink::StateMessage m;
@@ -64,8 +71,15 @@ void sendStats() {
               static_cast<uint16_t>(btlink::encodeStats(m, payload)));
 }
 
+// Not before `delayMs` from now. Compared as a signed difference, so it
+// holds across millis() wrapping.
+void postponeConnect(uint32_t delayMs) {
+  const uint32_t at = millis() + delayMs;
+  if (static_cast<int32_t>(at - g_nextConnectMs) > 0) g_nextConnectMs = at;
+}
+
 void connectToPeer(uint32_t nowMs) {
-  g_lastConnectMs = nowMs;
+  g_nextConnectMs = nowMs + kReconnectIntervalMs;
   Serial.printf("[bt] connecting to %s\n", g_peer.name().c_str());
   g_source.connect(g_peer.address());
 }
@@ -147,6 +161,7 @@ void onSourceEvent(const bt::BtSourceEvent &event) {
       break;
     case bt::BtSourceEvent::Kind::Disconnected:
       Serial.println("[bt] disconnected");
+      postponeConnect(kAfterDisconnectMs);
       sendState();
       break;
     case bt::BtSourceEvent::Kind::Log:
@@ -192,9 +207,10 @@ void loop() {
   if (g_source.link() == btlink::LinkState::Connecting &&
       millis() - g_source.connectingSinceMs() >= kConnectTimeoutMs) {
     g_source.abandonConnect();
+    postponeConnect(kAfterDisconnectMs);
   }
   if (g_enabled && g_peer.has() && g_source.link() == btlink::LinkState::Idle &&
-      now - g_lastConnectMs >= kReconnectIntervalMs) {
+      static_cast<int32_t>(now - g_nextConnectMs) >= 0) {
     connectToPeer(now);
   }
   delay(5);
