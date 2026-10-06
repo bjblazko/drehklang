@@ -144,12 +144,11 @@ void ScreenManager::render() {
   gravityWidgets_ = GravityWidgets{};
   gravityThrustSounding_ = false;
   toneChips_.fill(nullptr);
-  toneDots_.fill(nullptr);
-  toneBand_ = nullptr;
+  toneDots_.detach();
   toneScaleLabel_ = nullptr;
   toneValueLabel_ = nullptr;
   tonePlayButton_ = nullptr;
-  toneScope_.detach();
+  toneBand_.detach();
   tableTennisPlayerScore_.detach();
   tableTennisAiScore_.detach();
   miniBar_ = nullptr;
@@ -173,9 +172,7 @@ void ScreenManager::render() {
   // Leaving the tone generator silences it, whatever took you away.
   if (current.kind != ScreenKind::ToneGenerator) {
     if (toneSession_ && toneSession_->running()) toneSession_->stop();
-    toneScopeSamples_.clear();
-    toneScopeSamples_.shrink_to_fit();
-    toneSpectrum_.release();
+    toneBand_.release();
   }
   if (current.kind != renderedKind_) {
     renderedKind_ = current.kind;
@@ -933,7 +930,7 @@ bool ScreenManager::swipeStartsOnControl(int16_t x, int16_t y) const {
   constexpr lv_coord_t kSlop = 10;
   // The tone generator's band takes swipes of its own: they turn its
   // page between scope and spectrum (ADR 0024).
-  for (lv_obj_t *control : {caption_, toneBand_}) {
+  for (lv_obj_t *control : {caption_, toneBand_.raw()}) {
     if (!control) continue;
     lv_area_t area;
     lv_obj_get_coords(control, &area);

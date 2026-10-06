@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <cstring>
 
-#include "AudioOutputStage.h"
 #include "GeneratorControl.h"
 #include "LvglButtonHelpers.h"
 #include "ScreenManager.h"
@@ -19,7 +18,6 @@
 #include "TextFont.h"
 #include "Theme.h"
 #include "ToneSettings.h"
-#include "TriggeredScope.h"
 
 #ifdef DREHKLANG_GENERATOR_DEBUG
 #include <Arduino.h>
@@ -39,8 +37,6 @@ constexpr lv_coord_t kBandHeight = 88;
 constexpr lv_coord_t kBandY = 76;
 constexpr lv_coord_t kScaleLabelY = kBandY + kBandHeight + 4;
 constexpr lv_coord_t kDotsY = kScaleLabelY + 22;
-constexpr lv_coord_t kDotSize = 6;
-constexpr lv_coord_t kDotGap = 8;
 constexpr lv_coord_t kValueY = 198;
 constexpr lv_coord_t kChipY = 238;
 constexpr lv_coord_t kChipWidth = 68;
@@ -53,10 +49,6 @@ constexpr lv_coord_t kSwipeMinPx = 40;
 
 // Noise has no pitch to lock on to; this picks the 20 ms timebase.
 constexpr float kNoiseTimebaseHz = 100.0f;
-// The spectrum's band: 0 dBFS at the top, -80 at the bottom, in the
-// tenths of a dB it is drawn in.
-constexpr int32_t kSpectrumTopDeci = 0;
-constexpr int32_t kSpectrumBottomDeci = -800;
 
 constexpr ToneParam kToneChipOrder[signal::kToneParamCount] = {
     ToneParam::Waveform, ToneParam::Frequency, ToneParam::Level, ToneParam::Shape};
@@ -70,41 +62,22 @@ float timebaseHz(const signal::OscillatorParams &params) {
 
 void ScreenManager::renderToneGenerator() {
   if (!toneSession_) return;
-  toneScopeSamples_.resize(drivers::AudioOutputStage::kSampleRingSize);
 
-  const lv_coord_t bandX = (drivers::kLcdHorRes - kBandWidth) / 2;
-  toneScope_.create(screen_, bandX, kBandY, kBandWidth, kBandHeight, theme::ink(),
-                    theme::surfaceAlt());
-
-  // Over the trace, so it takes the finger; transparent, so it shows
-  // nothing. Swiping it turns the band's page.
-  toneBand_ = lv_obj_create(screen_);
-  lv_obj_set_size(toneBand_, kBandWidth, kBandHeight);
-  lv_obj_set_pos(toneBand_, bandX, kBandY);
-  lv_obj_set_style_bg_opa(toneBand_, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_border_width(toneBand_, 0, 0);
-  lv_obj_clear_flag(toneBand_, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_add_flag(toneBand_, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_add_event_cb(toneBand_, onToneBandPressed, LV_EVENT_PRESSED, this);
-  lv_obj_add_event_cb(toneBand_, onToneBandReleased, LV_EVENT_RELEASED, this);
-  lv_obj_add_event_cb(toneBand_, onToneBandReleased, LV_EVENT_PRESS_LOST, this);
+  // The band's box takes the finger: swiping it turns the band's page.
+  lv_obj_t *band = toneBand_.create(screen_, kBandWidth, kBandHeight, theme::ink(),
+                                    theme::surfaceAlt());
+  lv_obj_align(band, LV_ALIGN_TOP_MID, 0, kBandY);
+  lv_obj_add_flag(band, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_event_cb(band, onToneBandPressed, LV_EVENT_PRESSED, this);
+  lv_obj_add_event_cb(band, onToneBandReleased, LV_EVENT_RELEASED, this);
+  lv_obj_add_event_cb(band, onToneBandReleased, LV_EVENT_PRESS_LOST, this);
 
   toneScaleLabel_ = lv_label_create(screen_);
   lv_obj_set_style_text_font(toneScaleLabel_, &drehklang_text_font_14, 0);
   lv_obj_set_style_text_color(toneScaleLabel_, theme::structure(), 0);
   lv_obj_align(toneScaleLabel_, LV_ALIGN_TOP_MID, 0, kScaleLabelY);
 
-  for (size_t i = 0; i < toneDots_.size(); ++i) {
-    lv_obj_t *dot = lv_obj_create(screen_);
-    lv_obj_set_size(dot, kDotSize, kDotSize);
-    const lv_coord_t offset = (static_cast<lv_coord_t>(i) * 2 - 1) * (kDotSize + kDotGap) / 2;
-    lv_obj_align(dot, LV_ALIGN_TOP_MID, offset, kDotsY);
-    lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_border_width(dot, 0, 0);
-    lv_obj_clear_flag(dot, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_clear_flag(dot, LV_OBJ_FLAG_SCROLLABLE);
-    toneDots_[i] = dot;
-  }
+  toneDots_.create(screen_, 2, kDotsY, theme::ink(), theme::surfaceAlt());
 
   toneValueLabel_ = lv_label_create(screen_);
   lv_obj_set_style_text_font(toneValueLabel_, &drehklang_text_font_28, 0);
@@ -184,21 +157,8 @@ void ScreenManager::applyTonePlayButton() {
 }
 
 void ScreenManager::applyToneView() {
-  const bool scope = toneView_ == ToneView::Scope;
-  for (size_t i = 0; i < toneDots_.size(); ++i) {
-    if (!toneDots_[i]) continue;
-    const bool current = (i == 0) == scope;
-    lv_obj_set_style_bg_color(toneDots_[i], current ? theme::ink() : theme::surfaceAlt(), 0);
-  }
-  toneScope_.setZeroLineVisible(scope);
-  if (scope) {
-    toneScope_.clear();
-  } else {
-    toneSpectrum_.reset();
-    std::array<int16_t, ui_widgets::ScopeTrace::kPoints> floor;
-    floor.fill(static_cast<int16_t>(kSpectrumBottomDeci));
-    toneScope_.setPoints(floor.data(), floor.size(), kSpectrumBottomDeci, kSpectrumTopDeci);
-  }
+  toneBand_.setView(toneBand_.view());
+  toneDots_.setCurrent(toneBand_.view() == SignalBand::View::Scope ? 0 : 1);
   applyToneLabel();
 }
 
@@ -207,13 +167,9 @@ void ScreenManager::applyToneView() {
 void ScreenManager::applyToneLabel() {
   if (!toneScaleLabel_ || !toneSession_) return;
   char text[40];
-  if (toneView_ == ToneView::Scope) {
-    const ToneSettings &settings = toneSession_->settings();
-    toneScale_.update(timebaseHz(settings.params()), settings.levelDb());
-    toneScale_.label(text, sizeof(text));
-  } else {
-    snprintf(text, sizeof(text), "20 Hz \xE2\x80\x93 20 kHz \xC2\xB7 0 to -80 dB");
-  }
+  const ToneSettings &settings = toneSession_->settings();
+  toneBand_.updateScale(timebaseHz(settings.params()), settings.levelDb());
+  toneBand_.label(text, sizeof(text));
   if (strcmp(lv_label_get_text(toneScaleLabel_), text) != 0) {
     lv_label_set_text(toneScaleLabel_, text);
   }
@@ -234,11 +190,11 @@ void ScreenManager::onToneBandReleased(lv_event_t *e) {
   lv_point_t point;
   lv_indev_get_point(lv_indev_get_act(), &point);
   const lv_coord_t dx = point.x - self->toneSwipeStartX_;
-  ToneView next = self->toneView_;
-  if (dx <= -kSwipeMinPx) next = ToneView::Spectrum;
-  if (dx >= kSwipeMinPx) next = ToneView::Scope;
-  if (next == self->toneView_) return;
-  self->toneView_ = next;
+  SignalBand::View next = self->toneBand_.view();
+  if (dx <= -kSwipeMinPx) next = SignalBand::View::Spectrum;
+  if (dx >= kSwipeMinPx) next = SignalBand::View::Scope;
+  if (next == self->toneBand_.view()) return;
+  self->toneBand_.setView(next);
   self->applyToneView();
 }
 
@@ -281,10 +237,8 @@ void ScreenManager::tickToneGenerator(uint32_t nowMs, bool visible) {
   const int64_t startUs = esp_timer_get_time();
 #endif
   const size_t count =
-      scopeSource_ ? scopeSource_->readRecent(toneScopeSamples_.data(),
-                                              toneScopeSamples_.size())
-                   : 0;
-  if (toneView_ == ToneView::Scope) {
+      scopeSource_ ? scopeSource_->readRecent(toneBand_.buffer(), toneBand_.capacity()) : 0;
+  if (toneBand_.view() == SignalBand::View::Scope) {
     drawToneScope(count);
   } else {
     drawToneSpectrum(count, std::min<uint32_t>(dtMs, 100));
@@ -298,7 +252,8 @@ void ScreenManager::tickToneGenerator(uint32_t nowMs, bool visible) {
     // (AGENTS.md: USBCDC::write() has no timeout).
     char line[48];
     const int length = snprintf(line, sizeof(line), "[tones] %s frame worst %lldus\n",
-                                toneView_ == ToneView::Scope ? "scope" : "spectrum",
+                                toneBand_.view() == SignalBand::View::Scope ? "scope"
+                                                                            : "spectrum",
                                 worstUs);
     if (length > 0 && Serial.availableForWrite() >= length) {
       Serial.write(reinterpret_cast<const uint8_t *>(line), length);
@@ -311,32 +266,17 @@ void ScreenManager::tickToneGenerator(uint32_t nowMs, bool visible) {
 void ScreenManager::drawToneScope(size_t count) {
   if (count == 0) {
     // Nothing new reached the DAC: stopped (or never started).
-    if (!toneSession_->running()) toneScope_.clear();
+    if (!toneSession_->running()) toneBand_.clearScope();
     return;
   }
-  applyToneLabel();  // Also brings toneScale_ up to date.
-  const float span = static_cast<float>(toneScale_.timebaseUs()) *
-                     static_cast<float>(signal::kGeneratorSampleRate) / 1000000.0f;
-  signal::TriggeredScope::traceWindow(toneScopeSamples_.data(), count, span,
-                                      toneScopeTrace_.data(), toneScopeTrace_.size());
-  // Held to the level range's top, not to the level itself: within a
-  // range, +6 dB draws twice as tall.
-  const auto fullScale = std::max<int32_t>(
-      1, static_cast<int32_t>(ToneSettings::dbToLinear(toneScale_.topDb()) * 32767.0f));
-  toneScope_.setSamples(toneScopeTrace_.data(), toneScopeTrace_.size(), fullScale);
+  const ToneSettings &settings = toneSession_->settings();
+  toneBand_.showScope(count, signal::kGeneratorSampleRate, timebaseHz(settings.params()),
+                      settings.levelDb());
+  applyToneLabel();
 }
 
 void ScreenManager::drawToneSpectrum(size_t count, uint32_t dtMs) {
-  toneSpectrum_.update(count ? toneScopeSamples_.data() : nullptr, count,
-                       signal::kGeneratorSampleRate, dtMs);
-  const auto &levels = toneSpectrum_.levels();
-  for (size_t i = 0; i < toneScopeTrace_.size() && i < levels.size(); ++i) {
-    toneScopeTrace_[i] = static_cast<int16_t>(
-        std::clamp<float>(levels[i] * 10.0f, static_cast<float>(kSpectrumBottomDeci),
-                          static_cast<float>(kSpectrumTopDeci)));
-  }
-  toneScope_.setPoints(toneScopeTrace_.data(), toneScopeTrace_.size(),
-                       kSpectrumBottomDeci, kSpectrumTopDeci);
+  toneBand_.showSpectrum(count, signal::kGeneratorSampleRate, dtMs);
 }
 
 }  // namespace drehklang::ui
