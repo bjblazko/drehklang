@@ -21,7 +21,8 @@ tap to choose. No app, no account, no cloud: nothing leaves the device.
 - Jog/shuttle like a CD player: hold the time and turn
 - Bluetooth headphones next to the 3.5 mm jack, with Play/Pause on the
   headphones
-- A dot-matrix spectrum analyzer, a tone generator with oscilloscope, a
+- Cover, dot-matrix spectrum, oscilloscope or spectrum in Now Playing,
+  swiped through; a tone generator with oscilloscope, a
   sleep timer, and two games for the knob
 - The SD card as a USB drive, for copying music over the cable
 - A calm, Braun-inspired design: one orange control per screen, nothing
@@ -39,19 +40,21 @@ These are taken from the device itself by
 [`scripts/readme-screenshots.py`](scripts/readme-screenshots.py), which
 walks the interface over the serial port like an end-to-end test and cuts
 each frame to the round display. Album covers are left out on purpose:
-Now Playing shows the spectrum in their place.
+Now Playing shows its other pages in their place.
 
 | Home | Library | An album |
 |:---:|:---:|:---:|
 | <img src="docs/screenshots/home.png" alt="Home: a carousel of round tiles turned by the knob, Music selected, the playing track below" width="240"> | <img src="docs/screenshots/library.png" alt="Music's artists, with Browse by and Shuffle on top" width="240"> | <img src="docs/screenshots/tracks.png" alt="An album's tracks with their numbers" width="240"> |
-| **Now Playing** | **Options** | **Locked** |
-| <img src="docs/screenshots/now-playing.png" alt="Now Playing with the dot-matrix spectrum, the title, the transport buttons and the song-progress ring" width="240"> | <img src="docs/screenshots/options.png" alt="The options panel: shuffle, repeat, spectrum or cover, lock" width="240"> | <img src="docs/screenshots/locked.png" alt="The lock screen: hold the button and turn the knob to unlock" width="240"> |
-| **Tones** | **Tones, spectrum** | **Sleep timer** |
-| <img src="docs/screenshots/tones.png" alt="The tone generator: a saw wave on the oscilloscope, its frequency large, the parameter chips and the stop button" width="240"> | <img src="docs/screenshots/tones-spectrum.png" alt="The tone generator's band swiped to the spectrum" width="240"> | <img src="docs/screenshots/sleep.png" alt="The sleep timer, off, with its ring" width="240"> |
-| **Settings** | **Bluetooth** | **About** |
-| <img src="docs/screenshots/settings.png" alt="Settings: a list, each row ending in its value" width="240"> | <img src="docs/screenshots/bluetooth.png" alt="Settings, Bluetooth: the switch, the paired headphones, find and forget" width="240"> | <img src="docs/screenshots/about.png" alt="About: version, author, source, licence" width="240"> |
-| **Table Tennis** | **Gravity** | |
-| <img src="docs/screenshots/table-tennis.png" alt="Table Tennis: paddles, the net and the score, white on black" width="240"> | <img src="docs/screenshots/gravity.png" alt="Gravity: a lander above a landscape with three landing pads" width="240"> | |
+| **Now Playing** | **Now Playing, scope** | **Now Playing, spectrum** |
+| <img src="docs/screenshots/now-playing.png" alt="Now Playing with the dot-matrix spectrum, the page dots under it, the title, the transport buttons and the song-progress ring" width="240"> | <img src="docs/screenshots/now-playing-scope.png" alt="Now Playing's cover slot swiped to the oscilloscope over the music" width="240"> | <img src="docs/screenshots/now-playing-spectrum.png" alt="Now Playing's cover slot swiped to the spectrum, 20 Hz to 20 kHz" width="240"> |
+| **Options** | **Locked** | **Sleep timer** |
+| <img src="docs/screenshots/options.png" alt="The options panel: shuffle, repeat, lock" width="240"> | <img src="docs/screenshots/locked.png" alt="The lock screen: hold the button and turn the knob to unlock" width="240"> | <img src="docs/screenshots/sleep.png" alt="The sleep timer, off, with its ring" width="240"> |
+| **Tones** | **Tones, spectrum** | **Settings** |
+| <img src="docs/screenshots/tones.png" alt="The tone generator: a wave on the oscilloscope, its frequency large, the parameter chips and the stop button" width="240"> | <img src="docs/screenshots/tones-spectrum.png" alt="The tone generator's band swiped to the spectrum" width="240"> | <img src="docs/screenshots/settings.png" alt="Settings: a list, each row ending in its value" width="240"> |
+| **Bluetooth** | **About** | **Table Tennis** |
+| <img src="docs/screenshots/bluetooth.png" alt="Settings, Bluetooth: the switch, the paired headphones, find and forget" width="240"> | <img src="docs/screenshots/about.png" alt="About: version, author, source, licence" width="240"> | <img src="docs/screenshots/table-tennis.png" alt="Table Tennis: paddles, the net and the score, white on black" width="240"> |
+| **Gravity** |  |  |
+| <img src="docs/screenshots/gravity.png" alt="Gravity: a lander above a landscape with three landing pads" width="240"> |  |  |
 
 ## Contents
 
@@ -90,9 +93,11 @@ screens.
   one orange primary control per screen, tag titles, album cover and
   release years) — see
   [the UX guidelines](docs/design/ux-guidelines.md).
-- A dot-matrix spectrum analyzer in Now Playing's cover slot: tap the
-  cover to switch, shown by default when an album has no cover — see
-  [ADR 0009](docs/adr/0009-now-playing-spectrum-analyzer.md).
+- Now Playing's cover slot is swiped through: the cover, a dot-matrix
+  spectrum analyzer, and the tone generator's scope and spectrum over the
+  music, with page dots under it — see
+  [ADR 0009](docs/adr/0009-now-playing-spectrum-analyzer.md) and
+  [ADR 0028](docs/adr/0028-now-playing-slot-pages.md).
   No charging indicator: the board exposes no charge-status signal (no
   dedicated pin, no voltage change on plug/unplug, no status LED).
 - Collections: Music, Audiobooks and Radio Plays are separate shelves,
@@ -107,7 +112,7 @@ screens.
   Toggles in Now Playing's options panel switch shuffle and repeat
   (off / all / one) — see [ADR 0011](docs/adr/0011-shuffle-and-repeat.md).
 - Now Playing options panel: an ellipsis at the bottom opens a panel with
-  shuffle, repeat, the cover/spectrum switch and lock, keeping the player
+  shuffle, repeat and lock, keeping the player
   itself uncluttered — see
   [ADR 0014](docs/adr/0014-now-playing-options-panel.md).
 - Resume after power loss: the device comes back on the last screen with

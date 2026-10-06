@@ -186,11 +186,19 @@ def library(dev):
     dev.shot("tracks")
     dev.tap(120, 139)  # The first track: plays the album from there.
     dev.expect("NowPlaying")
-    time.sleep(2)  # Let the spectrum fill.
+    # The cover slot's last page, the spectrum, then back one at a time
+    # (ADR 0028): the cover page, first when there is one, is never shown.
+    for _ in range(4):
+        dev.send(SLOT_NEXT, SETTLE_S)
+    time.sleep(2)  # Let the picture fill.
+    dev.shot("now-playing-spectrum")
+    dev.send(SLOT_BACK, 2)
+    dev.shot("now-playing-scope")
+    dev.send(SLOT_BACK, 2)
     dev.shot("now-playing")
     dev.tap(180, 340)  # The options handle.
     dev.shot("options")
-    dev.tap(288, 240)  # Lock.
+    dev.tap(252, 238)  # Lock, the third of three (ADR 0028).
     dev.shot("locked")
     unlock(dev)
 
@@ -245,6 +253,9 @@ def about(dev):
 
 
 TOUR = (home, library, tones, sleep_timer, settings, games, about)
+# Swipes inside Now Playing's cover slot (ADR 0028).
+SLOT_NEXT = "SWIPE 280 92 80 92"
+SLOT_BACK = "SWIPE 80 92 280 92"
 ATTEMPTS = 3  # Now and then a serial command goes missing; a step starts over.
 
 
