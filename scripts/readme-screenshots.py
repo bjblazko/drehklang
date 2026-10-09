@@ -40,7 +40,7 @@ LIBRARY_SCROLL = 10  # Knob detents down the artist list before its picture.
 KIND = {
     "Home": 0, "Settings": 1, "Artists": 3, "Albums": 4, "Tracks": 5,
     "NowPlaying": 7, "SleepTimer": 9, "Games": 18, "TableTennis": 19,
-    "Gravity": 20, "ToneGenerator": 21, "About": 24, "Bluetooth": 25,
+    "Gravity": 20, "ToneGenerator": 21, "Circuit": 29, "About": 24, "Bluetooth": 25,
     "Equalizer": 28,
 }
 
@@ -255,6 +255,12 @@ def games(dev):
         dev.tap(180, 200)  # Serve, or start the descent.
         time.sleep(1.5)
         dev.shot(name)
+    dev.open_from_home("Games", "Games")
+    dev.tap(150, 183)
+    dev.expect("Circuit")
+    dev.tap(180, 200)  # Start: three seconds of countdown, then racing.
+    time.sleep(6)
+    dev.shot("circuit")
 
 
 def about(dev):
