@@ -219,6 +219,12 @@ existing `KeyValueStore`, zero meaning none; written only on a new record.
 - Not settled until played: steering degrees per detent, the
   centrifugal factor, start time and checkpoint bonus per track. Table
   Tennis's knob took three attempts (ADR 0022); expect the same here.
+- **The knob is a wheel, not a nudge** (user, 2026-10-09): every detent
+  is kept and only the angle the car follows is capped at full lock, so
+  turning back as far as it was turned is always straight again. The first
+  build capped the wheel itself at +-12 and re-centred it after a crash;
+  both dropped detents and moved centre away from where the hand was,
+  which felt relative.
 - Deliberately absent: manual gears, repair, pit stops, a qualifying lap,
   music, two players, collisions between computer cars.
 

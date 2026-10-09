@@ -186,13 +186,25 @@ void test_steering_beyond_the_dead_zone_moves_the_car() {
   TEST_ASSERT_GREATER_THAN(100, game.x());
 }
 
-void test_steering_is_clamped_and_stays_where_it_is_left() {
+void test_steering_angle_is_capped_but_the_wheel_keeps_every_detent() {
   CircuitGame game;
   race(game, kStraightTrack);
-  game.steer(50);
-  TEST_ASSERT_EQUAL(CircuitGame::kMaxSteering, game.steering());
+  game.steer(20);
+  TEST_ASSERT_EQUAL(CircuitGame::kMaxSteering, game.steeringAngle());
+  TEST_ASSERT_EQUAL(20, game.steering());
   game.steer(-3);
-  TEST_ASSERT_EQUAL(CircuitGame::kMaxSteering - 3, game.steering());
+  TEST_ASSERT_EQUAL(CircuitGame::kMaxSteering, game.steeringAngle());
+}
+
+void test_turning_back_as_far_returns_the_wheel_to_centre() {
+  // A wheel, not a nudge: the same turn back is straight again, however
+  // far past full lock it went (user, 2026-10-09).
+  CircuitGame game;
+  race(game, kStraightTrack);
+  game.steer(20);
+  game.steer(-20);
+  TEST_ASSERT_EQUAL(0, game.steering());
+  TEST_ASSERT_EQUAL(0, game.steeringAngle());
 }
 
 void test_steering_already_works_in_the_countdown() {
@@ -255,7 +267,9 @@ void test_a_crash_stops_the_car_and_puts_it_back_on_the_road() {
   while (!game.crashed() && now < 20000) now = drive(game, now, 5);
   TEST_ASSERT_TRUE(game.crashed());
   TEST_ASSERT_EQUAL_INT32(0, game.speed());
-  TEST_ASSERT_EQUAL(0, game.steering());
+  // The wheel stays where the hand holds it: re-centring it behind the
+  // player's back would make the knob lie about where centre is.
+  TEST_ASSERT_EQUAL(CircuitGame::kMaxSteering, game.steering());
   drive(game, now, CircuitGame::kCrashRecoveryMs + 20);
   TEST_ASSERT_FALSE(game.crashed());
   TEST_ASSERT_FALSE(game.offRoad());
@@ -398,7 +412,8 @@ int main(int, char **) {
   RUN_TEST(test_gears_rise_with_speed);
   RUN_TEST(test_dead_zone_ignores_two_detents_of_jitter);
   RUN_TEST(test_steering_beyond_the_dead_zone_moves_the_car);
-  RUN_TEST(test_steering_is_clamped_and_stays_where_it_is_left);
+  RUN_TEST(test_steering_angle_is_capped_but_the_wheel_keeps_every_detent);
+  RUN_TEST(test_turning_back_as_far_returns_the_wheel_to_centre);
   RUN_TEST(test_steering_already_works_in_the_countdown);
   RUN_TEST(test_a_bend_pushes_an_unsteered_car_outward);
   RUN_TEST(test_steering_into_a_bend_holds_the_line);

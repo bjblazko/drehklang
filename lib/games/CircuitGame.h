@@ -40,6 +40,9 @@ class CircuitGame {
   // not steer (user, 2026-10-06).
   static constexpr int kMaxSteering = 12;
   static constexpr int kDeadZone = 2;
+  // How far the wheel itself can be wound, either way, before detents are
+  // dropped -- far beyond anyone's grip, only so the number stays sane.
+  static constexpr int kWheelTravel = 60;
   // Sideways speed per effective detent at top speed, and the push out of
   // a curve per unit of curve at top speed. First guesses: Table Tennis's
   // knob took three goes on the device (ADR 0022).
@@ -101,14 +104,16 @@ class CircuitGame {
     beeps_ = 0;
   }
 
-  // Signed detents, clockwise steers right. The angle stays where it is
-  // left, like a wheel. Works in the countdown too: a control that does
-  // nothing until later reads as broken (ADR 0023).
+  // Signed detents, clockwise steers right. The knob is a wheel: every
+  // detent is kept, so turning back as far as it was turned is straight
+  // again, even from past full lock (user, 2026-10-09). Only the angle the
+  // car follows is capped, at kMaxSteering. Works in the countdown too: a
+  // control that does nothing until later reads as broken (ADR 0023).
   void steer(int detents) {
     if (phase_ != Phase::Countdown && phase_ != Phase::Race) return;
     int next = steering_ + detents;
-    if (next > kMaxSteering) next = kMaxSteering;
-    if (next < -kMaxSteering) next = -kMaxSteering;
+    if (next > kWheelTravel) next = kWheelTravel;
+    if (next < -kWheelTravel) next = -kWheelTravel;
     steering_ = next;
   }
 
@@ -141,7 +146,14 @@ class CircuitGame {
   int32_t z() const { return z_; }
   int32_t x() const { return x_; }
   int32_t speed() const { return speed_; }
+  // Where the wheel is, in detents from centre.
   int steering() const { return steering_; }
+  // The steering lock that wheel position gives, capped at full lock.
+  int steeringAngle() const {
+    if (steering_ > kMaxSteering) return kMaxSteering;
+    if (steering_ < -kMaxSteering) return -kMaxSteering;
+    return steering_;
+  }
   bool braking() const { return braking_; }
   int damage() const { return damageMilli_ / 1000; }
   bool crashed() const { return crashLeftMs_ > 0; }
@@ -232,7 +244,7 @@ class CircuitGame {
   void steerAndDrift(int32_t ms) {
     const CircuitTrack::Segment here = track_.segment(z_ / CircuitTrack::kSegmentLength);
     const int64_t v = speed_;
-    const int64_t steer = effectiveSteering(steering_) * kSteerPerDetent * v / kTopSpeed;
+    const int64_t steer = effectiveSteering(steeringAngle()) * kSteerPerDetent * v / kTopSpeed;
     const int64_t push = static_cast<int64_t>(here.curve) * kCentrifugal * v / kTopSpeed * v /
                          kTopSpeed / CircuitTrack::kOne;
     squealing_ = std::llabs(push) > kSquealPush;
@@ -289,8 +301,8 @@ class CircuitGame {
   }
 
   void crash() {
+    // The wheel is left alone: the hand on the knob still holds it there.
     speed_ = speedRemainder_ = 0;
-    steering_ = 0;
     xRemainder_ = 0;
     const int32_t back = CircuitTrack::kRoadHalfWidth - kCarHalfWidth;
     x_ = x_ < 0 ? -back : back;
