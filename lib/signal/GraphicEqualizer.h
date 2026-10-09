@@ -18,10 +18,10 @@ namespace drehklang::signal {
 //   is squeezed out of shape, and "air" is a shelf anyway. The bottom is a
 //   bell, not a shelf, so nothing below hearing is lifted.
 // - Never clips: everything is lowered by the curve's highest point,
-//   found on a fine grid (headroom()), and given back after the volume as
-//   far as the volume leaves room (makeup()). At a listening volume the
-//   music keeps its level; only near full volume does a lift lower the
-//   rest, because there is no room left.
+//   found on a fine grid (headroom()), and given back in full after the
+//   volume by signal::PeakLimiter, which dips only for a peak that would
+//   pass full scale. The music that was not lifted keeps its level at
+//   every volume.
 // - A band at or above 0.45 x the sample rate is left out (a 22.05 kHz
 //   audiobook has no 16 kHz).
 // - Flat costs nothing: the samples are not touched at all.
@@ -57,13 +57,6 @@ class GraphicEqualizer {
   // How far process() lowered everything, as a linear factor >= 1: the
   // curve's highest point. Read from any task; set by process().
   float headroom() const { return headroom_.load(std::memory_order_relaxed); }
-
-  // What to multiply by after a volume of `volumeLinear` (0..1): the
-  // headroom back, but never past what keeps full scale at full scale.
-  float makeup(float volumeLinear) const {
-    if (volumeLinear <= 0.0f) return 1.0f;
-    return std::max(1.0f, std::min(headroom(), 1.0f / volumeLinear));
-  }
 
   // `words` interleaved left/right samples, in place, at `sampleRate`.
   void process(int32_t *samples, size_t words, uint32_t sampleRate) {

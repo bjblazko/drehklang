@@ -138,32 +138,23 @@ void test_back_to_flat_is_untouched_again() {
   TEST_ASSERT_TRUE(t == original);
 }
 
-void test_makeup_gives_back_what_the_headroom_took_where_volume_allows() {
+void test_headroom_is_the_lift_and_nothing_when_flat() {
   GraphicEqualizer eq;
-  // Flat: nothing taken, nothing to give back.
   auto s = sine(1000, 0.1);
   eq.process(s.data(), s.size(), kRate);
-  TEST_ASSERT_EQUAL_FLOAT(1.0f, eq.makeup(0.25f));
-
+  TEST_ASSERT_EQUAL_FLOAT(1.0f, eq.headroom());
   eq.setGain(0, 12);  // Everything else is lowered by ~12 dB.
   eq.process(s.data(), s.size(), kRate);
-  const float headroom = eq.headroom();
-  TEST_ASSERT_FLOAT_WITHIN(0.3f, 12.0f, 20.0f * std::log10(headroom));
-  // At a quiet volume all of it comes back after the volume...
-  TEST_ASSERT_EQUAL_FLOAT(headroom, eq.makeup(0.1f));
-  // ...at a loud one only as much as keeps full scale full scale...
-  TEST_ASSERT_EQUAL_FLOAT(2.0f, eq.makeup(0.5f));
-  // ...and at full volume none.
-  TEST_ASSERT_EQUAL_FLOAT(1.0f, eq.makeup(1.0f));
-  TEST_ASSERT_EQUAL_FLOAT(1.0f, eq.makeup(0.0f));  // Muted.
+  TEST_ASSERT_FLOAT_WITHIN(0.3f, 12.0f, 20.0f * std::log10(eq.headroom()));
 }
 
-void test_with_makeup_the_rest_of_the_music_keeps_its_level() {
+void test_with_the_headroom_given_back_the_rest_keeps_its_level() {
+  // At every volume (user, 2026-10-09): signal::PeakLimiter gives all of
+  // the headroom back after the volume and only dips for a peak.
   GraphicEqualizer eq;
   eq.setGain(0, 12);
   const float at1k = gainAt(eq, 1000);
-  // A quiet volume has room for all of it: 1 kHz ends where it started.
-  TEST_ASSERT_FLOAT_WITHIN(0.3f, 0.0f, at1k + 20.0f * std::log10(eq.makeup(0.1f)));
+  TEST_ASSERT_FLOAT_WITHIN(0.3f, 0.0f, at1k + 20.0f * std::log10(eq.headroom()));
 }
 
 int main(int argc, char **argv) {
@@ -177,7 +168,7 @@ int main(int argc, char **argv) {
   RUN_TEST(test_everything_lifted_still_does_not_clip);
   RUN_TEST(test_a_band_above_half_the_rate_is_left_out);
   RUN_TEST(test_back_to_flat_is_untouched_again);
-  RUN_TEST(test_makeup_gives_back_what_the_headroom_took_where_volume_allows);
-  RUN_TEST(test_with_makeup_the_rest_of_the_music_keeps_its_level);
+  RUN_TEST(test_headroom_is_the_lift_and_nothing_when_flat);
+  RUN_TEST(test_with_the_headroom_given_back_the_rest_keeps_its_level);
   return UNITY_END();
 }

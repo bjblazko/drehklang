@@ -16,6 +16,7 @@
 #include "AudioGain.h"
 #include "AudioOutputStage.h"
 #include "AudioTap.h"
+#include "PeakLimiter.h"
 
 #ifdef DREHKLANG_EQ_DEBUG
 #include <esp_timer.h>
@@ -29,6 +30,8 @@ std::atomic<drehklang::bluetooth::AudioTap *> g_bluetoothTap{nullptr};
 std::atomic<uint32_t> g_decoderRate{44100};
 // Internal RAM: the decode task runs it on every chunk.
 signal::GraphicEqualizer g_equalizer;
+// Decode task only, like the equalizer.
+signal::PeakLimiter g_makeupLimiter;
 #ifdef DREHKLANG_EQ_DEBUG
 std::atomic<uint32_t> g_worstEqualizerUs{0};
 std::atomic<uint32_t> g_worstEqualizerWords{0};
@@ -39,17 +42,11 @@ std::atomic<uint32_t> g_totalEqualizerWords{0};
 
 signal::GraphicEqualizer &musicEqualizer() { return g_equalizer; }
 
+// All of the headroom back, at every volume, through a peak limiter
+// (ADR 0029): the rest of the music keeps its level; a lifted band that
+// would pass full scale dips the gain for a moment instead of clipping.
 void applyEqualizerMakeup(int32_t *samples, size_t words) {
-  using playback::AudioGain;
-  const uint8_t step = std::min(audioOutputStage().volumeStep(), AudioGain::kMaxVolumeStep);
-  const float makeup = g_equalizer.makeup(AudioGain::kVolumeTable[step] / 64.0f);
-  if (makeup <= 1.0f) return;
-  for (size_t i = 0; i < words; ++i) {
-    const float scaled = static_cast<float>(samples[i]) * makeup;
-    samples[i] = scaled >= 2147483647.0f    ? INT32_MAX
-                 : scaled <= -2147483648.0f ? INT32_MIN
-                                            : static_cast<int32_t>(scaled);
-  }
+  g_makeupLimiter.process(samples, words, g_equalizer.headroom(), decoderRate());
 }
 
 #ifdef DREHKLANG_EQ_DEBUG
