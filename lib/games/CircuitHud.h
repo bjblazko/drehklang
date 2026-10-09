@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -38,12 +39,18 @@ class CircuitHud {
     int16_t x, y, w, h;
     uint16_t color;
   };
+  struct Triangle {
+    int16_t x[3];
+    int16_t y[3];
+    uint16_t color;
+  };
 
   static constexpr int kMaxTexts = 10;
   static constexpr int kMaxRects = 16;
 
   void layout(const CircuitScene &scene) {
     textCount_ = rectCount_ = 0;
+    hasMarker_ = false;
     switch (scene.phase) {
       case CircuitGame::Phase::Select:
         layoutSelect(scene);
@@ -66,6 +73,9 @@ class CircuitHud {
   const Text &text(int i) const { return texts_[i]; }
   int rectCount() const { return rectCount_; }
   const Rect &rect(int i) const { return rects_[i]; }
+  // The wheel's marker on the rim, while there is a wheel to show.
+  bool hasMarker() const { return hasMarker_; }
+  const Triangle &marker() const { return marker_; }
 
  private:
   static bool blink(const CircuitScene &scene) { return (scene.frame / 8) % 2 == 0; }
@@ -123,7 +133,7 @@ class CircuitHud {
     addf(88, 300, 2, kWhite, "%d",
          static_cast<int>(scene.speed * kTopKmh / CircuitGame::kTopSpeed));
     add(88, 318, 1, kWhite, "KM/H");
-    layoutWheel(scene.steering);
+    layoutWheel(scene.wheel);
   }
 
   void layoutDamage(int damage) {
@@ -139,16 +149,32 @@ class CircuitHud {
     }
   }
 
-  // A strip with the dead zone shaded and a marker where the wheel is:
-  // the knob has no centre you can feel, so the screen shows it.
-  void layoutWheel(int steering) {
-    constexpr int kPerDetent = 2;
-    constexpr int kCentre = 274;
-    const int half = CircuitGame::kMaxSteering * kPerDetent;
-    addRect(kCentre - half, 308, 2 * half + 2, 6, kDim);
-    addRect(kCentre - CircuitGame::kDeadZone * kPerDetent, 308,
-            2 * CircuitGame::kDeadZone * kPerDetent + 2, 6, kMid);
-    addRect(kCentre + steering * kPerDetent, 304, 2, 14, kWhite);
+  // A small red arrow on the top rim, pointing in, that travels round
+  // the rim as the wheel turns: top centre is straight. It shows the
+  // wheel itself, past full lock too, so centre can always be found
+  // again -- the knob has none you can feel (user, 2026-10-09).
+  void layoutWheel(int wheel) {
+    constexpr float kDegreesPerDetent = 5.0f;
+    constexpr float kMaxDegrees = 100.0f;
+    constexpr float kTipRadius = 165.0f;
+    constexpr float kBaseRadius = 178.0f;
+    constexpr float kHalfBase = 6.0f;
+    float degrees = wheel * kDegreesPerDetent;
+    if (degrees > kMaxDegrees) degrees = kMaxDegrees;
+    if (degrees < -kMaxDegrees) degrees = -kMaxDegrees;
+    const float a = degrees * 3.14159265f / 180.0f;
+    const float dx = std::sin(a);
+    const float dy = -std::cos(a);
+    const float baseX = 180.0f + dx * kBaseRadius;
+    const float baseY = 180.0f + dy * kBaseRadius;
+    marker_.x[0] = static_cast<int16_t>(std::lround(180.0f + dx * kTipRadius));
+    marker_.y[0] = static_cast<int16_t>(std::lround(180.0f + dy * kTipRadius));
+    marker_.x[1] = static_cast<int16_t>(std::lround(baseX - dy * kHalfBase));
+    marker_.y[1] = static_cast<int16_t>(std::lround(baseY + dx * kHalfBase));
+    marker_.x[2] = static_cast<int16_t>(std::lround(baseX + dy * kHalfBase));
+    marker_.y[2] = static_cast<int16_t>(std::lround(baseY - dx * kHalfBase));
+    marker_.color = kRed;
+    hasMarker_ = true;
   }
 
   void add(int centerX, int top, int scale, uint16_t colour, const char *text) {
@@ -178,6 +204,8 @@ class CircuitHud {
 
   Text texts_[kMaxTexts];
   Rect rects_[kMaxRects];
+  Triangle marker_{};
+  bool hasMarker_ = false;
   int textCount_ = 0;
   int rectCount_ = 0;
 };

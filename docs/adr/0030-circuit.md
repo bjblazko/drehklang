@@ -225,6 +225,10 @@ existing `KeyValueStore`, zero meaning none; written only on a new record.
   build capped the wheel itself at +-12 and re-centred it after a crash;
   both dropped detents and moved centre away from where the hand was,
   which felt relative.
+- **The wheel's position is a small red arrow on the top rim** (user,
+  2026-10-09), 5 degrees per detent, top centre straight, up to 100 degrees
+  either way -- the true wheel, past full lock too. The first build's
+  strip beside the car could not be seen while driving.
 - Deliberately absent: manual gears, repair, pit stops, a qualifying lap,
   music, two players, collisions between computer cars.
 

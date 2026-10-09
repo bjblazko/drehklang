@@ -28,6 +28,7 @@ struct CircuitScene {
   int32_t speed = 0;
   int32_t heading = 0;
   int steering = 0;  // the capped angle, as drawn
+  int wheel = 0;     // where the wheel is, uncapped: the rim marker
   bool braking = false;
   bool offRoad = false;
   int32_t crashLeftMs = 0;
@@ -58,6 +59,7 @@ struct CircuitScene {
     scene.speed = game.speed();
     scene.heading = game.heading();
     scene.steering = game.steeringAngle();
+    scene.wheel = game.steering();
     scene.braking = game.braking() && game.phase() == CircuitGame::Phase::Race;
     scene.offRoad = game.offRoad();
     scene.crashLeftMs = game.crashLeftMs();

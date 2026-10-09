@@ -279,6 +279,7 @@ void CircuitRenderer::renderStripe(uint16_t *dst, int y0, int rows, Span span) c
   if (spriteCount_ > 0) drawSprite(sprites_[spriteCount_ - 1], dst, y0, rows, span);
   for (int i = 0; i < hud_.rectCount(); ++i) drawRect(hud_.rect(i), dst, y0, rows, span);
   for (int i = 0; i < hud_.textCount(); ++i) drawText(hud_.text(i), dst, y0, rows, span);
+  if (hud_.hasMarker()) drawTriangle(hud_.marker(), dst, y0, rows, span);
 }
 
 // Sky in hard bands down to the horizon, the backdrop standing on it, and
@@ -366,6 +367,37 @@ void CircuitRenderer::drawRect(const CircuitHud::Rect &rect, uint16_t *dst, int 
     if (x0 >= x1) continue;
     uint16_t *row = dst + (y - y0) * span.width - span.x0;
     std::fill(row + x0, row + x1, rect.color);
+  }
+}
+
+// A filled triangle, row by row: where each row's centre line crosses the
+// three edges, filled between the outermost crossings.
+void CircuitRenderer::drawTriangle(const CircuitHud::Triangle &t, uint16_t *dst, int y0,
+                                   int rows, Span span) const {
+  const int top = std::max(y0, static_cast<int>(std::min({t.y[0], t.y[1], t.y[2]})));
+  const int bottom =
+      std::min(y0 + rows, static_cast<int>(std::max({t.y[0], t.y[1], t.y[2]})) + 1);
+  for (int y = top; y < bottom; ++y) {
+    const float cy = y + 0.5f;
+    float left = kSize;
+    float right = -1.0f;
+    for (int e = 0; e < 3; ++e) {
+      const float ax = t.x[e], ay = t.y[e];
+      const float bx = t.x[(e + 1) % 3], by = t.y[(e + 1) % 3];
+      if ((cy < ay) == (cy < by)) continue;
+      const float x = ax + (bx - ax) * (cy - ay) / (by - ay);
+      left = std::min(left, x);
+      right = std::max(right, x);
+    }
+    if (right < left) continue;
+    const Span visible = rowSpan(y);
+    const int x0 = std::max({static_cast<int>(std::lround(left)), static_cast<int>(visible.x0),
+                             static_cast<int>(span.x0)});
+    const int x1 = std::min({static_cast<int>(std::lround(right)) + 1,
+                             visible.x0 + visible.width, span.x0 + span.width});
+    if (x0 >= x1) continue;
+    uint16_t *row = dst + (y - y0) * span.width - span.x0;
+    std::fill(row + x0, row + x1, t.color);
   }
 }
 

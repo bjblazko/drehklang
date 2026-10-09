@@ -71,6 +71,8 @@ class CircuitRenderer {
   void drawRoad(uint16_t *row, const Row &plan, int x0, int x1) const;
   void drawSprite(const SpriteItem &item, uint16_t *dst, int y0, int rows, Span span) const;
   void drawRect(const CircuitHud::Rect &rect, uint16_t *dst, int y0, int rows, Span span) const;
+  void drawTriangle(const CircuitHud::Triangle &triangle, uint16_t *dst, int y0, int rows,
+                    Span span) const;
   void drawText(const CircuitHud::Text &text, uint16_t *dst, int y0, int rows, Span span) const;
   void drawGlyph(const uint8_t *glyph, int left, int top, int scale, uint16_t colour,
                  uint16_t *dst, int y0, int rows, Span span) const;

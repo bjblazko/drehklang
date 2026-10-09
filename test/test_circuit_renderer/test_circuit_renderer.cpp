@@ -211,6 +211,49 @@ void test_the_same_scene_draws_the_same_pixels() {
   TEST_ASSERT_TRUE(renderFrame(a, scene) == renderFrame(b, scene));
 }
 
+// The wheel's marker: a small red arrow on the top rim, at the top when
+// straight and around the rim the way the wheel is turned.
+int markerColumn(const std::vector<uint16_t> &frame) {
+  int sum = 0;
+  int count = 0;
+  for (int y = 0; y < kSize; ++y) {
+    for (int x = 0; x < kSize; ++x) {
+      if (frame[y * kSize + x] == drehklang::games::CircuitHud::kRed) {
+        sum += x;
+        ++count;
+      }
+    }
+  }
+  return count > 0 ? sum / count : -1;
+}
+
+void test_the_wheel_marker_sits_on_the_top_rim() {
+  CircuitGame game;
+  CircuitRenderer renderer;
+  CircuitScene scene = sceneOn(game, kStraightTrack, 2000);
+  scene.wheel = 0;
+  TEST_ASSERT_INT_WITHIN(2, kSize / 2, markerColumn(renderFrame(renderer, scene)));
+  scene.wheel = 6;
+  const int right = markerColumn(renderFrame(renderer, scene));
+  scene.wheel = 20;  // Past full lock: still shows where the wheel is.
+  const int further = markerColumn(renderFrame(renderer, scene));
+  scene.wheel = -6;
+  const int left = markerColumn(renderFrame(renderer, scene));
+  TEST_ASSERT_GREATER_THAN(kSize / 2 + 20, right);
+  TEST_ASSERT_GREATER_THAN(right, further);
+  TEST_ASSERT_LESS_THAN(kSize / 2 - 20, left);
+}
+
+void test_the_old_wheel_gauge_beside_the_car_is_gone() {
+  CircuitGame game;
+  CircuitRenderer renderer;
+  CircuitScene scene = sceneOn(game, kStraightTrack, 2000);
+  renderer.prepare(scene);
+  drehklang::games::CircuitHud hud;
+  hud.layout(scene);
+  for (int i = 0; i < hud.rectCount(); ++i) TEST_ASSERT_LESS_THAN(100, hud.rect(i).y);
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_spans_follow_the_circle);
@@ -223,5 +266,7 @@ int main(int, char **) {
   RUN_TEST(test_sprites_at_the_edge_are_clipped_without_overrun);
   RUN_TEST(test_every_phase_and_track_renders);
   RUN_TEST(test_the_same_scene_draws_the_same_pixels);
+  RUN_TEST(test_the_wheel_marker_sits_on_the_top_rim);
+  RUN_TEST(test_the_old_wheel_gauge_beside_the_car_is_gone);
   return UNITY_END();
 }
