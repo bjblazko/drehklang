@@ -30,14 +30,23 @@ found on a 256-point log grid plus the band centres (overlapping bells add
 up), so nothing is pushed past full scale in the 32-bit samples. Tested
 with every band at +12 dB.
 
-After the volume, that headroom is given back as far as the volume step
-leaves room: `min(headroom, 64 / kVolumeTable[step])`
-(`GraphicEqualizer::makeup()`, `applyEqualizerMakeup()`), before the
-sleep fade and the Bluetooth copy. At a listening volume the music keeps
-its level and only the curve changes; near full volume a lift lowers the
-rest, because there is no room left. It can never clip: the makeup never
-exceeds what the volume took. The spectrum's tap gets the same, so the
-pictures do not look quieter either.
+After the volume, all of that headroom is given back, at every volume
+step, through a peak limiter (`signal::PeakLimiter`,
+`applyEqualizerMakeup()`), before the sleep fade and the Bluetooth copy.
+The music the equalizer did not lift keeps exactly its level; only where
+a lifted band would pass full scale does the gain dip, for that peak, and
+come back over ~80 ms. Both channels share the gain, so the image does not
+move. It cannot clip: the limiter holds everything under -0.18 dBFS. The
+spectrum's tap gets the headroom back too, so the pictures do not look
+quieter either.
+
+**Superseded the same week:** the first makeup gave back only
+`min(headroom, 64 / kVolumeTable[step])`, i.e. as much as the volume step
+left room for if the lifted band were at full scale all the time. That
+worst case cost the common one: from step 10 up the rest of the music got
+quieter whenever a band was lifted -- -4.5 dB at step 13, -7.5 dB at 16,
+-12 dB at full volume for +12 dB of bass (user, 2026-10-09: "wenn ich den
+Bass anhebe, wird der Rest relativ leiser").
 
 Found on the device the same day, both as "the equalizer makes
 everything quieter, whatever I set":
