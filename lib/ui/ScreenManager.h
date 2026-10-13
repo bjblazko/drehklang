@@ -22,6 +22,7 @@
 #include "Bookmarks.h"
 #include "CollectionSet.h"
 #include "MenuVisibility.h"
+#include "VideoResume.h"
 #include "LetterJump.h"
 #include "LibraryScanner.h"
 #include "KeyValueStore.h"
@@ -53,6 +54,7 @@
 namespace drehklang::ui {
 
 class CircuitPresenter;
+class VideoPresenter;
 
 // Renders whatever screen TabController's active stack currently shows,
 // and forwards taps into navigation/playback. Also implements
@@ -210,6 +212,10 @@ class ScreenManager : public input::KnobSink {
   // the display awake.
   void setCircuitPresenter(CircuitPresenter &presenter) { circuitPresenter_ = &presenter; }
   bool tickCircuit(uint32_t nowMs, bool visible);
+  // Video (ADR 0031): the presenter that plays a film. tickVideo() is true
+  // while one plays, which keeps the display awake like a race.
+  void setVideoPresenter(VideoPresenter &presenter) { videoPresenter_ = &presenter; }
+  bool tickVideo(uint32_t nowMs, bool visible);
 
   // The tone generator (ADR 0024). Optional like the blips: without a
   // session the screen shows nothing to play.
@@ -312,6 +318,13 @@ class ScreenManager : public input::KnobSink {
   void presentCircuit(uint32_t nowMs);
   void finishCircuitRace();
   void leaveCircuit();
+  // ScreenManagerVideo.cpp.
+  void renderVideoPlayer();
+  void openFilm(const std::string &title);
+  void leaveVideo();
+  void saveFilmPosition(const video::VideoResume &resume);
+  video::VideoResume filmPosition(const std::string &title);
+  static void onVideoTapped(lv_event_t *e);
   static void onCircuitPressed(lv_event_t *e);
   static void onCircuitReleased(lv_event_t *e);
   static void onCircuitTapped(lv_event_t *e);
@@ -382,6 +395,7 @@ class ScreenManager : public input::KnobSink {
   bool menuEntryVisible(int entryIndex) const;
   const char *menuVisibilityValue(int entryIndex) const;
   void loadMenuVisibility();
+  void saveMenuVisibility();
   // Built from the menu table, which lives in ScreenManagerMenu.cpp.
   static navigation::MenuVisibility makeMenuVisibility();
   // Indices into the menu table, filtered by the visibility setting -- the
@@ -577,6 +591,7 @@ class ScreenManager : public input::KnobSink {
   // characters. Default: everything visible, which is what a device that
   // has never opened this screen should look like.
   static constexpr char kMenuVisibilityKey[] = "menuVis";
+  static constexpr char kMenuVisibilityVersionKey[] = "menuVisV";
   // Constructed in ScreenManagerMenu.cpp, where the menu table (and so the
   // entry count and which entry is pinned) lives.
   navigation::MenuVisibility menuVisibility_;
@@ -707,6 +722,11 @@ class ScreenManager : public input::KnobSink {
   // Circuit (ADR 0030). The picture is the presenter's; the only LVGL
   // object is the invisible brake that covers the screen.
   CircuitPresenter *circuitPresenter_ = nullptr;
+  // Video (ADR 0031). Titles as listed, so a row's index names its film.
+  VideoPresenter *videoPresenter_ = nullptr;
+  std::vector<std::string> videoTitles_;
+  lv_obj_t *videoSurface_ = nullptr;
+  std::string videoTitle_;
   lv_obj_t *circuitBrake_ = nullptr;
   games::CircuitGame circuit_;
   games::CircuitRecords circuitRecords_;

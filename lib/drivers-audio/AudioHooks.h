@@ -31,6 +31,11 @@ bluetooth::AudioTap *bluetoothTap();
 void setDecoderRate(uint32_t rate);
 uint32_t decoderRate();
 
+// Stereo frames handed to the I2S channel since the last reset, held
+// output not counted: the clock a film's picture follows (ADR 0031).
+uint32_t outputFrames();
+void resetOutputFrames();
+
 // Settings > Equalizer (ADR 0029): run on the music before the volume and
 // before the spectrum's tap, so what is shown is what is heard. The tone
 // generator owns the DAC on its own path and stays flat.

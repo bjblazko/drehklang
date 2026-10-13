@@ -363,6 +363,12 @@ duplicating it.
   same switch. A frame is bus-bound (~31.5 ms, 2026-10-06); build with
   `-DDREHKLANG_CIRCUIT_DEBUG` for frame, render and push times. Racing
   leaves ~21 KB internal heap (two 11.5 KB DMA stripes).
+- **Video plays a Motion-JPEG AVI next to an M4A** (ADR 0031,
+  `scripts/convert-video.sh`). The sound is the clock (`outputFrames()`),
+  and pictures decode on core 1 while a task pushes them from core 0 **at
+  prio 3, above the audio library's decoder**. At prio 1 half the frames
+  were dropped. Core 0 then runs at ~93 %. The AVI must stay under 1 GB
+  (no OpenDML); the reader refuses anything else.
 - **UI colors must be judged on the device, not a monitor or a
   screenshot's hex values.** The panel is RGB565 (subtle neutrals get
   rounded — `#F4F4F0` arrived as neutral `#F6F6F6`) and visibly shifts

@@ -94,6 +94,10 @@ void setDecoderRate(uint32_t rate) { g_decoderRate.store(rate, std::memory_order
 
 uint32_t decoderRate() { return g_decoderRate.load(std::memory_order_relaxed); }
 
+std::atomic<uint32_t> g_outputFrames{0};
+uint32_t outputFrames() { return g_outputFrames.load(std::memory_order_relaxed); }
+void resetOutputFrames() { g_outputFrames.store(0, std::memory_order_relaxed); }
+
 }  // namespace drehklang::drivers
 
 // Before the volume: the equalizer (ADR 0029), then what the spectrum
@@ -124,6 +128,8 @@ void audio_process_i2s(int32_t *samples, int16_t words, bool *continueI2S) {
     std::fill(samples, samples + words, 0);
     return;
   }
+  drehklang::drivers::g_outputFrames.fetch_add(static_cast<uint32_t>(words) / 2,
+                                               std::memory_order_relaxed);
   drehklang::drivers::applyEqualizerMakeup(samples, static_cast<size_t>(words));
   const uint16_t gain = drehklang::drivers::audioOutputStage().outputGain();
   if (gain < drehklang::playback::AudioGain::kUnityOutputGain) {

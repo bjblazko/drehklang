@@ -85,6 +85,8 @@ struct MenuEntry {
   // Settings is the only way back to this screen, so it is the one entry
   // the user may not hide.
   bool alwaysVisible = false;
+  // Video starts hidden: it needs specially converted files (ADR 0031).
+  bool hiddenByDefault = false;
 };
 
 constexpr MenuEntry kMenuEntries[] = {
@@ -118,6 +120,11 @@ constexpr MenuEntry kMenuEntries[] = {
      [](navigation::TabController &tabs) {
        tabs.activeStack().push(Screen{ScreenKind::ToneGenerator, {}});
      }},
+    {DREHKLANG_ICON_MOVIE, "Video",
+     [](navigation::TabController &tabs) {
+       tabs.activeStack().push(Screen{ScreenKind::Videos, {}});
+     },
+     /*showsSleepTimer=*/false, /*alwaysVisible=*/false, /*hiddenByDefault=*/true},
 };
 constexpr int kMenuEntryCount =
     static_cast<int>(sizeof(kMenuEntries) / sizeof(kMenuEntries[0]));
@@ -322,21 +329,32 @@ std::vector<int> ScreenManager::visibleMenuEntries() const {
 
 navigation::MenuVisibility ScreenManager::makeMenuVisibility() {
   uint8_t pinned = 0;
+  uint8_t hidden = 0;
   for (int i = 0; i < kMenuEntryCount; ++i) {
     if (kMenuEntries[i].alwaysVisible) pinned |= static_cast<uint8_t>(1u << i);
+    if (kMenuEntries[i].hiddenByDefault) hidden |= static_cast<uint8_t>(1u << i);
   }
-  return navigation::MenuVisibility(kMenuEntryCount, pinned);
+  return navigation::MenuVisibility(kMenuEntryCount, pinned, hidden);
 }
 
 bool ScreenManager::menuEntryVisible(int entryIndex) const {
   return menuVisibility_.visible(entryIndex);
 }
 
+// A mask stored before Video existed is corrected once and written back
+// with the current version (MenuVisibility::loadStored()).
 void ScreenManager::loadMenuVisibility() {
-  uint8_t stored = navigation::MenuVisibility::kDefaultMask;
-  if (settings_.getU8(kMenuVisibilityKey, stored)) {
-    menuVisibility_.setMask(stored);
-  }
+  uint8_t stored = 0;
+  if (!settings_.getU8(kMenuVisibilityKey, stored)) return;
+  uint8_t version = 0;
+  settings_.getU8(kMenuVisibilityVersionKey, version);
+  menuVisibility_.loadStored(stored, version);
+  if (version < navigation::MenuVisibility::kMaskVersion) saveMenuVisibility();
+}
+
+void ScreenManager::saveMenuVisibility() {
+  settings_.setU8(kMenuVisibilityKey, menuVisibility_.mask());
+  settings_.setU8(kMenuVisibilityVersionKey, navigation::MenuVisibility::kMaskVersion);
 }
 
 void ScreenManager::toggleMenuEntryVisible(int entryIndex) {
@@ -354,7 +372,12 @@ void ScreenManager::toggleMenuEntryVisible(int entryIndex) {
     case navigation::MenuVisibility::ToggleResult::Toggled:
       break;
   }
-  settings_.setU8(kMenuVisibilityKey, menuVisibility_.mask());
+  saveMenuVisibility();
+  // Video plays only files made by scripts/convert-video.sh: say so the
+  // moment it is switched on, not when the first film fails.
+  if (kMenuEntries[entryIndex].hiddenByDefault && menuEntryVisible(entryIndex)) {
+    messages_.show("Convert first: see README", kAnchor, millis());
+  }
   // The carousel is rebuilt from the filtered list, so a hidden entry
   // must not leave the selection pointing past the end.
   homeSelection_ = 0;

@@ -181,7 +181,7 @@ void ScreenManager::onHeadphoneButton(BtEvent event) {
   const ScreenKind kind = tabs_.activeStack().current().kind;
   bluetooth::ButtonContext context;
   context.inGame = kind == ScreenKind::TableTennis || kind == ScreenKind::Gravity ||
-                   kind == ScreenKind::Circuit;
+                   kind == ScreenKind::Circuit || kind == ScreenKind::VideoPlayer;
   context.onTones = kind == ScreenKind::ToneGenerator && toneSession_ != nullptr;
   context.toneRunning = toneSession_ != nullptr && toneSession_->running();
   context.hasTrack = playback_.hasQueue();

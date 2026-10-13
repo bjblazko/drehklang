@@ -9,6 +9,7 @@
 #include "BookmarkKeeper.h"
 #include "Credits.h"
 #include "GameCatalog.h"
+#include "VideoShelf.h"
 #include "IconFont.h"
 #include "LvglButtonHelpers.h"
 #include "PlaylistBuilder.h"
@@ -144,6 +145,8 @@ void ScreenManager::render() {
   tableTennisHint_ = nullptr;
   // Circuit gives the panel back to LVGL and stops its engine.
   if (circuitBrake_) leaveCircuit();
+  // A film gives the panel back and keeps its place (ADR 0031).
+  if (videoSurface_) leaveVideo();
   // Same for Gravity: an engine must not keep running into the next screen.
   if (gravityWidgets_.craft && blips_) blips_->silence();
   gravityWidgets_ = GravityWidgets{};
@@ -215,6 +218,10 @@ void ScreenManager::render() {
   } else if (current.kind == ScreenKind::Circuit) {
     // Modal like the other games; drawn by its own presenter (ADR 0030).
     renderCircuit();
+    return;
+  } else if (current.kind == ScreenKind::VideoPlayer) {
+    // Modal like Circuit, drawn by its own presenter too (ADR 0031).
+    renderVideoPlayer();
     return;
   } else if (current.kind == ScreenKind::Gravity) {
     // Modal like the others (ADR 0023).
@@ -348,6 +355,13 @@ void ScreenManager::render() {
         // page this list is opened from. The row is the credit's index.
         for (size_t i = 0; i < about::kCreditCount; ++i) {
           items.emplace_back(about::kCredits[i].name, static_cast<int>(i));
+        }
+        break;
+      case ScreenKind::Videos:
+        // Read again on every visit: the card may have changed meanwhile.
+        videoTitles_ = video::filmTitlesIn(directoryReader_);
+        for (size_t i = 0; i < videoTitles_.size(); ++i) {
+          items.emplace_back(videoTitles_[i], static_cast<int>(i));
         }
         break;
       case ScreenKind::Games:
@@ -623,6 +637,7 @@ std::vector<std::string> ScreenManager::letterKeysFor(
 const char *ScreenManager::emptyListText(const navigation::Screen &screen) const {
   if (screen.kind == ScreenKind::Bluetooth) return bluetoothEmptyText();
   if (screen.kind == ScreenKind::Folder) return "Empty folder";
+  if (screen.kind == ScreenKind::Videos) return "No films in /Videos\nSee the README";
   if (library().tracks.empty()) return "Nothing scanned yet\nSettings > Rescan SD card";
   switch (screen.kind) {
     case ScreenKind::Genres:
@@ -766,6 +781,8 @@ std::string ScreenManager::captionTextFor(
       return bluetoothSearchCaption();
     case ScreenKind::Games:
       return "Games";
+    case ScreenKind::Videos:
+      return "Video";
     case ScreenKind::Licences:
     case ScreenKind::LicenceDetail:
       return "Licences";
@@ -1892,6 +1909,11 @@ void ScreenManager::onListItemClicked(lv_event_t *e) {
         params.row = static_cast<uint16_t>(ctx->index);
         self->tabs_.activeStack().push(Screen{ScreenKind::LicenceDetail, params});
         self->render();
+      }
+      break;
+    case ScreenKind::Videos:
+      if (ctx->index >= 0 && static_cast<size_t>(ctx->index) < self->videoTitles_.size()) {
+        self->openFilm(self->videoTitles_[ctx->index]);
       }
       break;
     case ScreenKind::Games:

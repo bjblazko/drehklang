@@ -78,6 +78,8 @@ screens.
 - Audio output via the onboard 3.5mm jack (PCM5100A DAC).
 - Control via the board's rotary encoder(s) + touch display.
 - Fully offline for v1.
+- Video, as a toy: films converted on a computer play from `/Videos`
+  (see [Films](#films)). Off by default.
 - Display power and device lock, tuned for two real usage contexts: on a
   table (display times out on its own, a touch wakes it without acting
   on whatever's underneath) and in a pocket while playing (manually
@@ -295,11 +297,49 @@ Settings > USB drive, at about 0.8 MB/s writing and 0.9 MB/s reading
 (the ESP32-S3 has USB full speed only, whose practical ceiling is
 ~1.2 MB/s). That is roughly 2 minutes per album, or 9 hours for 26 GB.
 
+### Films
+
+**Video is a toy, and will stay one.** It came out of "can this board
+show a film at all?", and the answer is: just about. The ESP32-S3 has no
+video decoder, so every picture is a JPEG decoded in software, the
+picture is 320 px wide on a 1.8" round screen, and while a film plays both
+cores are close to full. It will never become a serious video player on
+this hardware. It is fun, though.
+
+The Video entry on the home screen is off at first: switch it on in
+Settings > Main menu. It lists the films in `/Videos`. Every film is a
+pair of files with the same name, which the board can play: a
+Motion-JPEG picture (`.avi`) and an AAC sound (`.m4a`).
+`scripts/convert-video.sh` makes the pair from anything ffmpeg reads
+(MKV, MP4, MOV, AVI, WebM, a DVD rip, a phone video). It needs ffmpeg
+(`brew install ffmpeg`):
+
+```bash
+scripts/convert-video.sh "Film.mkv" --title "Film (1985)" --out out/
+```
+
+- The sound is the first German track (`--lang ger`), or else the first
+  track there is. `--lang eng` picks another language, and `--audio 1`
+  picks a track by number.
+- Interlaced pictures are deinterlaced, and non-square pixels are made
+  square. The picture is fitted into 320×240, portrait videos too.
+- A two-hour film takes about 1 GB. The picture must stay under 1 GB, so
+  the script lowers the JPEG quality for longer films until it fits.
+
+Copy both files into `/Videos`. The list shows each film once.
+
+- **Tap:** pause and continue.
+- **Knob:** volume.
+- **Swipe right:** leave. The film continues where you left it the next
+  time.
+
 ## Planned next
 
 - Less delay on Bluetooth headphones in games (~300 ms today; ADR 0027's
   open points)
 - Wi-Fi: internet radio, and podcasts downloaded to the SD card
+- Haptic feedback on button taps: the board's DRV2605 motor driver on the
+  shared I2C bus (device.md), unused so far
 
 ## Explicitly out of scope for now
 
@@ -411,6 +451,7 @@ Each collection is its own top-level folder, laid out
 /Music/…         Music
 /Audiobooks/…    Audiobooks
 /RadioPlays/…    Radio Plays
+/Videos/         films, converted first (see below)
 /drehklang/        indexes and cached covers (written by the device)
 ```
 

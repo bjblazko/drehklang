@@ -13,19 +13,34 @@ namespace drehklang::navigation {
 // hidden, and never ending up with an empty menu -- host-testable.
 class MenuVisibility {
  public:
-  static constexpr uint8_t kDefaultMask = 0xFF;  // Everything shown.
-  static constexpr int kMaxEntries = 8;          // One mask byte.
+  static constexpr int kMaxEntries = 8;  // One mask byte.
+  // Bumped when an entry hidden by default is added (Video, 2026-10-13).
+  static constexpr uint8_t kMaskVersion = 1;
 
   // `pinnedMask` marks entries the user may not hide: Settings, which is
   // the only way back to the screen that does the hiding.
-  MenuVisibility(int entryCount, uint8_t pinnedMask)
+  // `hiddenByDefault` marks entries that start hidden: Video, which needs
+  // specially converted files (ADR 0031).
+  MenuVisibility(int entryCount, uint8_t pinnedMask, uint8_t hiddenByDefault = 0)
       : entryCount_(entryCount < 0 ? 0
                     : entryCount > kMaxEntries ? kMaxEntries
                                                : entryCount),
-        pinnedMask_(pinnedMask) {}
+        pinnedMask_(pinnedMask),
+        hiddenByDefault_(hiddenByDefault),
+        mask_(defaultMask()) {}
+
+  // Everything shown but the entries hidden by default.
+  uint8_t defaultMask() const { return static_cast<uint8_t>(0xFF & ~hiddenByDefault_); }
 
   uint8_t mask() const { return mask_; }
   void setMask(uint8_t mask) { mask_ = mask; }
+
+  // A mask stored at `storedVersion`. Masks from before version 1 have
+  // every unused bit set (the old default was 0xFF), which would show an
+  // entry added since as if the user had chosen it.
+  void loadStored(uint8_t stored, uint8_t storedVersion) {
+    mask_ = storedVersion < 1 ? static_cast<uint8_t>(stored & ~hiddenByDefault_) : stored;
+  }
 
   bool pinned(int entryIndex) const {
     return inRange(entryIndex) && (pinnedMask_ & bitFor(entryIndex)) != 0;
@@ -72,7 +87,8 @@ class MenuVisibility {
 
   int entryCount_;
   uint8_t pinnedMask_;
-  uint8_t mask_ = kDefaultMask;
+  uint8_t hiddenByDefault_;
+  uint8_t mask_;
 };
 
 }  // namespace drehklang::navigation

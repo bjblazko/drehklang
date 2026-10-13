@@ -59,6 +59,10 @@ class InputRouter {
 
   void onEncoderDelta(int16_t delta, uint32_t nowMs) {
     switch (tabs_.activeStack().current().kind) {
+      case navigation::ScreenKind::VideoPlayer:
+        // A film's sound shares the music's volume (ADR 0031).
+        playback_.adjustVolume(delta, nowMs);
+        break;
       case navigation::ScreenKind::NowPlaying:
         // Holding the time pill turns the knob into a shuttle (ADR 0013);
         // the volume never changes during a hold.

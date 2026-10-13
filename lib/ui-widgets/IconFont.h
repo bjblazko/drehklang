@@ -47,6 +47,9 @@ LV_FONT_DECLARE(drehklang_icon_font_48);
 // The tone generator ("airwave"), ADR 0024: one wave line, which says
 // "a tone" where the equalizer bars would say "spectrum".
 #define DREHKLANG_ICON_TONES "\xEF\x85\x94"           // U+F154
+// The Video tile ("movie"): a clapperboard, which no audio tile could be
+// mistaken for.
+#define DREHKLANG_ICON_MOVIE "\xEE\x90\x84"           // U+E404
 // Settings > Screen rotation's screen ("screen_rotation"), like light_mode on
 // Brightness's.
 #define DREHKLANG_ICON_SCREEN_ROTATION "\xEE\x87\x81"  // U+E1C1

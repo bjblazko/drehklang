@@ -73,6 +73,11 @@ enum class ScreenKind {
   // Games > Circuit (ADR 0030). Appended like everything above; past
   // NowPlaying, so a resume never lands mid-race.
   Circuit,
+  // Video (ADR 0031): the films in /Videos, and one playing. Appended like
+  // everything above; past NowPlaying, so a resume never lands in a film.
+  // VideoPlayer's film is ScreenParams::folderPath (its title).
+  Videos,
+  VideoPlayer,
 };
 
 // Parameters a screen needs to render itself. Only the fields relevant

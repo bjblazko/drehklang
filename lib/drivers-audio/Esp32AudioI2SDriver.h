@@ -63,6 +63,16 @@ class Esp32AudioI2SDriver : public playback::PlaybackDriver, public playback::Da
   // playback::DacOwner -- the tone output wants the DAC.
   void releaseDac() override;
 
+  // A film's sound (ADR 0031) borrows the decoder: the music's track is
+  // set aside, with its position and timing, and comes back parked, so
+  // the player's resume reopens it where it was. Meanwhile filePosition()
+  // still answers for the music, so its resume record is not overwritten
+  // with the film's.
+  bool playVideoSound(const std::string &path, uint32_t position);
+  void endVideoSound();
+  // Where the film's sound is heard, for its own resume record.
+  uint32_t videoSoundPosition();
+
  private:
   // What the decoder's own estimates get wrong, read from the file itself.
   struct TrackTiming {
@@ -101,6 +111,11 @@ class Esp32AudioI2SDriver : public playback::PlaybackDriver, public playback::Da
   // -1 when none.
   int64_t pendingSeek_ = -1;
   uint8_t volume_ = 0;
+  // The music's track while a film borrows the decoder.
+  bool lent_ = false;
+  std::string lentPath_;
+  uint32_t lentPosition_ = 0;
+  TrackTiming lentTiming_;
   // Published by the loop task for the spectrum, which reads it lock-free.
   std::atomic<uint32_t> sampleRate_{44100};
 };

@@ -102,6 +102,31 @@ void test_a_stored_mask_round_trips() {
   TEST_ASSERT_EQUAL(menu.visibleCount(), restored.visibleCount());
 }
 
+void test_an_entry_hidden_by_default_starts_hidden() {
+  MenuVisibility menu(kEntries, kSettingsPinned, 1u << 5);
+  TEST_ASSERT_FALSE(menu.visible(5));
+  TEST_ASSERT_TRUE(menu.visible(4));
+  TEST_ASSERT_EQUAL(static_cast<int>(ToggleResult::Toggled),
+                    static_cast<int>(menu.toggle(5)));
+  TEST_ASSERT_TRUE(menu.visible(5));
+}
+
+// A mask saved before Video existed has its bit set (the old default was
+// 0xFF); loading it must not show Video as if the user had chosen it.
+void test_a_mask_from_before_version_1_keeps_new_entries_hidden() {
+  MenuVisibility menu(kEntries, kSettingsPinned, 1u << 5);
+  menu.loadStored(0xFF & ~(1u << 2), 0);
+  TEST_ASSERT_FALSE(menu.visible(5));
+  TEST_ASSERT_FALSE(menu.visible(2));
+  TEST_ASSERT_TRUE(menu.visible(1));
+}
+
+void test_a_version_1_mask_is_taken_as_stored() {
+  MenuVisibility menu(kEntries, kSettingsPinned, 1u << 5);
+  menu.loadStored(0xFF, MenuVisibility::kMaskVersion);
+  TEST_ASSERT_TRUE(menu.visible(5));
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_everything_shows_before_the_user_changes_anything);
@@ -112,5 +137,8 @@ int main(int, char **) {
   RUN_TEST(test_a_hidden_entry_can_always_be_shown_again);
   RUN_TEST(test_entries_outside_the_table_are_inert);
   RUN_TEST(test_a_stored_mask_round_trips);
+  RUN_TEST(test_an_entry_hidden_by_default_starts_hidden);
+  RUN_TEST(test_a_mask_from_before_version_1_keeps_new_entries_hidden);
+  RUN_TEST(test_a_version_1_mask_is_taken_as_stored);
   return UNITY_END();
 }

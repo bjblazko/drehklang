@@ -199,6 +199,39 @@ bool Esp32AudioI2SDriver::isRunning() {
 
 uint32_t Esp32AudioI2SDriver::filePosition() {
   Lock lock(mutex_);
+  return lent_ ? lentPosition_ : heardPosition();
+}
+
+bool Esp32AudioI2SDriver::playVideoSound(const std::string &path, uint32_t position) {
+  dac_.claim(*this);
+  const TrackTiming timing = readTrackTiming(path);
+  Lock lock(mutex_);
+  if (!lent_) {
+    lentPath_ = path_;
+    lentPosition_ = parked_ ? parkedPosition_ : (path_.empty() ? 0 : heardPosition());
+    lentTiming_ = timing_;
+    lent_ = true;
+  }
+  timing_ = timing;
+  return openTrack(path, position);
+}
+
+void Esp32AudioI2SDriver::endVideoSound() {
+  Lock lock(mutex_);
+  if (!lent_) return;
+  if (audio_) audio_->stopSong();
+  pendingSeek_ = -1;
+  setHoldOutput(false);
+  paused_ = false;
+  path_ = lentPath_;
+  parkedPosition_ = lentPosition_;
+  parked_ = !path_.empty();
+  timing_ = lentTiming_;
+  lent_ = false;
+}
+
+uint32_t Esp32AudioI2SDriver::videoSoundPosition() {
+  Lock lock(mutex_);
   return heardPosition();
 }
 

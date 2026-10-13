@@ -39,3 +39,4 @@ supersedes the old one (and the old one is marked "Superseded by NNNN").
 | [0028](0028-now-playing-slot-pages.md) | Now Playing's cover slot as swiped pages | Accepted (amends 0009, 0014, 0024) |
 | [0029](0029-equalizer.md) | A seven-band equalizer | Accepted |
 | [0030](0030-circuit.md) | Circuit, a pseudo-3D racer with its own renderer | Accepted (extends 0022) |
+| [0031](0031-video.md) | Video, as a Motion-JPEG picture and an AAC sound | Accepted (uses 0030) |
