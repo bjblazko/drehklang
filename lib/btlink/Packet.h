@@ -35,6 +35,9 @@ enum class PacketType : uint8_t {
   ScanResult = 0x42,
   Button = 0x43,
   Stats = 0x44,
+  // One line of the U4WDH's own log, plain text, for the S3's Bluetooth
+  // log on the SD card (2026-10-13). An S3 that predates it ignores it.
+  Log = 0x45,
 };
 
 struct Packet {

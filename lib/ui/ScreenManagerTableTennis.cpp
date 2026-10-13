@@ -144,11 +144,13 @@ void ScreenManager::onTableTennisKnob(int16_t delta) {
 // is right: a ball that clips the wall and the paddle in the same 33 ms
 // made one sound on the original too.
 void ScreenManager::drainTableTennisSounds() {
-  if (!blips_) return;
   for (TableTennisGame::Sound sound = tableTennis_.takeSound();
        sound != TableTennisGame::Sound::None; sound = tableTennis_.takeSound()) {
     const games::Blip blip = games::blipFor(sound);
-    if (blip.frequencyHz != 0) blips_->blip(blip.frequencyHz, blip.durationMs);
+    if (blips_ && blip.frequencyHz != 0) blips_->blip(blip.frequencyHz, blip.durationMs);
+    // The paddle and the point are felt; the walls, every few frames, not.
+    if (sound == TableTennisGame::Sound::Paddle) feelGame(haptics::Feel::Hit);
+    if (sound == TableTennisGame::Sound::Score) feelGame(haptics::Feel::Crash);
   }
 }
 

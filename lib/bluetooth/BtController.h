@@ -112,6 +112,10 @@ class BtController {
         break;
       case btlink::PacketType::Stats:
         btlink::decodeStats(packet, stats_);
+        noteStats();
+        break;
+      case btlink::PacketType::Log:
+        note(std::string(reinterpret_cast<const char *>(packet.payload.data()), packet.length));
         break;
       default:
         break;
@@ -120,6 +124,16 @@ class BtController {
 
   BtState state() const { return state_; }
   bool enabled() const { return enabled_; }
+
+  // What happened on the link since the last call, for the Bluetooth log
+  // on the SD card: the U4WDH's own lines, state changes, and new
+  // underruns or losses. At most kMaxLogLines are kept between calls.
+  std::vector<std::string> takeLog() {
+    std::vector<std::string> lines;
+    lines.swap(log_);
+    return lines;
+  }
+  static constexpr size_t kMaxLogLines = 64;
 
   void setEnabled(bool on) {
     if (on == enabled_) return;
@@ -272,8 +286,39 @@ class BtController {
     }
   }
 
+  static const char *nameOf(BtState state) {
+    switch (state) {
+      case BtState::Starting: return "starting";
+      case BtState::FirmwareMissing: return "firmware missing";
+      case BtState::FirmwareOutdated: return "firmware outdated";
+      case BtState::NotAnswering: return "not answering";
+      case BtState::Off: return "off";
+      case BtState::Idle: return "idle";
+      case BtState::Connecting: return "connecting";
+      case BtState::Connected: return "connected";
+    }
+    return "?";
+  }
+
+  void note(std::string line) {
+    if (log_.size() >= kMaxLogLines) log_.erase(log_.begin());
+    log_.push_back(std::move(line));
+  }
+
+  // Only what changed: the counters arrive every 5 s.
+  void noteStats() {
+    if (stats_.underruns == loggedStats_.underruns && stats_.lostPackets == loggedStats_.lostPackets &&
+        stats_.crcErrors == loggedStats_.crcErrors) {
+      return;
+    }
+    note("stats underruns " + std::to_string(stats_.underruns) + " lost " +
+         std::to_string(stats_.lostPackets) + " crc " + std::to_string(stats_.crcErrors));
+    loggedStats_ = stats_;
+  }
+
   void setState(BtState next) {
     if (next == state_) return;
+    note(std::string("state ") + nameOf(state_) + " -> " + nameOf(next));
     if (state_ == BtState::Connected) events_.push_back(BtEvent::Disconnected);
     if (next == BtState::Connected) {
       events_.push_back(BtEvent::Connected);
@@ -293,6 +338,8 @@ class BtController {
   playback::KeyValueStore &store_;
   BtState state_ = BtState::Starting;
   bool enabled_ = false;
+  std::vector<std::string> log_;
+  btlink::StatsMessage loggedStats_{};
   bool answered_ = false;
   bool scanning_ = false;
   bool scanConfirmed_ = true;

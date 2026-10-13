@@ -160,6 +160,8 @@ void ScreenManager::drainCircuitSounds(uint32_t nowMs) {
       circuitBonusSeen_ = true;
     }
     if (blips_) blips_->chipEffect(games::circuit_sound::effectFor(sound));
+    if (sound == CircuitGame::Sound::Bump) feelGame(haptics::Feel::Hit);
+    if (sound == CircuitGame::Sound::Crash) feelGame(haptics::Feel::Crash);
   }
   if (!blips_) return;
   const games::circuit_sound::Held held = games::circuit_sound::heldFor(circuit_);

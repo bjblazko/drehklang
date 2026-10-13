@@ -5,6 +5,7 @@
 #include <freertos/semphr.h>
 
 #include <JPEGDEC.h>
+#include <lvgl.h>
 
 #include <cstdint>
 #include <memory>
@@ -36,25 +37,37 @@ class VideoPresenter {
 
   VideoPresenter(LvglGlue &glue, drivers::Esp32AudioI2SDriver &audio) : glue_(glue), audio_(audio) {}
 
-  // Opens the film and shows the picture at `resume`; the sound starts on
-  // the first togglePause() -- or at once with `play`.
-  bool open(const std::string &title, const video::VideoResume &resume, bool play);
+  // Opens the film at `from`. With `play` it takes the panel and plays;
+  // without, it waits Cued, its picture in still() for LVGL to show.
+  bool open(const std::string &title, const video::VideoResume &from, bool play);
   void close();
   State state() const { return state_; }
   bool isOpen() const { return state_ != State::Closed; }
 
-  // Cued -> playing -> paused -> playing.
-  void togglePause();
+  // Playing -> Paused: the sound stops, the picture shown becomes still()
+  // and the panel goes back to LVGL, which draws the controls over it.
+  void pause();
+  // Cued or Paused -> Playing: the panel is the film's again.
+  void resume();
+  // Plays on from `seconds` into the film (clamped to it).
+  void jumpTo(uint32_t seconds);
   // Shows the picture that is due. False once the film has ended.
   bool tick();
   // Where to resume: the sound heard and the picture shown with it.
   video::VideoResume position();
+  uint32_t seconds() const { return shownFrame_ / kFramesPerSecond; }
+  uint32_t durationSeconds() const { return avi_.frameCount() / kFramesPerSecond; }
+  // The picture the film stands at while Cued or Paused, for an lv_img.
+  const lv_img_dsc_t *still() const { return stillPixels_ ? &still_ : nullptr; }
 
  private:
   static constexpr int kStripes = 2;
   static constexpr int kStripeWidth = 320;
   static constexpr int kStripeRows = 16;
   static constexpr size_t kMaxFrameBytes = 64 * 1024;
+  static constexpr uint32_t kFramesPerSecond = 25;
+  static constexpr int kStillMaxWidth = 320;
+  static constexpr int kStillMaxHeight = 240;
 
   struct Stripe {
     uint16_t *pixels = nullptr;
@@ -70,8 +83,11 @@ class VideoPresenter {
   void decodeBuffered();
   void waitForStripes();
   void clearPanel();
-  void drawPauseMark(bool shown);
+  void takePanel();
+  void captureStill();
+  void restartSoundAt(uint32_t frame);
   static int queueStrip(JPEGDRAW *block);
+  static int copyToStill(JPEGDRAW *block);
   static void pushTask(void *self);
 
   LvglGlue &glue_;
@@ -89,10 +105,15 @@ class VideoPresenter {
   QueueHandle_t freeStripes_ = nullptr;
   QueueHandle_t filledStripes_ = nullptr;
   int x0_ = 0, y0_ = 0, height_ = 0;
+  // With headphones the loop pushes the stripes itself (core 1), and core 0
+  // is left to the sound and the link to the second chip.
+  bool pushOnLoop_ = false;
 
   video::VideoResume start_;  // Where the sound started.
   uint32_t shownFrame_ = 0;
   bool soundStarted_ = false;
+  uint16_t *stillPixels_ = nullptr;
+  lv_img_dsc_t still_{};
 };
 
 }  // namespace drehklang::ui

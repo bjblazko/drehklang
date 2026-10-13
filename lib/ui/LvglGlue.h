@@ -3,6 +3,7 @@
 #include <lvgl.h>
 
 #include "GestureRecognizer.h"
+#include "HapticFeedback.h"
 #include "St77916Driver.h"
 #include "TouchLatch.h"
 
@@ -46,6 +47,8 @@ class LvglGlue {
   // dropped and the game pushes its own stripes with pushStripe(). Giving
   // the panel back invalidates the screen so LVGL repaints all of it.
   void setPanelOwnedByGame(bool owned);
+  // Optional: every click is then felt.
+  void setHaptics(haptics::HapticFeedback &haptics) { haptics_ = &haptics; }
   bool panelOwnedByGame() const { return panelOwnedByGame_; }
   // Blocks until the QSPI transfer is done. `mirror` also copies it into
   // the screenshot buffer, which costs a PSRAM write per pixel -- a game
@@ -56,6 +59,7 @@ class LvglGlue {
   static void flushCb(lv_disp_drv_t *drv, const lv_area_t *area,
                        lv_color_t *colorMap);
   static void touchReadCb(lv_indev_drv_t *drv, lv_indev_data_t *data);
+  static void feedbackCb(lv_indev_drv_t *drv, uint8_t code);
 
   lv_disp_draw_buf_t drawBuf_{};
   lv_disp_drv_t dispDrv_{};
@@ -68,6 +72,7 @@ class LvglGlue {
   lv_coord_t lastPressedX_ = 0;
   lv_coord_t lastPressedY_ = 0;
   Arduino_TFT *gfx_ = nullptr;
+  haptics::HapticFeedback *haptics_ = nullptr;
   // PSRAM-backed (8MB available per device.md; too big to justify from
   // the tight 320KB internal SRAM budget for a diagnostic feature).
   uint16_t *shadowFrame_ = nullptr;

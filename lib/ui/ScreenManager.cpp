@@ -145,8 +145,11 @@ void ScreenManager::render() {
   tableTennisHint_ = nullptr;
   // Circuit gives the panel back to LVGL and stops its engine.
   if (circuitBrake_) leaveCircuit();
-  // A film gives the panel back and keeps its place (ADR 0031).
-  if (videoSurface_) leaveVideo();
+  // A film gives the panel back and keeps its place (ADR 0031); a render of
+  // the player itself (pausing, playing on) keeps it open.
+  if (videoSurface_ && tabs_.activeStack().current().kind != ScreenKind::VideoPlayer) {
+    leaveVideo();
+  }
   // Same for Gravity: an engine must not keep running into the next screen.
   if (gravityWidgets_.craft && blips_) blips_->silence();
   gravityWidgets_ = GravityWidgets{};
@@ -1681,6 +1684,9 @@ void ScreenManager::onGameKnob(int16_t delta) {
       break;
     case ScreenKind::Circuit:
       onCircuitKnob(delta);
+      break;
+    case ScreenKind::VideoPlayer:
+      onVideoKnob(delta);
       break;
     default:
       break;

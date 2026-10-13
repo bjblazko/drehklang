@@ -290,6 +290,18 @@ const ScreenManager::SettingsRow
          [](const ScreenManager &self) {
            return std::to_string(self.brightness_.percent()) + "%";
          }},
+        {"Haptic feedback",
+         [](ScreenManager &self) {
+           if (!self.haptics_) return;
+           // Felt at once when switched on: the tap's own tick comes after
+           // this handler (HapticFeedback).
+           self.haptics_->setEnabled(!self.haptics_->enabled());
+           self.render();
+         },
+         [](const ScreenManager &self) {
+           if (!self.haptics_) return std::string();
+           return std::string(self.haptics_->enabled() ? "On" : "Off");
+         }},
         {"Screen rotation",
          [](ScreenManager &self) {
            self.tabs_.activeStack().push(Screen{ScreenKind::Rotation, {}});
@@ -341,6 +353,11 @@ bool ScreenManager::menuEntryVisible(int entryIndex) const {
   return menuVisibility_.visible(entryIndex);
 }
 
+void ScreenManager::refuse(const char *text, ui_widgets::MessageAnchor anchor) {
+  messages_.show(text, anchor, millis());
+  if (haptics_) haptics_->feel(haptics::Feel::Refusal, millis());
+}
+
 // A mask stored before Video existed is corrected once and written back
 // with the current version (MenuVisibility::loadStored()).
 void ScreenManager::loadMenuVisibility() {
@@ -364,10 +381,10 @@ void ScreenManager::toggleMenuEntryVisible(int entryIndex) {
     case navigation::MenuVisibility::ToggleResult::Pinned:
       // Hiding Settings would hide this very screen. Say so rather than
       // letting the row look broken (Rams #4).
-      messages_.show("Settings always shows", kAnchor, millis());
+      refuse("Settings always shows", kAnchor);
       return;
     case navigation::MenuVisibility::ToggleResult::WouldEmptyMenu:
-      messages_.show("Keep at least one", kAnchor, millis());
+      refuse("Keep at least one", kAnchor);
       return;
     case navigation::MenuVisibility::ToggleResult::Toggled:
       break;
@@ -1018,7 +1035,7 @@ void ScreenManager::startUsbDrive() {
   constexpr ui_widgets::MessageAnchor kAnchor{drivers::kLcdHorRes / 2,
                                               drivers::kLcdVerRes / 2};
   if (!usbDrive_.start(millis())) {
-    messages_.show("No SD card", kAnchor, millis());
+    refuse("No SD card", kAnchor);
     return;
   }
   tabs_.activeStack().push(Screen{ScreenKind::UsbDrive, {}});

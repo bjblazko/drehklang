@@ -40,6 +40,9 @@
 #include "LockOverlay.h"
 #include "CircuitPresenter.h"
 #include "VideoPresenter.h"
+#include "BtLogFile.h"
+#include "Drv2605Driver.h"
+#include "HapticFeedback.h"
 #include "LvglGlue.h"
 #include "BookmarkKeeper.h"
 #include "Bookmarks.h"
@@ -272,6 +275,9 @@ drehklang::ui::LvglGlue g_lvglGlue;
 // Circuit draws the panel itself (ADR 0030); it allocates only while open.
 drehklang::ui::CircuitPresenter g_circuitPresenter(g_lvglGlue);
 drehklang::ui::VideoPresenter g_videoPresenter(g_lvglGlue, g_audioDriver);
+drehklang::drivers::Drv2605Driver g_hapticMotor;
+drehklang::haptics::HapticFeedback g_haptics(g_nvsStore);
+drehklang::drivers::BtLogFile g_btLog;
 drehklang::power::IdleTimer g_idleTimer;
 drehklang::power::LockController g_lockController;
 drehklang::ui_widgets::MessageArea g_messageArea;
@@ -386,6 +392,11 @@ void setup() {
                       kBtRingSamples, sizeof(int16_t), MALLOC_CAP_SPIRAM)),
                   kBtRingSamples);
   drehklang::drivers::setBluetoothTap(&g_btTap);
+  // A boot number for the Bluetooth log's lines: there is no clock.
+  uint32_t boot = 0;
+  g_nvsStore.getU32("bootNo", boot);
+  g_nvsStore.setU32("bootNo", ++boot);
+  g_btLog.setBoot(boot);
   g_btLink.begin();
   g_btController.begin(millis());
   // Must run after g_audioDriver.begin() (needs a real driver to push the
@@ -409,6 +420,10 @@ void setup() {
   if (!g_touch.begin()) {
     Serial.println("Touch init FAILED -- check wiring/pinout in device.md");
   }
+  // On the touch controller's I2C bus, so after it.
+  g_haptics.begin();
+  if (g_hapticMotor.begin()) g_haptics.attach(g_hapticMotor);
+  g_lvglGlue.setHaptics(g_haptics);
 
   // Display comes up FIRST, before the SD card is even touched, and
   // shows a boot/progress screen immediately -- this board has no LEDs,
@@ -499,6 +514,7 @@ void setup() {
     g_screenManager.setBlipPlayer(g_toneOutput);
     g_screenManager.setCircuitPresenter(g_circuitPresenter);
     g_screenManager.setVideoPresenter(g_videoPresenter);
+    g_screenManager.setHaptics(g_haptics);
     g_screenManager.setToneSession(g_toneSession);
     g_screenManager.setBluetooth(g_btController);
     g_screenManager.setScopeSource(g_toneOutput);
@@ -618,6 +634,10 @@ void pollSerialCommands() {
           g_idleTimer.noteActivity(millis());
           g_screenManager.goHome();
           Serial.println("[where] 0");
+        } else if (strcmp(buf, "BTLOG") == 0 &&
+                   !drehklang::drivers::UsbMscStorage::exporting()) {
+          // The newest part of the Bluetooth log on the SD card.
+          g_btLog.printTail(8192);
         } else if (strcmp(buf, "TASKS") == 0 &&
                    !drehklang::drivers::UsbMscStorage::exporting()) {
           // Each task's share of its core over 2 s.
@@ -913,6 +933,12 @@ void loop() {
   if (g_lockController.isLocked()) g_messageArea.dismissScreenMessage();
   g_messageArea.tick(now);
   g_batteryIndicator.setLocked(g_lockController.isLocked());
+  // Locking and unlocking are felt, whichever way they happened.
+  static bool wasLocked = g_lockController.isLocked();
+  if (g_lockController.isLocked() != wasLocked) {
+    wasLocked = g_lockController.isLocked();
+    g_haptics.feel(drehklang::haptics::Feel::Lock, now);
+  }
 
   if (now - g_lastBatteryUpdateMs >= kBatteryUpdateIntervalMs) {
     g_lastBatteryUpdateMs = now;
@@ -927,6 +953,9 @@ void loop() {
   static drehklang::btlink::Packet btPacket;
   while (g_btLink.receive(btPacket)) g_btController.onPacket(btPacket, now);
   g_btController.tick(now);
+  // To the SD card's Bluetooth log -- not while the card is the computer's
+  // (the lines wait in the controller meanwhile, the newest 64 kept).
+  if (!drehklang::drivers::UsbMscStorage::exporting()) g_btLog.append(g_btController.takeLog(), now);
   g_btTap.setForwarding(g_btController.forwardAudio());
   g_screenManager.tickBluetooth(now);
   g_batteryIndicator.setBluetoothConnected(g_btController.forwardAudio());

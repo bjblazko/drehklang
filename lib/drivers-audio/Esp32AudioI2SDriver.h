@@ -72,6 +72,9 @@ class Esp32AudioI2SDriver : public playback::PlaybackDriver, public playback::Da
   void endVideoSound();
   // Where the film's sound is heard, for its own resume record.
   uint32_t videoSoundPosition();
+  // The byte of `path` (an M4A) that `seconds` into it maps to, from its
+  // own audio data range and duration; 0 for the start or when unknown.
+  static uint32_t soundOffsetAt(const std::string &path, uint32_t seconds);
 
  private:
   // What the decoder's own estimates get wrong, read from the file itself.

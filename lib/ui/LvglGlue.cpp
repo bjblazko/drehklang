@@ -48,23 +48,7 @@ bool LvglGlue::begin(drivers::St77916Driver &display) {
   indevDrv_.disp = disp;
   indevDrv_.read_cb = &LvglGlue::touchReadCb;
   indevDrv_.user_data = this;
-#ifdef DREHKLANG_TOUCH_DEBUG
-  indevDrv_.feedback_cb = [](lv_indev_drv_t *, uint8_t code) {
-    const char *name = nullptr;
-    switch (code) {
-      case LV_EVENT_PRESSED: name = "PRESSED"; break;
-      case LV_EVENT_CLICKED: name = "CLICKED"; break;
-      case LV_EVENT_PRESS_LOST: name = "PRESS_LOST"; break;
-      case LV_EVENT_SCROLL_BEGIN: name = "SCROLL_BEGIN"; break;
-      default: return;
-    }
-    lv_obj_t *obj = lv_indev_get_obj_act();
-    lv_area_t a{};
-    if (obj) lv_obj_get_coords(obj, &a);
-    Serial.printf("[lv] t=%lu %s obj=(%d,%d)-(%d,%d)\n", millis(), name,
-                  a.x1, a.y1, a.x2, a.y2);
-  };
-#endif
+  indevDrv_.feedback_cb = &LvglGlue::feedbackCb;
   lv_indev_drv_register(&indevDrv_);
 
   // Braun palette on a light theme -- see Theme.cpp and
@@ -122,6 +106,31 @@ void LvglGlue::setPanelOwnedByGame(bool owned) {
   if (owned == panelOwnedByGame_) return;
   panelOwnedByGame_ = owned;
   if (!owned) lv_obj_invalidate(lv_scr_act());
+}
+
+// Every click LVGL delivers is felt (haptics::Feel::Tap); it calls this
+// after the click's handler, which HapticFeedback allows for.
+void LvglGlue::feedbackCb(lv_indev_drv_t *drv, uint8_t code) {
+#ifdef DREHKLANG_TOUCH_DEBUG
+  const char *name = nullptr;
+  switch (code) {
+    case LV_EVENT_PRESSED: name = "PRESSED"; break;
+    case LV_EVENT_CLICKED: name = "CLICKED"; break;
+    case LV_EVENT_PRESS_LOST: name = "PRESS_LOST"; break;
+    case LV_EVENT_SCROLL_BEGIN: name = "SCROLL_BEGIN"; break;
+    default: break;
+  }
+  if (name) {
+    lv_obj_t *obj = lv_indev_get_obj_act();
+    lv_area_t a{};
+    if (obj) lv_obj_get_coords(obj, &a);
+    Serial.printf("[lv] t=%lu %s obj=(%d,%d)-(%d,%d)\n", millis(), name, a.x1, a.y1, a.x2, a.y2);
+  }
+#endif
+  auto *self = static_cast<LvglGlue *>(drv->user_data);
+  if (code == LV_EVENT_CLICKED && self && self->haptics_) {
+    self->haptics_->feel(haptics::Feel::Tap, millis());
+  }
 }
 
 void LvglGlue::pushStripe(int x0, int y0, int width, int rows, const uint16_t *pixels,

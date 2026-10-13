@@ -21,6 +21,7 @@
 #include "InputRouter.h"
 #include "Bookmarks.h"
 #include "CollectionSet.h"
+#include "HapticFeedback.h"
 #include "MenuVisibility.h"
 #include "VideoResume.h"
 #include "LetterJump.h"
@@ -215,6 +216,8 @@ class ScreenManager : public input::KnobSink {
   // Video (ADR 0031): the presenter that plays a film. tickVideo() is true
   // while one plays, which keeps the display awake like a race.
   void setVideoPresenter(VideoPresenter &presenter) { videoPresenter_ = &presenter; }
+  // Optional: Settings > Haptic feedback, and refusals are felt.
+  void setHaptics(haptics::HapticFeedback &haptics) { haptics_ = &haptics; }
   bool tickVideo(uint32_t nowMs, bool visible);
 
   // The tone generator (ADR 0024). Optional like the blips: without a
@@ -320,6 +323,13 @@ class ScreenManager : public input::KnobSink {
   void leaveCircuit();
   // ScreenManagerVideo.cpp.
   void renderVideoPlayer();
+  void renderFilmControls();
+  void renderFilmError();
+  void showFilmTime(uint32_t seconds);
+  void onVideoKnob(int16_t delta);
+  static void onFilmPlayClicked(lv_event_t *e);
+  static void onFilmPillPressed(lv_event_t *e);
+  static void onFilmPillReleased(lv_event_t *e);
   void openFilm(const std::string &title);
   void leaveVideo();
   void saveFilmPosition(const video::VideoResume &resume);
@@ -394,6 +404,12 @@ class ScreenManager : public input::KnobSink {
   void toggleMenuEntryVisible(int entryIndex);
   bool menuEntryVisible(int entryIndex) const;
   const char *menuVisibilityValue(int entryIndex) const;
+  // A message for something a tap could not do, felt as a refusal.
+  void refuse(const char *text, ui_widgets::MessageAnchor anchor);
+  // A game event felt in the hand (Feel::Hit, Feel::Crash).
+  void feelGame(haptics::Feel feel) {
+    if (haptics_) haptics_->feel(feel, millis());
+  }
   void loadMenuVisibility();
   void saveMenuVisibility();
   // Built from the menu table, which lives in ScreenManagerMenu.cpp.
@@ -411,7 +427,7 @@ class ScreenManager : public input::KnobSink {
     void (*open)(ScreenManager &self);
     std::string (*value)(const ScreenManager &self) = nullptr;
   };
-  static constexpr int kSettingsRowCount = 9;
+  static constexpr int kSettingsRowCount = 10;
   static const SettingsRow kSettingsRows[kSettingsRowCount];
   // Music's browse axes (ADR 0021): which shelf the Library tab is
   // rooted on, remembered across reboots.
@@ -724,8 +740,12 @@ class ScreenManager : public input::KnobSink {
   CircuitPresenter *circuitPresenter_ = nullptr;
   // Video (ADR 0031). Titles as listed, so a row's index names its film.
   VideoPresenter *videoPresenter_ = nullptr;
+  haptics::HapticFeedback *haptics_ = nullptr;
   std::vector<std::string> videoTitles_;
   lv_obj_t *videoSurface_ = nullptr;
+  lv_obj_t *videoPill_ = nullptr;
+  bool videoSeeking_ = false;     // The pill is held: the knob jumps.
+  uint32_t videoSeekTarget_ = 0;  // Seconds into the film.
   std::string videoTitle_;
   lv_obj_t *circuitBrake_ = nullptr;
   games::CircuitGame circuit_;

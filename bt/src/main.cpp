@@ -4,6 +4,9 @@
 
 #include <Arduino.h>
 
+#include <cstdarg>
+#include <cstring>
+
 #include "BtSource.h"
 #include "HeadphoneStream.h"
 #include "LinkUart.h"
@@ -64,6 +67,21 @@ void sendState() {
               static_cast<uint16_t>(btlink::encodeState(m, payload)));
 }
 
+// A line for this chip's serial log and, as a LOG packet, for the S3's
+// Bluetooth log on the SD card (2026-10-13). The S3 drops control packets
+// over 64 bytes, so the line is cut there.
+void report(const char *format, ...) {
+  char line[64];
+  va_list args;
+  va_start(args, format);
+  const int length = vsnprintf(line, sizeof(line), format, args);
+  va_end(args);
+  if (length < 0) return;
+  Serial.printf("[bt] %s\n", line);
+  g_link.send(btlink::PacketType::Log, reinterpret_cast<const uint8_t *>(line),
+              static_cast<uint16_t>(strnlen(line, sizeof(line))));
+}
+
 void sendStats() {
   btlink::StatsMessage m{g_stream.underruns(), g_link.crcErrors(), g_link.lostPackets()};
   uint8_t payload[12];
@@ -80,7 +98,7 @@ void postponeConnect(uint32_t delayMs) {
 
 void connectToPeer(uint32_t nowMs) {
   g_nextConnectMs = nowMs + kReconnectIntervalMs;
-  Serial.printf("[bt] connecting to %s\n", g_peer.name().c_str());
+  report("connecting to %s", g_peer.name().c_str());
   g_source.connect(g_peer.address());
 }
 
@@ -119,8 +137,8 @@ void onControl(const btlink::Packet &packet, uint32_t nowMs) {
     case btlink::PacketType::ScanStart:
       if (g_enabled) {
         const bool started = g_source.startScan();
-        Serial.printf("[bt] scan %s (link %d)\n", started ? "started" : "refused",
-                      static_cast<int>(g_source.link()));
+        report("scan %s (link %d)", started ? "started" : "refused",
+               static_cast<int>(g_source.link()));
       }
       break;
     case btlink::PacketType::ScanStop:
@@ -156,16 +174,16 @@ void onSourceEvent(const bt::BtSourceEvent &event) {
     }
     case bt::BtSourceEvent::Kind::Connected:
       g_source.startMedia();
-      Serial.println("[bt] connected");
+      report("connected");
       sendState();
       break;
     case bt::BtSourceEvent::Kind::Disconnected:
-      Serial.println("[bt] disconnected");
+      report("disconnected");
       postponeConnect(kAfterDisconnectMs);
       sendState();
       break;
     case bt::BtSourceEvent::Kind::Log:
-      Serial.printf("[bt] %s\n", event.text);
+      report("%s", event.text);
       break;
   }
 }
@@ -179,8 +197,8 @@ void setup() {
   g_peer.begin();
   g_link.begin();
   g_source.begin();
-  Serial.printf("[bt] Drehklang BT firmware, protocol %u, peer %s\n",
-                btlink::kProtocolVersion, g_peer.has() ? g_peer.name().c_str() : "none");
+  report("started, protocol %u, peer %s", btlink::kProtocolVersion,
+         g_peer.has() ? g_peer.name().c_str() : "none");
 }
 
 void loop() {

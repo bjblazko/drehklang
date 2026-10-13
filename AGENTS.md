@@ -367,8 +367,16 @@ duplicating it.
   `scripts/convert-video.sh`). The sound is the clock (`outputFrames()`),
   and pictures decode on core 1 while a task pushes them from core 0 **at
   prio 3, above the audio library's decoder**. At prio 1 half the frames
-  were dropped. Core 0 then runs at ~93 %. The AVI must stay under 1 GB
-  (no OpenDML); the reader refuses anything else.
+  were dropped. Core 0 then runs at ~93 %, **so with Bluetooth headphones
+  connected the loop pushes instead, at 12.5 fps**: any push on core 0
+  starved the link and both outputs stuttered (`BT` shows `U4WDH
+  underruns` climbing). The AVI must stay under 1 GB (no OpenDML); the
+  reader refuses anything else.
+- **The vibration motor is an LRA** (DRV2605L at 0x5A on the touch I2C
+  bus). In the chip's factory ERM mode it stays silent while every write
+  succeeds. `Drv2605Driver` sets LRA open loop. LVGL's `feedback_cb`
+  reports a click *after* its handler, so `HapticFeedback` drops a tap
+  tick right after a refusal (2026-10-13).
 - **UI colors must be judged on the device, not a monitor or a
   screenshot's hex values.** The panel is RGB565 (subtle neutrals get
   rounded — `#F4F4F0` arrived as neutral `#F6F6F6`) and visibly shifts

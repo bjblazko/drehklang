@@ -78,6 +78,9 @@ screens.
 - Audio output via the onboard 3.5mm jack (PCM5100A DAC).
 - Control via the board's rotary encoder(s) + touch display.
 - Fully offline for v1.
+- Haptic feedback: a tick on every tap, a double click when something
+  can't be done, a soft bump on lock and unlock, and hits and crashes in
+  the games. Settings > Haptic feedback.
 - Video, as a toy: films converted on a computer play from `/Videos`
   (see [Films](#films)). Off by default.
 - Display power and device lock, tuned for two real usage contexts: on a
@@ -328,7 +331,11 @@ scripts/convert-video.sh "Film.mkv" --title "Film (1985)" --out out/
 
 Copy both files into `/Videos`. The list shows each film once.
 
-- **Tap:** pause and continue.
+- **Tap:** pause. The paused screen has Play and the time, like the
+  music player.
+- **Hold the time and turn the knob:** a minute per step. Turning back to
+  0:00:00 starts the film from the beginning. Let go and it plays from
+  there.
 - **Knob:** volume.
 - **Swipe right:** leave. The film continues where you left it the next
   time.
@@ -338,8 +345,10 @@ Copy both files into `/Videos`. The list shows each film once.
 - Less delay on Bluetooth headphones in games (~300 ms today; ADR 0027's
   open points)
 - Wi-Fi: internet radio, and podcasts downloaded to the SD card
-- Haptic feedback on button taps: the board's DRV2605 motor driver on the
-  shared I2C bus (device.md), unused so far
+- Maybe: films through Espressif's `esp_new_jpeg` (SIMD, already in the
+  Arduino core) instead of JPEGDEC, for a bigger and cleaner picture. The
+  factory firmware used it. It is binary-only, so the licence has to be
+  settled first (ADR 0031)
 
 ## Explicitly out of scope for now
 

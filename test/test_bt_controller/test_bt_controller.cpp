@@ -296,6 +296,44 @@ void test_enabling_is_stored_and_sent() {
   TEST_ASSERT_NOT_EQUAL(revision, f.controller.revision());
 }
 
+void test_the_log_has_state_changes_u4wdh_lines_and_new_losses() {
+  Fixture f;
+  f.answer();
+  f.controller.takeLog();
+  f.controller.onPacket(state(btlink::LinkState::Connected), 200);
+  Packet line;
+  line.type = PacketType::Log;
+  const std::string text = "acl disconnected: reason 0x13";
+  line.length = static_cast<uint16_t>(text.size());
+  std::copy(text.begin(), text.end(), line.payload.begin());
+  f.controller.onPacket(line, 300);
+  btlink::StatsMessage stats{4, 0, 1};
+  Packet counters;
+  counters.type = PacketType::Stats;
+  counters.length = static_cast<uint16_t>(btlink::encodeStats(stats, counters.payload.data()));
+  f.controller.onPacket(counters, 400);
+  f.controller.onPacket(counters, 5400);  // Unchanged: not logged again.
+  const std::vector<std::string> log = f.controller.takeLog();
+  TEST_ASSERT_EQUAL(3, log.size());
+  TEST_ASSERT_EQUAL_STRING("state idle -> connected", log[0].c_str());
+  TEST_ASSERT_EQUAL_STRING("acl disconnected: reason 0x13", log[1].c_str());
+  TEST_ASSERT_EQUAL_STRING("stats underruns 4 lost 1 crc 0", log[2].c_str());
+  TEST_ASSERT_EQUAL(0, f.controller.takeLog().size());
+}
+
+void test_the_log_keeps_only_the_newest_lines_when_not_taken() {
+  Fixture f;
+  f.answer();
+  Packet line;
+  line.type = PacketType::Log;
+  line.length = 1;
+  for (int i = 0; i < 100; ++i) {
+    line.payload[0] = static_cast<uint8_t>('a' + i % 26);
+    f.controller.onPacket(line, 200);
+  }
+  TEST_ASSERT_EQUAL(BtController::kMaxLogLines, f.controller.takeLog().size());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_starts_by_saying_hello);
@@ -314,5 +352,7 @@ int main() {
   RUN_TEST(test_a_scan_that_never_starts_ends_after_the_grace);
   RUN_TEST(test_buttons_become_events);
   RUN_TEST(test_enabling_is_stored_and_sent);
+  RUN_TEST(test_the_log_has_state_changes_u4wdh_lines_and_new_losses);
+  RUN_TEST(test_the_log_keeps_only_the_newest_lines_when_not_taken);
   return UNITY_END();
 }

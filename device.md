@@ -40,7 +40,10 @@ This board uses a single CH340 USB-serial chip paired with a CH445P analog switc
 - Digital MEMS microphone
 
 **Haptics:**
-- DRV2605 vibration/LRA motor driver
+- DRV2605L haptic driver (device ID 7) driving a **linear resonant
+  actuator**: nothing is felt in the chip's factory ERM mode. LRA open
+  loop with TI's LRA library (6) works without calibration (checked by
+  hand 2026-10-13, `lib/drivers-haptics/Drv2605Driver.h`)
 
 **Connectivity:**
 - USB-C for power and programming (CH340 USB-serial + CH445P analog switch, single-port dual-MCU programming)
@@ -75,7 +78,7 @@ successful flash before trusting blindly.
 | | INT | 9 |
 | | RST | 10 |
 | | I2C address | 0x15 |
-| Haptics (DRV2605, out of v1 scope) | I2C | shared bus (11/12) |
+| Haptics (DRV2605L, LRA) | I2C | shared bus (11/12) |
 | | I2C address | 0x5A |
 | Rotary encoder (primary) | A (CLK) | 8 |
 | | B (DT) | 7 |

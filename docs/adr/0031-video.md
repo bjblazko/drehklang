@@ -48,15 +48,30 @@ Measured on the device (2026-10-13), 320 px wide pictures:
    back parked with its position and timing, and `filePosition()` keeps
    answering for the music meanwhile, so the music's resume record is
    not overwritten.
-5. **Controls as in Circuit:** a tap pauses and continues (two bars show
-   the pause, because a still frame alone could be a hang), the knob is
-   the volume, and a swipe to the right leaves. The place is kept per
+5. **Controls like Now Playing's:** a tap pauses. Paused, the panel goes
+   back to LVGL, which shows the picture as a still (decoded once more
+   into PSRAM), the title, Play, and the time pill. Holding the pill and
+   turning jumps a minute per detent, with the hint shown as in Now
+   Playing; letting go plays on from there, and 0:00:00 is the start.
+   There is no preview while turning. The jump reopens the sound at the
+   byte that time maps to in the M4A's audio data
+   (`soundOffsetAt()`). Otherwise the knob is the volume, and a swipe to
+   the right leaves. The place is kept per
    film in NVS (the sound's byte offset and the frame shown,
    `video::soundKey()` / `frameKey()`), and the end clears it.
 6. **Video starts hidden.** `MenuVisibility` learned entries that are
    hidden by default. Masks stored before had every unused bit set, so
    they are corrected once (`menuVisV` = 1). Switching Video on says
    "Convert first: see README".
+
+7. **With Bluetooth headphones, every second picture, pushed by the
+   loop.** Core 0 then also feeds the second chip, and the sound broke up
+   on both outputs while the push task ran there. Over 30 s of film the
+   second chip ran dry 14–22 times at prio 2–3, and 3 times at prio 1,
+   where only 8.6 pictures a second got through. At 12.5 pictures a
+   second, reading, decoding and pushing fit on core 1 (~44 of 80 ms):
+   no underruns in 60 s, and no picture late. The picture also waits the
+   ~150 ms the headphones lag behind the jack (ADR 0027).
 
 ## Consequences
 
@@ -68,3 +83,7 @@ Measured on the device (2026-10-13), 320 px wide pictures:
 - The picture is pushed in stripes without waiting for the panel's
   refresh, so fast motion shows a little tearing.
 - Films need converting on a computer. The README says how.
+- **Later, maybe: `esp_new_jpeg`.** The factory firmware played full-screen
+  MJPEG with Espressif's SIMD decoder, which ships in the Arduino core
+  (`libesp_new_jpeg.a`). It is binary-only ("All rights reserved"), so the
+  licence question of ADR 0026 has to be settled before it is used.

@@ -386,6 +386,7 @@ void ScreenManager::drainGravitySounds() {
 
   for (GravityGame::Sound sound = gravity_.takeSound();
        sound != GravityGame::Sound::None; sound = gravity_.takeSound()) {
+    feelGame(sound == GravityGame::Sound::Crash ? haptics::Feel::Crash : haptics::Feel::Hit);
     const games::GravityBlip blip = games::blipFor(sound);
     if (blip.frequencyHz == 0) continue;
     gravityThrustSounding_ = false;

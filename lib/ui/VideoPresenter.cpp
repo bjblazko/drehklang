@@ -9,6 +9,7 @@
 #include <new>
 
 #include "AudioHooks.h"
+#include "AudioTap.h"
 #include "CpuClock.h"
 #include "St77916Driver.h"
 #include "VideoShelf.h"
@@ -27,6 +28,21 @@ constexpr uint32_t kPushStackBytes = 4096;
 // the loop.
 constexpr int kMaxDropsPerTick = 8;
 constexpr uint32_t kStripeWaitMs = 200;
+// With headphones connected, core 0 also feeds the second chip, and the
+// sound broke up on the jack and the headphones alike while the push task
+// ran there at any priority (U4WDH underruns, 2026-10-13: 14-22 per 30 s
+// at prio 2-3; at prio 1 only 8.6 pictures a second got through). So with
+// headphones every second picture is shown and the loop pushes it itself:
+// read, decode and push take ~44 ms of the 80 ms a picture then has.
+constexpr uint32_t kHeadphoneFrameStep = 2;
+// The headphones play ~150 ms after the jack (ADR 0027); the picture
+// waits for them.
+constexpr int64_t kHeadphoneDelayUs = 150000;
+
+bool headphonesConnected() {
+  const auto *tap = drivers::bluetoothTap();
+  return tap && tap->forwarding();
+}
 
 }  // namespace
 
@@ -69,10 +85,12 @@ void VideoPresenter::release() {
   }
   heap_caps_free(frame_);
   frame_ = nullptr;
+  heap_caps_free(stillPixels_);
+  stillPixels_ = nullptr;
   file_.reset();
 }
 
-bool VideoPresenter::open(const std::string &title, const video::VideoResume &resume, bool play) {
+bool VideoPresenter::open(const std::string &title, const video::VideoResume &from, bool play) {
   if (isOpen()) close();
   if (!startTask()) return false;
   const std::string base = std::string(video::kVideoFolder) + "/" + title;
@@ -84,8 +102,8 @@ bool VideoPresenter::open(const std::string &title, const video::VideoResume &re
     return false;
   }
   title_ = title;
-  start_ = resume;
-  if (!avi_.seekFrame(resume.frame)) {
+  start_ = from;
+  if (!avi_.seekFrame(from.frame)) {
     start_ = video::VideoResume{};
     avi_.seekFrame(0);
   }
@@ -93,12 +111,12 @@ bool VideoPresenter::open(const std::string &title, const video::VideoResume &re
   frameSize_ = 0;
   soundStarted_ = false;
   drivers::setFullCpuSpeed(true);
-  glue_.setPanelOwnedByGame(true);
-  clearPanel();
   state_ = State::Cued;
-  // The picture the film stands at, before any sound.
-  if (readNext()) decodeBuffered();
-  if (play) togglePause();
+  if (play) {
+    resume();
+  } else {
+    captureStill();
+  }
   return true;
 }
 
@@ -119,26 +137,59 @@ bool VideoPresenter::startSound() {
   return soundStarted_;
 }
 
-void VideoPresenter::togglePause() {
-  switch (state_) {
-    case State::Cued:
-      if (startSound()) state_ = State::Playing;
-      break;
-    case State::Playing:
-      audio_.pause();
-      state_ = State::Paused;
-      waitForStripes();
-      drawPauseMark(true);
-      break;
-    case State::Paused:
-      waitForStripes();
-      drawPauseMark(false);
-      audio_.resume();
-      state_ = State::Playing;
-      break;
-    case State::Closed:
-      break;
+void VideoPresenter::takePanel() {
+  glue_.setPanelOwnedByGame(true);
+  clearPanel();
+}
+
+void VideoPresenter::pause() {
+  if (state_ != State::Playing) return;
+  audio_.pause();
+  waitForStripes();
+  captureStill();
+  glue_.setPanelOwnedByGame(false);
+  state_ = State::Paused;
+}
+
+void VideoPresenter::resume() {
+  if (state_ == State::Cued) {
+    takePanel();
+    if (!startSound()) {
+      glue_.setPanelOwnedByGame(false);
+      return;
+    }
+  } else if (state_ == State::Paused) {
+    takePanel();
+    audio_.resume();
+  } else {
+    return;
   }
+  state_ = State::Playing;
+}
+
+void VideoPresenter::jumpTo(uint32_t seconds) {
+  if (!isOpen()) return;
+  const uint32_t last = avi_.frameCount() == 0 ? 0 : avi_.frameCount() - 1;
+  restartSoundAt(std::min(seconds * kFramesPerSecond, last));
+}
+
+// The sound is reopened at the byte the jump's time maps to, and the
+// picture follows from the matching frame; the clock starts again there.
+void VideoPresenter::restartSoundAt(uint32_t frame) {
+  if (state_ == State::Playing) waitForStripes();
+  if (!avi_.seekFrame(frame)) return;
+  const std::string path = std::string(video::kVideoFolder) + "/" + title_ + ".m4a";
+  start_ = video::VideoResume{
+      drivers::Esp32AudioI2SDriver::soundOffsetAt(path, frame / kFramesPerSecond), frame};
+  shownFrame_ = frame;
+  frameSize_ = 0;
+  if (state_ != State::Playing) takePanel();
+  if (!startSound()) {
+    glue_.setPanelOwnedByGame(false);
+    state_ = State::Cued;
+    return;
+  }
+  state_ = State::Playing;
 }
 
 // Microseconds of the film's sound that have reached the jack since it
@@ -158,9 +209,19 @@ bool VideoPresenter::readNext() {
 bool VideoPresenter::tick() {
   if (state_ != State::Playing) return true;
   if (!audio_.isRunning()) return false;  // The sound ended: so has the film.
+  const bool headphones = headphonesConnected();
+  if (headphones != pushOnLoop_) {
+    waitForStripes();
+    pushOnLoop_ = headphones;
+  }
+  const int64_t delay = headphones ? kHeadphoneDelayUs : 0;
   for (int drops = 0; drops <= kMaxDropsPerTick; ++drops) {
     if (frameSize_ == 0 && !readNext()) return false;
-    const int64_t due = static_cast<int64_t>(frameIndex_ - start_.frame) * kFrameUs;
+    if (headphones && frameIndex_ % kHeadphoneFrameStep != 0) {
+      frameSize_ = 0;
+      continue;
+    }
+    const int64_t due = static_cast<int64_t>(frameIndex_ - start_.frame) * kFrameUs + delay;
     const int64_t now = clockUs();
     if (now < due) return true;
     if (now <= due + kFrameUs) {
@@ -195,7 +256,10 @@ int VideoPresenter::queueStrip(JPEGDRAW *block) {
   const int width = std::min(block->iWidth, kStripeWidth);
   if (rows <= 0) return 1;
   int8_t index = 0;
-  if (xQueueReceive(self->freeStripes_, &index, pdMS_TO_TICKS(kStripeWaitMs)) != pdTRUE) return 0;
+  if (!self->pushOnLoop_ &&
+      xQueueReceive(self->freeStripes_, &index, pdMS_TO_TICKS(kStripeWaitMs)) != pdTRUE) {
+    return 0;
+  }
   Stripe &stripe = self->stripes_[index];
   for (int row = 0; row < rows; ++row) {
     std::memcpy(stripe.pixels + row * width, block->pPixels + row * block->iWidth,
@@ -205,7 +269,11 @@ int VideoPresenter::queueStrip(JPEGDRAW *block) {
   stripe.y = self->y0_ + block->y;
   stripe.width = width;
   stripe.rows = rows;
-  xQueueSend(self->filledStripes_, &index, portMAX_DELAY);
+  if (self->pushOnLoop_) {
+    self->glue_.pushStripe(stripe.x, stripe.y, stripe.width, stripe.rows, stripe.pixels, false);
+  } else {
+    xQueueSend(self->filledStripes_, &index, portMAX_DELAY);
+  }
   return 1;
 }
 
@@ -237,20 +305,42 @@ void VideoPresenter::clearPanel() {
   }
 }
 
-// Two bars below the picture while paused: a still frame alone could be a
-// hang. White on the black band, inside the round bezel.
-void VideoPresenter::drawPauseMark(bool shown) {
-  constexpr int kBarWidth = 8;
-  constexpr int kBarHeight = 24;
-  constexpr int kGap = 8;
-  static uint16_t white[kBarWidth * kBarHeight];
-  static uint16_t black[kBarWidth * kBarHeight] = {};
-  std::fill(std::begin(white), std::end(white), 0xFFFF);
-  const int top = std::min(drivers::kLcdVerRes - 70, (drivers::kLcdVerRes + height_) / 2 + 20);
-  const int left = drivers::kLcdHorRes / 2 - kGap / 2 - kBarWidth;
-  const uint16_t *pixels = shown ? white : black;
-  glue_.pushStripe(left, top, kBarWidth, kBarHeight, pixels, false);
-  glue_.pushStripe(left + kBarWidth + kGap, top, kBarWidth, kBarHeight, pixels, false);
+// The frame shown, decoded once more into a buffer LVGL can draw from.
+// The film reads on from the frame after it.
+void VideoPresenter::captureStill() {
+  if (!stillPixels_) {
+    stillPixels_ = static_cast<uint16_t *>(heap_caps_malloc(
+        kStillMaxWidth * kStillMaxHeight * sizeof(uint16_t), MALLOC_CAP_SPIRAM));
+    if (!stillPixels_) return;
+  }
+  frameSize_ = 0;
+  if (!avi_.seekFrame(shownFrame_) || !readNext()) return;
+  if (decoder_->openRAM(frame_, static_cast<int>(frameSize_), &VideoPresenter::copyToStill)) {
+    const int width = std::min(decoder_->getWidth(), kStillMaxWidth);
+    const int height = std::min(decoder_->getHeight(), kStillMaxHeight);
+    still_.header.cf = LV_IMG_CF_TRUE_COLOR;
+    still_.header.w = static_cast<uint32_t>(width);
+    still_.header.h = static_cast<uint32_t>(height);
+    still_.data_size = static_cast<uint32_t>(width * height * sizeof(uint16_t));
+    still_.data = reinterpret_cast<const uint8_t *>(stillPixels_);
+    decoder_->setUserPointer(this);
+    decoder_->decode(0, 0, 0);
+    decoder_->close();
+  }
+  frameSize_ = 0;
+}
+
+int VideoPresenter::copyToStill(JPEGDRAW *block) {
+  auto *self = static_cast<VideoPresenter *>(block->pUser);
+  const int width = static_cast<int>(self->still_.header.w);
+  const int height = static_cast<int>(self->still_.header.h);
+  for (int row = 0; row < block->iHeight && block->y + row < height; ++row) {
+    const int columns = std::min(block->iWidth, width - block->x);
+    if (columns <= 0) break;
+    std::memcpy(self->stillPixels_ + (block->y + row) * width + block->x,
+                block->pPixels + row * block->iWidth, static_cast<size_t>(columns) * 2);
+  }
+  return 1;
 }
 
 video::VideoResume VideoPresenter::position() {

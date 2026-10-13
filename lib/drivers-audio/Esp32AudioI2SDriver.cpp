@@ -230,6 +230,15 @@ void Esp32AudioI2SDriver::endVideoSound() {
   lent_ = false;
 }
 
+uint32_t Esp32AudioI2SDriver::soundOffsetAt(const std::string &path, uint32_t seconds) {
+  if (seconds == 0) return 0;
+  const TrackTiming timing = readTrackTiming(path);
+  if (timing.durationSeconds == 0 || timing.dataEnd <= timing.dataStart) return 0;
+  const uint64_t span = timing.dataEnd - timing.dataStart;
+  const uint64_t offset = span * std::min(seconds, timing.durationSeconds) / timing.durationSeconds;
+  return timing.dataStart + static_cast<uint32_t>(std::min<uint64_t>(offset, span - 1));
+}
+
 uint32_t Esp32AudioI2SDriver::videoSoundPosition() {
   Lock lock(mutex_);
   return heardPosition();
