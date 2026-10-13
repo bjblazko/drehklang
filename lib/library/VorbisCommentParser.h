@@ -17,6 +17,10 @@ namespace drehklang::library {
 class VorbisCommentParser {
  public:
   static TagResult parse(RawFile &file);
+  // The comment list itself (vendor string, count, KEY=value entries),
+  // which FLAC stores unchanged in its VORBIS_COMMENT block. A list cut
+  // off by `size` yields the entries before the cut.
+  static TagResult parseComments(const uint8_t *data, size_t size);
 };
 
 }  // namespace drehklang::library

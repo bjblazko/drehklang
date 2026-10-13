@@ -43,17 +43,23 @@ TagResult VorbisCommentParser::parse(RawFile &file) {
   if (it == buf.end()) {
     return result;
   }
-  size_t pos = static_cast<size_t>(it - buf.begin()) + kMagicLen;
+  size_t start = static_cast<size_t>(it - buf.begin()) + kMagicLen;
+  return parseComments(buf.data() + start, buf.size() - start);
+}
+
+TagResult VorbisCommentParser::parseComments(const uint8_t *data, size_t size) {
+  TagResult result;
+  size_t pos = 0;
 
   auto readU32 = [&](uint32_t &out) -> bool {
-    if (pos + 4 > buf.size()) return false;
-    out = readU32LE(&buf[pos]);
+    if (pos + 4 > size) return false;
+    out = readU32LE(&data[pos]);
     pos += 4;
     return true;
   };
 
   uint32_t vendorLength = 0;
-  if (!readU32(vendorLength) || pos + vendorLength > buf.size()) {
+  if (!readU32(vendorLength) || vendorLength > size - pos) {
     return result;
   }
   pos += vendorLength;
@@ -66,10 +72,11 @@ TagResult VorbisCommentParser::parse(RawFile &file) {
   bool any = false;
   for (uint32_t i = 0; i < commentCount; ++i) {
     uint32_t commentLength = 0;
-    if (!readU32(commentLength) || pos + commentLength > buf.size()) {
+    if (!readU32(commentLength) || commentLength > size - pos) {
       break;  // Truncated (likely past our scan window) -- stop cleanly.
     }
-    std::string comment(reinterpret_cast<char *>(&buf[pos]), commentLength);
+    std::string comment(reinterpret_cast<const char *>(&data[pos]),
+                        commentLength);
     pos += commentLength;
 
     auto eq = comment.find('=');

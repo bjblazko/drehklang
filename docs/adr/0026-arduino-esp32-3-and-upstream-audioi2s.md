@@ -235,5 +235,8 @@ and back. Next, each in its own session:
 2. **WiFi** (web radio; podcasts downloaded to SD). Decide HE-AAC first
    (above), and fit the internal-RAM budget: ~31 KB free while playing.
 3. Opus and 24-bit FLAC: the library decodes both; the library scan
-   (`lib/library/AudioFileTypes.h`) does not list Opus yet.
+   (`lib/library/AudioFileTypes.h`) does not list Opus yet. FLAC was
+   missing from that list as well, so no FLAC file ever reached the
+   library or the Files view; it is listed since 2026-10-12, with tags and
+   a JPEG cover read from its metadata blocks by `library::FlacParser`.
 

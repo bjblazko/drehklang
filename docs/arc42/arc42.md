@@ -167,7 +167,7 @@ flowchart TB
   destinations the user has chosen to show, and the two rules that keep
   the menu reachable).
 - **`lib/library`** — `model` (plain Artist/Album/Track structs), `tags`
-  (hand-rolled ID3v2/Vorbis-comment/RIFF-INFO/MP4 parsers behind a
+  (hand-rolled ID3v2/Vorbis-comment/FLAC/RIFF-INFO/MP4 parsers behind a
   `TagReader`/`RawFile` interface, `Mp4Parser` also yielding an M4A's
   exact duration and `mdat` range, ADR 0016), `scan` (`FileLister`
   interface, `LibraryScanner`, `FolderBrowser` for live Files-mode

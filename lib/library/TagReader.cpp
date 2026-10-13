@@ -4,6 +4,7 @@
 #include <cctype>
 #include <vector>
 
+#include "FlacParser.h"
 #include "Id3v2Parser.h"
 #include "Mp4Parser.h"
 #include "RiffInfoParser.h"
@@ -139,6 +140,8 @@ TagResult TagReader::read(RawFile &file, const std::string &filePath) {
     result = Mp4Parser::parse(file).tags;
   } else if (ext == "ogg") {
     result = VorbisCommentParser::parse(file);
+  } else if (ext == "flac") {
+    result = FlacParser::parse(file);
   } else if (ext == "wav") {
     result = RiffInfoParser::parse(file);
   }

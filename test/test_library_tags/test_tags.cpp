@@ -4,11 +4,13 @@
 #include <vector>
 
 #include "FakeRawFile.h"
+#include "FlacParser.h"
 #include "Id3v2Parser.h"
 #include "RiffInfoParser.h"
 #include "TagReader.h"
 #include "VorbisCommentParser.h"
 
+using drehklang::library::FlacParser;
 using drehklang::library::Id3v2Parser;
 using drehklang::library::RiffInfoParser;
 using drehklang::library::TagReader;
@@ -558,6 +560,168 @@ void test_id3v2_tpe1_wins_over_tpe2() {
   TEST_ASSERT_EQUAL_STRING("Track Artist", Id3v2Parser::parse(rawAfter).artist.c_str());
 }
 
+void appendU32LE(std::vector<uint8_t> &out, uint32_t v) {
+  for (int i = 0; i < 4; ++i) out.push_back(static_cast<uint8_t>((v >> (8 * i)) & 0xFF));
+}
+
+std::vector<uint8_t> flacCommentBlock(const std::vector<std::string> &comments) {
+  std::vector<uint8_t> out;
+  const std::string vendor = "reference libFLAC 1.4.3";
+  appendU32LE(out, static_cast<uint32_t>(vendor.size()));
+  out.insert(out.end(), vendor.begin(), vendor.end());
+  appendU32LE(out, static_cast<uint32_t>(comments.size()));
+  for (const std::string &c : comments) {
+    appendU32LE(out, static_cast<uint32_t>(c.size()));
+    out.insert(out.end(), c.begin(), c.end());
+  }
+  return out;
+}
+
+std::vector<uint8_t> flacPictureBlock(uint32_t type, const std::string &mime,
+                                      const std::vector<uint8_t> &image) {
+  std::vector<uint8_t> out;
+  appendU32BE(out, type);
+  appendU32BE(out, static_cast<uint32_t>(mime.size()));
+  out.insert(out.end(), mime.begin(), mime.end());
+  const std::string description = "Cover";
+  appendU32BE(out, static_cast<uint32_t>(description.size()));
+  out.insert(out.end(), description.begin(), description.end());
+  for (uint32_t field : {600u, 600u, 24u, 0u}) appendU32BE(out, field);
+  appendU32BE(out, static_cast<uint32_t>(image.size()));
+  out.insert(out.end(), image.begin(), image.end());
+  return out;
+}
+
+// "fLaC", a STREAMINFO block, the given blocks (the last one flagged),
+// then a little "audio".
+std::vector<uint8_t> buildFlac(
+    const std::vector<std::pair<uint8_t, std::vector<uint8_t>>> &blocks) {
+  std::vector<uint8_t> file = {'f', 'L', 'a', 'C'};
+  auto appendBlock = [&](uint8_t type, const std::vector<uint8_t> &data, bool last) {
+    file.push_back(static_cast<uint8_t>(type | (last ? 0x80 : 0)));
+    file.push_back(static_cast<uint8_t>((data.size() >> 16) & 0xFF));
+    file.push_back(static_cast<uint8_t>((data.size() >> 8) & 0xFF));
+    file.push_back(static_cast<uint8_t>(data.size() & 0xFF));
+    file.insert(file.end(), data.begin(), data.end());
+  };
+  appendBlock(0, std::vector<uint8_t>(34, 0), blocks.empty());
+  for (size_t i = 0; i < blocks.size(); ++i) {
+    appendBlock(blocks[i].first, blocks[i].second, i + 1 == blocks.size());
+  }
+  for (int i = 0; i < 16; ++i) file.push_back(0xAB);
+  return file;
+}
+
+const std::vector<uint8_t> kJpegA = {0xFF, 0xD8, 0xFF, 0xE0, 'A'};
+const std::vector<uint8_t> kJpegB = {0xFF, 0xD8, 0xFF, 0xE0, 'B', 'B'};
+
+void test_flac_reads_the_vorbis_comment_block() {
+  auto file = buildFlac({{4, flacCommentBlock({"ARTIST=Flac Artist", "album=Flac Album",
+                                                "TITLE=Flac Title", "TRACKNUMBER=3/12",
+                                                "DISCNUMBER=2", "DATE=2001-05-04",
+                                                "GENRE=Electronic"})}});
+  FakeRawFile raw(file);
+
+  TagResult result = FlacParser::parse(raw);
+
+  TEST_ASSERT_TRUE(result.found);
+  TEST_ASSERT_EQUAL_STRING("Flac Artist", result.artist.c_str());
+  TEST_ASSERT_EQUAL_STRING("Flac Album", result.album.c_str());
+  TEST_ASSERT_EQUAL_STRING("Flac Title", result.title.c_str());
+  TEST_ASSERT_EQUAL_UINT16(3, result.trackNumber);
+  TEST_ASSERT_EQUAL_UINT16(2, result.discNumber);
+  TEST_ASSERT_EQUAL_UINT16(2001, result.year);
+  TEST_ASSERT_EQUAL_STRING("Electronic", result.genre.c_str());
+  TEST_ASSERT_FALSE(result.picture.present);
+}
+
+void test_flac_skips_a_leading_id3v2_tag() {
+  auto flac = buildFlac({{4, flacCommentBlock({"TITLE=After ID3"})}});
+  std::vector<uint8_t> file = {'I', 'D', '3', 4, 0, 0};
+  appendSynchsafe(file, 20);
+  file.insert(file.end(), 20, 0);
+  file.insert(file.end(), flac.begin(), flac.end());
+  FakeRawFile raw(file);
+
+  TEST_ASSERT_EQUAL_STRING("After ID3", FlacParser::parse(raw).title.c_str());
+}
+
+void test_flac_prefers_the_front_cover_jpeg() {
+  auto file = buildFlac({{6, flacPictureBlock(4, "image/jpeg", kJpegA)},  // Back.
+                         {6, flacPictureBlock(3, "image/jpeg", kJpegB)},  // Front.
+                         {4, flacCommentBlock({"TITLE=Covered"})}});
+  FakeRawFile raw(file);
+
+  TagResult result = FlacParser::parse(raw);
+
+  TEST_ASSERT_EQUAL_STRING("Covered", result.title.c_str());
+  TEST_ASSERT_TRUE(result.picture.present);
+  TEST_ASSERT_EQUAL_UINT32(kJpegB.size(), result.picture.length);
+  TEST_ASSERT_EQUAL_UINT8(0xFF, file[result.picture.offset]);
+  TEST_ASSERT_EQUAL_UINT8('B', file[result.picture.offset + 4]);
+}
+
+void test_flac_takes_another_jpeg_when_there_is_no_front_cover() {
+  auto file = buildFlac({{6, flacPictureBlock(0, "image/jpeg", kJpegA)}});
+  FakeRawFile raw(file);
+
+  TagResult result = FlacParser::parse(raw);
+
+  TEST_ASSERT_TRUE(result.found);
+  TEST_ASSERT_TRUE(result.picture.present);
+  TEST_ASSERT_EQUAL_UINT8('A', file[result.picture.offset + 4]);
+}
+
+void test_flac_ignores_a_png_picture() {
+  const std::vector<uint8_t> png = {0x89, 'P', 'N', 'G', 0x0D, 0x0A};
+  auto file = buildFlac({{6, flacPictureBlock(3, "image/png", png)}});
+  FakeRawFile raw(file);
+
+  TagResult result = FlacParser::parse(raw);
+
+  TEST_ASSERT_FALSE(result.found);
+  TEST_ASSERT_FALSE(result.picture.present);
+}
+
+void test_flac_without_magic_returns_not_found() {
+  std::vector<uint8_t> file(64, 0x00);
+  FakeRawFile raw(file);
+
+  TEST_ASSERT_FALSE(FlacParser::parse(raw).found);
+}
+
+void test_flac_block_longer_than_the_file_does_not_crash() {
+  auto file = buildFlac({{4, flacCommentBlock({"TITLE=Cut"})}});
+  file.resize(file.size() - 30);  // The comment block now runs past the end.
+  FakeRawFile raw(file);
+
+  TagResult result = FlacParser::parse(raw);
+
+  TEST_ASSERT_FALSE(result.found);
+}
+
+void test_flac_picture_with_lying_lengths_does_not_crash() {
+  auto block = flacPictureBlock(3, "image/jpeg", kJpegA);
+  block[4] = 0xFF;  // MIME length now far past the block.
+  auto file = buildFlac({{6, block}, {4, flacCommentBlock({"TITLE=Still read"})}});
+  FakeRawFile raw(file);
+
+  TagResult result = FlacParser::parse(raw);
+
+  TEST_ASSERT_EQUAL_STRING("Still read", result.title.c_str());
+  TEST_ASSERT_FALSE(result.picture.present);
+}
+
+void test_tag_reader_uses_the_flac_parser_for_flac() {
+  auto file = buildFlac({{4, flacCommentBlock({"ARTIST=Real Artist", "TITLE=Real Title"})}});
+  FakeRawFile raw(file);
+
+  TagResult result = TagReader::read(raw, "/Music/whatever.flac");
+
+  TEST_ASSERT_EQUAL_STRING("Real Title", result.title.c_str());
+  TEST_ASSERT_EQUAL_STRING("Real Artist", result.artist.c_str());
+}
+
 int main(int argc, char **argv) {
   UNITY_BEGIN();
   RUN_TEST(test_id3v2_parses_title_artist_album_track);
@@ -585,5 +749,14 @@ int main(int argc, char **argv) {
   RUN_TEST(test_tag_reader_uses_id3_when_present_for_mp3);
   RUN_TEST(test_id3v2_tpe2_stands_in_for_missing_tpe1);
   RUN_TEST(test_id3v2_tpe1_wins_over_tpe2);
+  RUN_TEST(test_flac_reads_the_vorbis_comment_block);
+  RUN_TEST(test_flac_skips_a_leading_id3v2_tag);
+  RUN_TEST(test_flac_prefers_the_front_cover_jpeg);
+  RUN_TEST(test_flac_takes_another_jpeg_when_there_is_no_front_cover);
+  RUN_TEST(test_flac_ignores_a_png_picture);
+  RUN_TEST(test_flac_without_magic_returns_not_found);
+  RUN_TEST(test_flac_block_longer_than_the_file_does_not_crash);
+  RUN_TEST(test_flac_picture_with_lying_lengths_does_not_crash);
+  RUN_TEST(test_tag_reader_uses_the_flac_parser_for_flac);
   return UNITY_END();
 }

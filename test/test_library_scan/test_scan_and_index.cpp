@@ -1,5 +1,6 @@
 #include <unity.h>
 
+#include "AudioFileTypes.h"
 #include "Fakes.h"
 #include "IndexCache.h"
 
@@ -438,6 +439,17 @@ void test_folder_browser_filters_and_sorts() {
   TEST_ASSERT_EQUAL_STRING("zeta.mp3", result[3].name.c_str());
 }
 
+void test_audio_file_names_include_flac_but_not_video() {
+  using drehklang::library::isAudioFileName;
+  for (const char *name : {"a.mp3", "a.M4A", "a.ogg", "a.wav", "a.flac", "a.FLAC"}) {
+    TEST_ASSERT_TRUE_MESSAGE(isAudioFileName(name), name);
+  }
+  // A music video next to an album's tracks stays out of the library.
+  for (const char *name : {"a.m4v", "a.jpg", "flac", "a.flac.txt"}) {
+    TEST_ASSERT_FALSE_MESSAGE(isAudioFileName(name), name);
+  }
+}
+
 void test_signature_matches_for_identical_listing() {
   FakeFileLister a({{"/a.mp3", 100, 1}, {"/b.mp3", 200, 2}});
   FakeFileLister b({{"/a.mp3", 100, 1}, {"/b.mp3", 200, 2}});
@@ -668,6 +680,7 @@ int main(int argc, char **argv) {
   RUN_TEST(test_first_genre_seen_names_a_mixed_album);
   RUN_TEST(test_browse_axes_list_albums_songs_and_years);
   RUN_TEST(test_albums_with_no_year_have_no_shelf);
+  RUN_TEST(test_audio_file_names_include_flac_but_not_video);
   RUN_TEST(test_index_cache_round_trips);
   RUN_TEST(test_index_cache_rejects_corrupt_buffer);
   RUN_TEST(test_index_cache_rejects_truncated_buffer);
