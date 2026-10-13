@@ -355,7 +355,12 @@ void setup() {
   // a library shuffle couldn't open its first track -- measured on the
   // device 2026-09-15: 38.9 KB internal free before, 1.7 KB after. Anything
   // needing internal/DMA memory asks for it explicitly via heap_caps.
-  heap_caps_malloc_extmem_enable(32);
+  // 16, not 32: a title of 16-31 characters is a 17-32 byte block, so at
+  // 32 a library of 3174 tracks still put 54 KB of titles in internal RAM,
+  // and the player's I2S DMA buffers then no longer fitted -- setPinout()
+  // failed and every track played silently (2026-10-13). Shorter strings
+  // live inside std::string itself.
+  heap_caps_malloc_extmem_enable(16);
   // Before USB traffic can reach the drive (ADR 0016); asks for its DMA
   // buffer explicitly, so it isn't affected by the line above.
   g_usbStorage.begin();

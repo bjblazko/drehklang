@@ -378,9 +378,15 @@ duplicating it.
   DMA buffers then failed: `sdmmc_read_blocks failed (257)`
   (`ESP_ERR_NO_MEM`), `connecttoFS=FAILED`, a library shuffle showed a
   track but never played. `setup()` now calls
-  `heap_caps_malloc_extmem_enable(32)` first (93.9 KB internal free after
+  `heap_caps_malloc_extmem_enable(16)` first (93.9 KB internal free after
   boot, unchanged by the queue). If SD opens start failing with 257,
   check internal heap before suspecting the card. See ADR 0011.
+  **It was 32 until 2026-10-13**: titles of 16-31 characters still went
+  internal, so a 3174-track library left ~40 KB free after boot. Then the
+  player's 32 KB of I2S DMA buffers didn't fit, `Audio::setPinout()` failed
+  (the driver ignores its result) and **every track "played" in silence**:
+  the time ran, the spectrum stayed flat, the tone generator still sounded.
+  A silent player with a big library → check internal heap first.
 - **ESP32-audioI2S's durations and time seeks are estimates, wrong for
   VBR.** Every MP3 here is VBR (checked 2026-09-15); the library converts
   seconds to bytes with an average bitrate. `library::Mp3Duration` and
