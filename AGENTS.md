@@ -119,6 +119,12 @@ duplicating it.
   get lost (device.md, ADR 0027). `scripts/flash-bt-mcu.sh` flashes it.
   **Whatever runs on the U4WDH must drive its IO32 high** -- it is the
   DAC's XSMT, and floating it mutes the jack for both chips (2026-10-05).
+  So **never run `flash-primary-mcu.sh` (or esptool) at the CH340 port
+  while it reaches the U4WDH**: the failed attempt leaves that chip in its
+  ROM bootloader, the jack goes silent and `BT` shows state 1
+  (FirmwareMissing) -- and with the battery in, unplugging does not reset
+  it. Fix: on the CH340 side, `dtr = False`, pulse `rts` True for ~150 ms,
+  then False; its log should show `SPI_FAST_FLASH_BOOT` (2026-10-13).
 - **ESP32-audioI2S's own messages are silent by default.** To see them,
   set `-DCORE_DEBUG_LEVEL=3` (instead of 0) and add `-DAUDIO_LOG` in
   `[env:esp32-s3]`'s `build_flags` temporarily: `Esp32AudioI2SDriver.cpp`
@@ -393,6 +399,11 @@ duplicating it.
   Anything on core 0 below prio 2 only gets the gaps: a stripe push there
   took 80 ms instead of 18. The library's own tone control
   (`settings.IIR_FILTER`) is off since then; it cost ~4 % for nothing.
+- **The CPU runs at 160 MHz, 240 only while Circuit owns the panel**
+  (`lib/drivers-power/CpuClock.h`). The prebuilt core has no power
+  management, so nothing scales by itself. At 160 the music's decoder takes
+  ~48 % of core 0. Anything new that fills a core (video, a game) must ask
+  for 240 the same way; `INFO` prints the current clock.
 - **ESP32-audioI2S's durations and time seeks are estimates, wrong for
   VBR.** Every MP3 here is VBR (checked 2026-09-15); the library converts
   seconds to bytes with an average bitrate. `library::Mp3Duration` and

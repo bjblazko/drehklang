@@ -24,6 +24,7 @@
 #include "EncoderPins.h"
 #include "Esp32AudioI2SDriver.h"
 #include "TaskLoad.h"
+#include "CpuClock.h"
 #include "ToneOutput.h"
 #include "ToneSession.h"
 #include "GestureRecognizer.h"
@@ -362,6 +363,7 @@ void setup() {
   // failed and every track played silently (2026-10-13). Shorter strings
   // live inside std::string itself.
   heap_caps_malloc_extmem_enable(16);
+  drehklang::drivers::setFullCpuSpeed(false);
   // Before USB traffic can reach the drive (ADR 0016); asks for its DMA
   // buffer explicitly, so it isn't affected by the line above.
   g_usbStorage.begin();
@@ -581,9 +583,10 @@ void pollSerialCommands() {
         } else if (strcmp(buf, "INFO") == 0 &&
                    !drehklang::drivers::UsbMscStorage::exporting()) {
           // A reset reason of 4 is a panic: read the core dump (AGENTS.md).
-          Serial.printf("[info] up %lus, reset reason %d, internal free %u, "
+          Serial.printf("[info] up %lus, reset reason %d, cpu %lu MHz, internal free %u, "
                         "loop stack left %u\n",
                         millis() / 1000, static_cast<int>(esp_reset_reason()),
+                        static_cast<unsigned long>(getCpuFrequencyMhz()),
                         heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
                         uxTaskGetStackHighWaterMark(nullptr));
         } else if (sscanf(buf, "KNOB %d", &x) == 1) {
