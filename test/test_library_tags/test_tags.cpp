@@ -537,6 +537,27 @@ void test_id3v1_trailer_unset_genre_byte_yields_nothing() {
   TEST_ASSERT_TRUE(Id3v2Parser::parse(raw).genre.empty());
 }
 
+void test_id3v2_tpe2_stands_in_for_missing_tpe1() {
+  auto file = buildId3v2Mp3({{"TIT2", "Song"}, {"TPE2", "Album Artist"}});
+  FakeRawFile raw(file);
+
+  TagResult result = Id3v2Parser::parse(raw);
+
+  TEST_ASSERT_TRUE(result.found);
+  TEST_ASSERT_EQUAL_STRING("Album Artist", result.artist.c_str());
+}
+
+void test_id3v2_tpe1_wins_over_tpe2() {
+  // Either order: a compilation's tracks keep their own artists.
+  auto before = buildId3v2Mp3({{"TPE2", "Various"}, {"TPE1", "Track Artist"}});
+  auto after = buildId3v2Mp3({{"TPE1", "Track Artist"}, {"TPE2", "Various"}});
+  FakeRawFile rawBefore(before);
+  FakeRawFile rawAfter(after);
+
+  TEST_ASSERT_EQUAL_STRING("Track Artist", Id3v2Parser::parse(rawBefore).artist.c_str());
+  TEST_ASSERT_EQUAL_STRING("Track Artist", Id3v2Parser::parse(rawAfter).artist.c_str());
+}
+
 int main(int argc, char **argv) {
   UNITY_BEGIN();
   RUN_TEST(test_id3v2_parses_title_artist_album_track);
@@ -562,5 +583,7 @@ int main(int argc, char **argv) {
   RUN_TEST(test_riff_info_no_info_chunk_returns_not_found);
   RUN_TEST(test_tag_reader_falls_back_to_unknown_and_filename);
   RUN_TEST(test_tag_reader_uses_id3_when_present_for_mp3);
+  RUN_TEST(test_id3v2_tpe2_stands_in_for_missing_tpe1);
+  RUN_TEST(test_id3v2_tpe1_wins_over_tpe2);
   return UNITY_END();
 }

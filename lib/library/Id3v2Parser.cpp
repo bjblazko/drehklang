@@ -188,6 +188,7 @@ TagResult Id3v2Parser::parse(RawFile &file) {
   size_t pos = 10;
 
   TagResult result;
+  std::string albumArtist;
   bool any = false;
 
   while (pos + 10 <= frameAreaEnd) {
@@ -228,9 +229,9 @@ TagResult Id3v2Parser::parse(RawFile &file) {
         result.picture.offset = dataStart + imageOffset;
         result.picture.length = frameSize - imageOffset;
       }
-    } else if (frameId == "TIT2" || frameId == "TPE1" || frameId == "TALB" ||
-        frameId == "TRCK" || frameId == "TPOS" || frameId == "TYER" ||
-        frameId == "TDRC" || frameId == "TCON") {
+    } else if (frameId == "TIT2" || frameId == "TPE1" || frameId == "TPE2" ||
+        frameId == "TALB" || frameId == "TRCK" || frameId == "TPOS" ||
+        frameId == "TYER" || frameId == "TDRC" || frameId == "TCON") {
       std::vector<uint8_t> data(frameSize);
       if (!file.seek(dataStart) ||
           file.read(data.data(), data.size()) != data.size()) {
@@ -246,6 +247,8 @@ TagResult Id3v2Parser::parse(RawFile &file) {
             result.title = text;
           } else if (frameId == "TPE1") {
             result.artist = text;
+          } else if (frameId == "TPE2") {
+            albumArtist = text;
           } else if (frameId == "TALB") {
             result.album = text;
           } else if (frameId == "TRCK") {
@@ -272,6 +275,9 @@ TagResult Id3v2Parser::parse(RawFile &file) {
     pos = dataStart + frameSize;
   }
 
+  // Like MP4's aART: the album artist only stands in for a missing track
+  // artist.
+  if (result.artist.empty()) result.artist = albumArtist;
   if (any) {
     result.found = true;
     return result;
