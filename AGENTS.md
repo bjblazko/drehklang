@@ -315,7 +315,8 @@ duplicating it.
     `UsbMscStorage::printEvents()` prints the drive's host events later.
   - Serial commands for driving the device without a hand on it:
     `TAP x y`, `SWIPE x1 y1 x2 y2`, `KNOB n`, `INFO`, `BLIP <hz>`,
-    `SCREENSHOT`, `HOME`, `WHERE`, `HOLD x y ms`, `BT`.
+    `SCREENSHOT`, `HOME`, `WHERE`, `HOLD x y ms`, `BT`, `TASKS` (each
+    task's share of its core over 2 s, from FreeRTOS run-time stats).
   - **Never `Serial.printf()` from the audio task (core 0)**, not even in a
     debug build. A `[generator]` line from `ToneOutput` spun in
     `USBCDC::write` during a `SCREENSHOT` transfer until the task watchdog
@@ -387,6 +388,11 @@ duplicating it.
   (the driver ignores its result) and **every track "played" in silence**:
   the time ran, the spectrum stayed flat, the tone generator still sounded.
   A silent player with a big library → check internal heap first.
+- **Core 0 is ~40 % busy with ESP32-audioI2S's decode task during music**
+  (`PeriodicTask`, prio 2, measured with `TASKS` 2026-10-13, AAC 44.1 kHz).
+  Anything on core 0 below prio 2 only gets the gaps: a stripe push there
+  took 80 ms instead of 18. The library's own tone control
+  (`settings.IIR_FILTER`) is off since then; it cost ~4 % for nothing.
 - **ESP32-audioI2S's durations and time seeks are estimates, wrong for
   VBR.** Every MP3 here is VBR (checked 2026-09-15); the library converts
   seconds to bytes with an average bitrate. `library::Mp3Duration` and

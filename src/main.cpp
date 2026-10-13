@@ -23,6 +23,7 @@
 #include "Cst816Driver.h"
 #include "EncoderPins.h"
 #include "Esp32AudioI2SDriver.h"
+#include "TaskLoad.h"
 #include "ToneOutput.h"
 #include "ToneSession.h"
 #include "GestureRecognizer.h"
@@ -611,6 +612,10 @@ void pollSerialCommands() {
           g_idleTimer.noteActivity(millis());
           g_screenManager.goHome();
           Serial.println("[where] 0");
+        } else if (strcmp(buf, "TASKS") == 0 &&
+                   !drehklang::drivers::UsbMscStorage::exporting()) {
+          // Each task's share of its core over 2 s.
+          printTaskLoad(2000);
         } else if (strcmp(buf, "WHERE") == 0) {
           // The screen on top, as navigation::ScreenKind's value -- what a
           // scripted tour checks after each step.

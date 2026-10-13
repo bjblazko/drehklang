@@ -115,6 +115,10 @@ void Esp32AudioI2SDriver::ensureAudio() {
   void *memory = heap_caps_calloc(1, sizeof(Audio), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (memory == nullptr) return;
   audio_.reset(new (memory) Audio());
+  // The library's own three-band tone control runs on every sample even
+  // when flat, and the equalizer (ADR 0029) replaces it: 4 % of core 0
+  // during music, for nothing (measured with TASKS, 2026-10-13).
+  audio_->settings.IIR_FILTER = false;
   audio_->setPinout(kAudioBclkPin, kAudioLrcPin, kAudioDoutPin);
   audio_->setVolumeCurve(&AudioGain::volumeCurveDb);
   audio_->setVolume(volume_);
