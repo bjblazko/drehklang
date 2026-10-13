@@ -391,9 +391,11 @@ duplicating it.
   **It was 32 until 2026-10-13**: titles of 16-31 characters still went
   internal, so a 3174-track library left ~40 KB free after boot. Then the
   player's 32 KB of I2S DMA buffers didn't fit, `Audio::setPinout()` failed
-  (the driver ignores its result) and **every track "played" in silence**:
-  the time ran, the spectrum stayed flat, the tone generator still sounded.
-  A silent player with a big library → check internal heap first.
+  (the driver ignored its result then) and **every track "played" in
+  silence**: the time ran, the spectrum stayed flat, the tone generator
+  still sounded. Now the driver drops the `Audio` object, logs `[audio] I2S
+  setup failed, internal free N` and the player stops -- seeing that line
+  means internal heap ran short again.
 - **Core 0 is ~40 % busy with ESP32-audioI2S's decode task during music**
   (`PeriodicTask`, prio 2, measured with `TASKS` 2026-10-13, AAC 44.1 kHz).
   Anything on core 0 below prio 2 only gets the gaps: a stripe push there

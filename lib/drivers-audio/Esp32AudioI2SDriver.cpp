@@ -119,7 +119,15 @@ void Esp32AudioI2SDriver::ensureAudio() {
   // when flat, and the equalizer (ADR 0029) replaces it: 4 % of core 0
   // during music, for nothing (measured with TASKS, 2026-10-13).
   audio_->settings.IIR_FILTER = false;
-  audio_->setPinout(kAudioBclkPin, kAudioLrcPin, kAudioDoutPin);
+  // Fails when its I2S DMA buffers (32 KB, internal) don't fit. The library
+  // then never decodes, and a track "played" in silence with its clock
+  // running (2026-10-13); without Audio the caller stops instead.
+  if (!audio_->setPinout(kAudioBclkPin, kAudioLrcPin, kAudioDoutPin)) {
+    Serial.printf("[audio] I2S setup failed, internal free %u\n",
+                  static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)));
+    audio_.reset();
+    return;
+  }
   audio_->setVolumeCurve(&AudioGain::volumeCurveDb);
   audio_->setVolume(volume_);
 }
@@ -147,7 +155,11 @@ void Esp32AudioI2SDriver::resume() {
   if (parked_) {
     dac_.claim(*this);
     Lock lock(mutex_);
-    openTrack(path_, parkedPosition_);
+    // A parked track counts as running; one that can't reopen must not.
+    if (!openTrack(path_, parkedPosition_)) {
+      parked_ = false;
+      path_.clear();
+    }
     return;
   }
   Lock lock(mutex_);
