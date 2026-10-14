@@ -8,6 +8,7 @@
 #include <string>
 
 #include "HeadphoneStream.h"
+#include "LinkTimeline.h"
 #include "Messages.h"
 
 namespace drehklang::bt {
@@ -58,6 +59,7 @@ class BtSource {
   static void onGap(int event, void *param);
   static void onA2dp(int event, void *param);
   static void onAvrcTarget(int event, void *param);
+  static void onAvrcController(int event, void *param);
   static int32_t onData(uint8_t *data, int32_t length);
   void post(const BtSourceEvent &event);
   static void log(const char *format, ...);
@@ -69,6 +71,9 @@ class BtSource {
   std::atomic<uint32_t> connectingSince_{0};
   // Whom the link is with, or is being made with: what disconnect() ends.
   btlink::Address peer_{};
+  // What the current baseband link went through, summarized into the log
+  // when it is lost. Touched by Bluedroid's callbacks only (one task).
+  btlink::LinkTimeline timeline_;
 };
 
 }  // namespace drehklang::bt

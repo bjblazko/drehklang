@@ -73,7 +73,10 @@ void BtSource::begin() {
   esp_bt_io_cap_t ioCap = ESP_BT_IO_CAP_NONE;
   esp_bt_gap_set_security_param(ESP_BT_SP_IOCAP_MODE, &ioCap, sizeof(ioCap));
 
-  // AVRCP before A2DP, as ESP-IDF asks.
+  // AVRCP before A2DP, as ESP-IDF asks. The controller's callback only
+  // notes its connection for the link's timeline.
+  esp_avrc_ct_register_callback(
+      [](esp_avrc_ct_cb_event_t e, esp_avrc_ct_cb_param_t *p) { onAvrcController(e, p); });
   esp_avrc_ct_init();
   esp_avrc_tg_register_callback(
       [](esp_avrc_tg_cb_event_t e, esp_avrc_tg_cb_param_t *p) { onAvrcTarget(e, p); });
@@ -180,10 +183,16 @@ void BtSource::onGap(int event, void *raw) {
     case ESP_BT_GAP_AUTH_CMPL_EVT:
       log("auth %s: status %d", reinterpret_cast<const char *>(param->auth_cmpl.device_name),
           static_cast<int>(param->auth_cmpl.stat));
+      if (param->auth_cmpl.stat == ESP_BT_STATUS_SUCCESS) {
+        g_self->timeline_.done(btlink::LinkTimeline::Step::Auth, millis());
+      }
       break;
     case ESP_BT_GAP_ACL_CONN_CMPL_STAT_EVT:
       log("acl connected: status %d", static_cast<int>(param->acl_conn_cmpl_stat.stat));
       if (param->acl_conn_cmpl_stat.stat == ESP_BT_STATUS_SUCCESS) {
+        // Ours when we were connecting; otherwise the headphones came to us.
+        g_self->timeline_.aclUp(millis(),
+                                g_self->link_.load() == btlink::LinkState::Connecting);
         g_self->post(BtSourceEvent{BtSourceEvent::Kind::AclUp});
       }
       break;
@@ -192,13 +201,22 @@ void BtSource::onGap(int event, void *raw) {
     case ESP_BT_GAP_MODE_CHG_EVT:
       log("power mode %d, interval %u", static_cast<int>(param->mode_chg.mode),
           static_cast<unsigned>(param->mode_chg.interval));
+      g_self->timeline_.modeChanged(static_cast<uint8_t>(param->mode_chg.mode), millis());
       break;
     case ESP_BT_GAP_ENC_CHG_EVT:
       log("encryption %d", static_cast<int>(param->enc_chg.enc_mode));
+      if (param->enc_chg.enc_mode != 0) {
+        g_self->timeline_.done(btlink::LinkTimeline::Step::Encryption, millis());
+      }
       break;
-    case ESP_BT_GAP_ACL_DISCONN_CMPL_STAT_EVT:
-      log("acl disconnected: reason 0x%02x", static_cast<int>(param->acl_disconn_cmpl_stat.reason));
+    case ESP_BT_GAP_ACL_DISCONN_CMPL_STAT_EVT: {
+      const auto reason = static_cast<uint8_t>(param->acl_disconn_cmpl_stat.reason);
+      log("acl disconnected: reason 0x%02x", static_cast<int>(reason));
+      // Which steps the link got through, and which it never did: an LMP
+      // response timeout (0x22) left one of them unanswered.
+      g_self->timeline_.summarize(millis(), reason, [](const char *line) { log("%s", line); });
       break;
+    }
     case ESP_BT_GAP_KEY_REQ_EVT:
     case ESP_BT_GAP_KEY_NOTIF_EVT:
       log("pairing asks for a passkey (event %d)", event);
@@ -215,6 +233,9 @@ void BtSource::onGap(int event, void *raw) {
       esp_bt_gap_ssp_confirm_reply(param->cfm_req.bda, true);
       break;
     default:
+      // Anything else the stack reports, by number (esp_gap_bt_api.h):
+      // part of the picture when a link goes wrong.
+      log("gap event %d", event);
       break;
   }
 }
@@ -227,6 +248,7 @@ void BtSource::onA2dp(int event, void *raw) {
       log("a2dp state %d, reason %d", static_cast<int>(state),
           static_cast<int>(param->conn_stat.disc_rsn));
       if (state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
+        g_self->timeline_.done(btlink::LinkTimeline::Step::A2dp, millis());
         toAddress(param->conn_stat.remote_bda, g_self->peer_);
         g_self->link_.store(btlink::LinkState::Connected);
         BtSourceEvent connected{BtSourceEvent::Kind::Connected};
@@ -245,6 +267,9 @@ void BtSource::onA2dp(int event, void *raw) {
     }
     case ESP_A2D_AUDIO_STATE_EVT:
       log("a2dp audio state %d", static_cast<int>(param->audio_stat.state));
+      if (param->audio_stat.state == ESP_A2D_AUDIO_STATE_STARTED) {
+        g_self->timeline_.done(btlink::LinkTimeline::Step::Audio, millis());
+      }
       break;
     case ESP_A2D_MEDIA_CTRL_ACK_EVT:
       log("media ctrl %d ack %d", static_cast<int>(param->media_ctrl_stat.cmd),
@@ -278,6 +303,15 @@ void BtSource::onAvrcTarget(int event, void *raw) {
       return;
   }
   g_self->post(pressed);
+}
+
+void BtSource::onAvrcController(int event, void *raw) {
+  auto *param = static_cast<esp_avrc_ct_cb_param_t *>(raw);
+  if (static_cast<esp_avrc_ct_cb_event_t>(event) != ESP_AVRC_CT_CONNECTION_STATE_EVT) return;
+  log("avrcp connected %d", static_cast<int>(param->conn_stat.connected));
+  if (param->conn_stat.connected) {
+    g_self->timeline_.done(btlink::LinkTimeline::Step::Avrcp, millis());
+  }
 }
 
 // Bluedroid asks for `length` bytes of 44.1 kHz 16-bit stereo PCM.

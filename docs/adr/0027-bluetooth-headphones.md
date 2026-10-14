@@ -219,6 +219,28 @@ found:
      flapping), and a 0x122 drop 30 s after a connect (the headphones
      connected back within 1 s) all checked on the device.
 
+8. **The 0x122 drop 30 s after connecting, 2026-10-14** (the log on the
+   SD card, 24 boots):
+   - It recurs: the headphones connect to us, A2DP comes up and streams,
+     and 30 s later the link goes with an LMP response timeout -- one side
+     left a link-manager request unanswered for the spec's 30 s. They come
+     back within a second, and since `e695dcd` reconnecting takes ~1 s
+     instead of hanging for 28 s.
+   - Neither `auth` nor `encryption` was logged between such a connect and
+     its drop. Together with 7. (authentication failing after 30 s with
+     0x122), authentication or encryption is the likeliest request left
+     hanging. Headphones connecting to a phone or laptop at the same time
+     would explain why they do not answer -- likely here, but not visible
+     in the log.
+   - 157 of 167 connects ended in a page timeout (0x104): the headphones
+     were off, out of range or busy, retried every 10 s as intended.
+   - **Logged now:** on every lost link the chip summarizes its timeline
+     (`btlink::LinkTimeline`): how long it lasted, who connected, the
+     reason, which steps were seen when (auth, encryption, A2DP, audio,
+     AVRCP, power mode) and which never were. Every GAP event without a
+     line of its own is logged by number. The host never sees LMP itself,
+     so this narrows the request down rather than naming it.
+
 ## Open
 
 - **Legal check (2026-10-05) before merging.**
