@@ -58,6 +58,8 @@ Now Playing shows its other pages in their place.
 | <img src="docs/screenshots/bluetooth.png" alt="Settings, Bluetooth: the switch, the paired headphones, find and forget" width="240"> | <img src="docs/screenshots/about.png" alt="About: version, author, source, licence" width="240"> | <img src="docs/screenshots/table-tennis.png" alt="Table Tennis: paddles, the net and the score, white on black" width="240"> |
 | **Gravity** | **Equalizer** | **Circuit** |
 | <img src="docs/screenshots/gravity.png" alt="Gravity: a lander above a landscape with three landing pads" width="240"> | <img src="docs/screenshots/equalizer.png" alt="The equalizer: seven sliders from 31 Hz to 16 kHz on a 0 dB line, the selected one in orange, and Flat" width="240"> | <img src="docs/screenshots/circuit.png" alt="Circuit: a red sports car from behind on a coast road, palms and chevron signs, time and lap in the sky" width="240"> |
+| **Dictaphone** | | |
+| <img src="docs/screenshots/dictaphone.png" alt="The dictaphone: the microphone live on the oscilloscope, the time, the next recording's name, the list button and the orange record button" width="240"> | | |
 
 ## Contents
 
@@ -462,7 +464,8 @@ jump-by-letter and Music's browse axes, and
 [ADR 0024](docs/adr/0024-tone-generator.md) for the tone generator, and
 [ADR 0027](docs/adr/0027-bluetooth-headphones.md) for Bluetooth
 headphones, and
-[ADR 0032](docs/adr/0032-dictaphone.md) for the dictaphone.
+[ADR 0032](docs/adr/0032-dictaphone.md) for the dictaphone, and
+[ADR 0033](docs/adr/0033-full-screen-cover.md) for the full-screen cover.
 
 ### What goes on the SD card
 

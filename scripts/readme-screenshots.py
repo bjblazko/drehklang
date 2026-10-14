@@ -41,11 +41,12 @@ KIND = {
     "Home": 0, "Settings": 1, "Artists": 3, "Albums": 4, "Tracks": 5,
     "NowPlaying": 7, "SleepTimer": 9, "Games": 18, "TableTennis": 19,
     "Gravity": 20, "ToneGenerator": 21, "Circuit": 29, "About": 24, "Bluetooth": 25,
-    "Equalizer": 28,
+    "Equalizer": 28, "Dictaphone": 32,
 }
 
 # Home's carousel, from its first entry (HOME selects that one).
-CAROUSEL = {"Music": 0, "Settings": 2, "Sleep": 3, "Games": 4, "Tones": 5}
+CAROUSEL = {"Music": 0, "Settings": 2, "Sleep": 3, "Games": 4, "Tones": 5,
+            "Dictaphone": 7}
 
 
 class Device:
@@ -223,6 +224,14 @@ def tones(dev):
     dev.tap(180, 315)  # Stop.
 
 
+def dictaphone(dev):
+    # Idle, the microphone live in the band: recording would leave a file
+    # behind on the card, and the tour leaves nothing behind.
+    dev.open_from_home("Dictaphone", "Dictaphone")
+    time.sleep(1.5)  # Let the scope fill.
+    dev.shot("dictaphone")
+
+
 def sleep_timer(dev):
     dev.open_from_home("Sleep", "SleepTimer")
     dev.shot("sleep")
@@ -270,7 +279,7 @@ def about(dev):
     dev.shot("about")
 
 
-TOUR = (home, library, tones, sleep_timer, settings, games, about)
+TOUR = (home, library, tones, dictaphone, sleep_timer, settings, games, about)
 # Swipes inside Now Playing's cover slot (ADR 0028).
 SLOT_NEXT = "SWIPE 280 92 80 92"
 SLOT_BACK = "SWIPE 80 92 280 92"
