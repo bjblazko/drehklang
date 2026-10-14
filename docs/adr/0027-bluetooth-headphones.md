@@ -286,6 +286,14 @@ found:
    - Checked on the device: the Major V taken over from protocol 1 and
      reconnected; AirPods Pro (2nd gen.) paired from the search 4 s after
      the tap (switch included); back to the Major V by its row in 6 s.
+   - **The AirPods then played nothing**, connected, encrypted and
+     streaming without underruns. They use AVRCP absolute volume and wait
+     for the source to set it; nothing ever did. Once AVRCP is up the
+     U4WDH now sets the headphones' own volume to full
+     (`BtSource::setFullVolume()`): the knob stays the one volume, and the
+     stream already carries it. The AirPods answer "absolute volume 127"
+     and play. Headphones that kept their own volume until now (the
+     Major V) may be louder at the same knob position.
 
 ## Open
 

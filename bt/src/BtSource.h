@@ -19,7 +19,8 @@ struct BtSourceEvent {
   // Log: a line for loop() to print (`text`) -- callbacks never print.
   // AclUp: a baseband link came up, ours or the headphones' own.
   // Connected carries the headphones' address.
-  enum class Kind : uint8_t { Found, Button, Connected, Disconnected, AclUp, Log } kind;
+  // AvrcpUp: the remote control link is up; loop() sets the volume.
+  enum class Kind : uint8_t { Found, Button, Connected, Disconnected, AclUp, AvrcpUp, Log } kind;
   btlink::Address address{};
   int8_t rssi = 0;
   btlink::ButtonCode button = btlink::ButtonCode::Play;
@@ -54,6 +55,9 @@ class BtSource {
   void removeBond(const btlink::Address &address);
   // After a connection: check the stream endpoint and start streaming.
   void startMedia();
+  // The headphones' own volume to full: the knob is the one volume, and the
+  // stream already carries it.
+  void setFullVolume();
 
   btlink::LinkState link() const { return link_.load(); }
   bool scanning() const { return scanning_.load(); }
@@ -72,6 +76,8 @@ class BtSource {
   std::atomic<btlink::LinkState> link_{btlink::LinkState::Idle};
   std::atomic<bool> scanning_{false};
   std::atomic<uint32_t> connectingSince_{0};
+  // AVRCP transaction label, 0-15, a new one per command.
+  uint8_t label_ = 0;
   // Whom the link is with, or is being made with: what disconnect() ends.
   btlink::Address peer_{};
   // What the current baseband link went through, summarized into the log

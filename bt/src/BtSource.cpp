@@ -148,6 +148,12 @@ void BtSource::removeBond(const btlink::Address &address) {
 
 void BtSource::startMedia() { esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_CHECK_SRC_RDY); }
 
+void BtSource::setFullVolume() {
+  label_ = static_cast<uint8_t>((label_ + 1) & 0x0F);
+  const esp_err_t result = esp_avrc_ct_send_set_absolute_volume_cmd(label_, 0x7F);
+  if (result != ESP_OK) log("absolute volume refused: %s", esp_err_to_name(result));
+}
+
 void BtSource::post(const BtSourceEvent &event) { xQueueSend(events_, &event, 0); }
 
 void BtSource::log(const char *format, ...) {
@@ -313,10 +319,16 @@ void BtSource::onAvrcTarget(int event, void *raw) {
 
 void BtSource::onAvrcController(int event, void *raw) {
   auto *param = static_cast<esp_avrc_ct_cb_param_t *>(raw);
-  if (static_cast<esp_avrc_ct_cb_event_t>(event) != ESP_AVRC_CT_CONNECTION_STATE_EVT) return;
+  const auto kind = static_cast<esp_avrc_ct_cb_event_t>(event);
+  if (kind == ESP_AVRC_CT_SET_ABSOLUTE_VOLUME_RSP_EVT) {
+    log("absolute volume %d", static_cast<int>(param->set_volume_rsp.volume));
+    return;
+  }
+  if (kind != ESP_AVRC_CT_CONNECTION_STATE_EVT) return;
   log("avrcp connected %d", static_cast<int>(param->conn_stat.connected));
   if (param->conn_stat.connected) {
     g_self->timeline_.done(btlink::LinkTimeline::Step::Avrcp, millis());
+    g_self->post(BtSourceEvent{BtSourceEvent::Kind::AvrcpUp});
   }
 }
 

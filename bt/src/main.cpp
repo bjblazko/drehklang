@@ -261,6 +261,11 @@ void onSourceEvent(const bt::BtSourceEvent &event) {
         postponeConnect(kAfterTheirLinkMs);
       }
       break;
+    case bt::BtSourceEvent::Kind::AvrcpUp:
+      // Headphones with absolute volume (AirPods) wait for the source to
+      // set it and stayed silent without (2026-10-14).
+      g_source.setFullVolume();
+      break;
     case bt::BtSourceEvent::Kind::Log:
       report("%s", event.text);
       break;
