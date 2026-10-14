@@ -1,6 +1,83 @@
 # Device: Waveshare ESP32-S3-Knob-Touch-LCD-1.8
 
-*Last modified: 2026-10-05*
+*Last modified: 2026-10-14*
+
+## Block diagram
+
+What is on the board, what talks to what, and over which wires. Solid
+lines are confirmed on this unit (by a working driver or a measurement);
+dotted ones are from Waveshare's schematic or the factory firmware only.
+
+```mermaid
+flowchart LR
+  subgraph USB["USB-C (one port, two chips)"]
+    PLUG(["USB-C plug<br/>orientation picks the chip"])
+    CH340["CH340<br/>USB-serial"]
+    SW["CH445P<br/>analog switch"]
+  end
+
+  subgraph S3["ESP32-S3R8 -- main chip (Drehklang firmware)"]
+    S3CPU["2x Xtensa LX7, 240 MHz<br/>8 MB PSRAM, 16 MB flash<br/>SIMD (PIE): esp-dsp, esp_new_jpeg<br/>no JPEG/video hardware<br/>Wi-Fi 4, BLE 5 (no LE Audio)<br/>native USB: CDC + USB drive (TinyUSB)"]
+  end
+
+  subgraph U4["ESP32-U4WDH -- Bluetooth chip (bt/ firmware)"]
+    U4CPU["2x Xtensa LX6, 240 MHz<br/>4 MB flash<br/>Bluetooth Classic: A2DP source, AVRCP<br/>Wi-Fi 4"]
+  end
+
+  LCD["ST77916 LCD<br/>1.8&quot; round, 360x360<br/>RGB565"]
+  BL["Backlight<br/>PWM"]
+  TOUCH["CST816 touch<br/>I2C 0x15"]
+  HAPTIC["DRV2605L, I2C 0x5A<br/>+ LRA motor"]
+  SD["microSD<br/>SDMMC 4-bit"]
+  DAC["PCM5100A DAC<br/>line out, no amp"]
+  JACK(["3.5 mm jack"])
+  KNOB1["Rotary encoder<br/>(no push button)"]
+  KNOB2["Rotary encoder 2"]
+  MIC["MEMS microphone<br/>PDM"]
+  BAT["Battery 3.7 V 800 mAh<br/>PH1.25, onboard charger"]
+  HP(["Bluetooth headphones"])
+
+  PLUG -- "one way round:<br/>S3 native USB" --> S3CPU
+  PLUG -- "other way round" --> CH340
+  CH340 --> SW
+  SW -- "UART0 (flashing,<br/>log, dtr=rts=False)" --> U4CPU
+  SW -. "UART0 (documented,<br/>not used here)" .-> S3CPU
+
+  S3CPU -- "QSPI GPIO 13-18" --> LCD
+  S3CPU -- "GPIO 47" --> BL
+  S3CPU -- "I2C GPIO 11/12, INT 9" --> TOUCH
+  S3CPU -- "same I2C bus" --> HAPTIC
+  S3CPU -- "SDMMC GPIO 2-6, 42" --> SD
+  S3CPU -- "I2S GPIO 39-41" --> SW2
+  S3CPU -- "GPIO 7/8" --> KNOB1
+  S3CPU -. "PDM GPIO 45/46" .-> MIC
+  S3CPU -- "ADC GPIO 1" --> BAT
+  S3CPU <-- "UART 3 Mbaud<br/>S3 48 -> IO23, IO18 -> S3 38<br/>PCM + control (lib/btlink)" --> U4CPU
+
+  SW2["CH445P<br/>I2S switch<br/>(S3 GPIO 0 selects)"]
+  U4CPU -. "I2S IO25-27" .-> SW2
+  SW2 --> DAC
+  U4CPU -- "IO32 = XSMT<br/>high or the jack is muted" --> DAC
+  DAC --> JACK
+  U4CPU -. "IO19/22" .-> KNOB2
+  U4CPU -- "A2DP (SBC)" --> HP
+```
+
+| Part | What it does here | Notes |
+|---|---|---|
+| ESP32-S3R8 | Everything Drehklang does: UI, library, decoding, display, SD, USB drive | 240 MHz on both cores (2.4.1; 160 MHz was too little). Core 0: audio decoder and the link to the U4WDH; core 1: UI. SIMD, no JPEG or video hardware (that is the P4) |
+| ESP32-U4WDH | Bluetooth headphones only, fed with PCM by the S3 | Classic Bluetooth is the only way to headphones: the S3 has BLE without LE Audio. One A2DP stream (Bluedroid) |
+| PCM5100A | The jack's DAC, a line driver (>=1 kOhm) | No amplifier and no speaker on the board. Muted unless the U4WDH holds IO32 high |
+| CH445P (I2S) | Picks which chip drives the DAC | S3 GPIO0; Drehklang leaves it, and the S3 is connected |
+| CH340 + CH445P (USB) | Serial to a chip through the one USB-C port | Which chip answers depends on the plug's orientation (see quirks below) |
+| ST77916 | Display, QSPI | Pushes about 4 Mpx/s: a full frame ~31 ms, 320x172 ~18 ms |
+| CST816 | Touch | X needs calibrating; NACKs while untouched |
+| DRV2605L | Haptics, driving an LRA | Silent in its factory ERM mode; LRA open loop works |
+| Encoders | Rotation only, no push | Not quadrature: never `00` (see AGENTS.md) |
+| Microphone | PDM MEMS, GPIO 45/46 | From the schematic; unused and untested |
+| LEDs | none | The board has no LEDs; the display is the only status output |
+| Motion sensor | none | An I2C scan of the bus (GPIO 11/12) finds only 0x15 (touch) and 0x5A (haptics), 2026-10-14. The factory firmware's "Imu control music" string has no hardware behind it on this board |
+| Battery | 3.7 V Li-ion, 800 mAh, PH1.25 | With it plugged in, unplugging USB is no power cycle |
 
 ## Links
 
