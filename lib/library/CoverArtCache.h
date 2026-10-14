@@ -65,6 +65,13 @@ class CoverArtCache {
                                  FileOpener &opener, JpegDecoder &decoder,
                                  CoverWriter &writer);
 
+  // The album's cover as JPEG bytes, from the same sources in the same
+  // order as ensureCoverCached(): what the full-screen cover (ADR 0033)
+  // decodes again at its own size. False when there is none.
+  static bool readCoverJpeg(const std::string &albumFolderPath, RawFile &firstTrackFile,
+                            const TagResult &firstTrackTags, DirectoryReader &dirReader,
+                            FileOpener &opener, std::vector<uint8_t> *out);
+
   // Deterministic filename (no directory, no extension) a cached cover
   // for this album folder is stored/looked-up under -- shared by the
   // scan-time writer and the Now Playing screen's render-time reader so

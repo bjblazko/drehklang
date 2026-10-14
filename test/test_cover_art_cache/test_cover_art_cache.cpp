@@ -234,6 +234,52 @@ void test_cache_filename_differs_for_different_paths() {
   TEST_ASSERT_TRUE(a != b);
 }
 
+// The full-screen cover (ADR 0033) decodes the original again, bigger:
+// the same search as caching, the bytes handed back instead of decoded.
+void test_reads_the_embedded_jpeg_for_a_bigger_decode() {
+  const std::vector<uint8_t> embeddedJpeg = {0xFF, 0xD8, 0x05, 0x06};
+  std::vector<uint8_t> file = {'x', 'x', 'x'};
+  file.insert(file.end(), embeddedJpeg.begin(), embeddedJpeg.end());
+  FakeRawFile trackFile(file);
+  TagResult tags;
+  tags.picture.present = true;
+  tags.picture.offset = 3;
+  tags.picture.length = embeddedJpeg.size();
+  FakeDirectoryReader dirReader;
+  FakeFileOpener opener;
+
+  std::vector<uint8_t> bytes;
+  TEST_ASSERT_TRUE(CoverArtCache::readCoverJpeg("/Music/Artist/Album", trackFile, tags,
+                                                dirReader, opener, &bytes));
+  TEST_ASSERT_EQUAL(embeddedJpeg.size(), bytes.size());
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(embeddedJpeg.data(), bytes.data(), bytes.size());
+}
+
+void test_reads_the_folder_cover_when_nothing_is_embedded() {
+  FakeRawFile trackFile(std::vector<uint8_t>{});
+  TagResult tags;
+  FakeDirectoryReader dirReader;
+  dirReader.put("/Music/Artist/Album", {FolderEntry{"Cover.JPG", false}});
+  FakeFileOpener opener;
+  const std::vector<uint8_t> coverBytes = {0xFF, 0xD8, 0x07};
+  opener.put("/Music/Artist/Album/Cover.JPG", coverBytes);
+
+  std::vector<uint8_t> bytes;
+  TEST_ASSERT_TRUE(CoverArtCache::readCoverJpeg("/Music/Artist/Album", trackFile, tags,
+                                                dirReader, opener, &bytes));
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(coverBytes.data(), bytes.data(), coverBytes.size());
+}
+
+void test_no_cover_reads_nothing() {
+  FakeRawFile trackFile(std::vector<uint8_t>{});
+  TagResult tags;
+  FakeDirectoryReader dirReader;
+  FakeFileOpener opener;
+  std::vector<uint8_t> bytes;
+  TEST_ASSERT_FALSE(CoverArtCache::readCoverJpeg("/Music/Artist/Album", trackFile, tags,
+                                                 dirReader, opener, &bytes));
+}
+
 int main(int argc, char **argv) {
   UNITY_BEGIN();
   RUN_TEST(test_prefers_embedded_jpeg_over_folder_cover);
@@ -244,5 +290,8 @@ int main(int argc, char **argv) {
   RUN_TEST(test_album_folder_path_for_strips_filename);
   RUN_TEST(test_cache_filename_is_deterministic_for_same_path);
   RUN_TEST(test_cache_filename_differs_for_different_paths);
+  RUN_TEST(test_reads_the_embedded_jpeg_for_a_bigger_decode);
+  RUN_TEST(test_reads_the_folder_cover_when_nothing_is_embedded);
+  RUN_TEST(test_no_cover_reads_nothing);
   return UNITY_END();
 }

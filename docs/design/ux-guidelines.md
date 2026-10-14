@@ -208,6 +208,10 @@ backlight. Every screen, the lock screen included, uses `surface`.
   beyond its drawn bounds (`makeButton()` in `LvglButtonHelpers.h`), so
   keep at least ~20px between adjacent tappable controls to avoid
   overlapping hit areas.
+- **Text over a picture sits in a light pill.** The full-screen cover's
+  time and title go in the segments the square leaves free, on the
+  surface colour, never straight onto the cover or its blurred background,
+  which can be any colour (ADR 0033).
 - **Deleting asks first, in words.** Removing a file cannot be undone,
   so it opens a modal layer naming what goes ("Delete Recording 2?") with
   a grey Cancel beside a red Delete — red because it needs attention, and

@@ -41,3 +41,4 @@ supersedes the old one (and the old one is marked "Superseded by NNNN").
 | [0030](0030-circuit.md) | Circuit, a pseudo-3D racer with its own renderer | Accepted (extends 0022) |
 | [0031](0031-video.md) | Video, as a Motion-JPEG picture and an AAC sound | Accepted (uses 0030) |
 | [0032](0032-dictaphone.md) | Dictaphone, the microphone, and sharing I2S0 with it | Accepted (extends 0018, 0024, 0026) |
+| [0033](0033-full-screen-cover.md) | A full-screen cover in Now Playing | Accepted (extends 0028) |

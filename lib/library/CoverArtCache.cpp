@@ -65,38 +65,48 @@ std::string CoverArtCache::albumFolderPathFor(
   return trackFilePath.substr(0, lastSlash);
 }
 
+bool CoverArtCache::readCoverJpeg(const std::string &albumFolderPath,
+                                  RawFile &firstTrackFile, const TagResult &firstTrackTags,
+                                  DirectoryReader &dirReader, FileOpener &opener,
+                                  std::vector<uint8_t> *out) {
+  if (firstTrackTags.picture.present) {
+    out->resize(firstTrackTags.picture.length);
+    if (firstTrackFile.seek(firstTrackTags.picture.offset) &&
+        firstTrackFile.read(out->data(), out->size()) == out->size()) {
+      return true;
+    }
+  }
+
+  std::string coverName;
+  if (!findFolderCoverName(dirReader, albumFolderPath, &coverName)) {
+    out->clear();
+    return false;
+  }
+  auto coverFile = opener.open(albumFolderPath + "/" + coverName);
+  if (!coverFile) {
+    out->clear();
+    return false;
+  }
+  out->resize(coverFile->size());
+  if (coverFile->read(out->data(), out->size()) != out->size()) {
+    out->clear();
+    return false;
+  }
+  return true;
+}
+
 void CoverArtCache::ensureCoverCached(const std::string &albumFolderPath,
                                        RawFile &firstTrackFile,
                                        const TagResult &firstTrackTags,
                                        DirectoryReader &dirReader,
                                        FileOpener &opener, JpegDecoder &decoder,
                                        CoverWriter &writer) {
-  if (firstTrackTags.picture.present) {
-    std::vector<uint8_t> jpegBytes(firstTrackTags.picture.length);
-    if (firstTrackFile.seek(firstTrackTags.picture.offset) &&
-        firstTrackFile.read(jpegBytes.data(), jpegBytes.size()) ==
-            jpegBytes.size()) {
-      decodeAndWrite(jpegBytes.data(), jpegBytes.size(), albumFolderPath,
-                      decoder, writer);
-      return;
-    }
-  }
-
-  std::string coverName;
-  if (!findFolderCoverName(dirReader, albumFolderPath, &coverName)) {
+  std::vector<uint8_t> jpegBytes;
+  if (!readCoverJpeg(albumFolderPath, firstTrackFile, firstTrackTags, dirReader, opener,
+                     &jpegBytes)) {
     return;
   }
-  auto coverFile = opener.open(albumFolderPath + "/" + coverName);
-  if (!coverFile) {
-    return;
-  }
-  std::vector<uint8_t> jpegBytes(coverFile->size());
-  if (coverFile->read(jpegBytes.data(), jpegBytes.size()) !=
-      jpegBytes.size()) {
-    return;
-  }
-  decodeAndWrite(jpegBytes.data(), jpegBytes.size(), albumFolderPath, decoder,
-                 writer);
+  decodeAndWrite(jpegBytes.data(), jpegBytes.size(), albumFolderPath, decoder, writer);
 }
 
 }  // namespace drehklang::library

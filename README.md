@@ -23,7 +23,8 @@ tap to choose. No app, no account, no cloud: nothing leaves the device.
   headphones
 - A seven-band equalizer from 31 Hz to 16 kHz that never clips
 - Cover, dot-matrix spectrum, oscilloscope or spectrum in Now Playing,
-  swiped through; a tone generator with oscilloscope, a
+  swiped through; a tap shows the cover full-screen on a blurred copy of
+  itself; a tone generator with oscilloscope, a
   dictaphone with the same live scope and spectrum, a sleep timer, and
   two games for the knob
 - The SD card as a USB drive, for copying music over the cable

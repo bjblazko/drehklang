@@ -385,6 +385,15 @@ duplicating it.
   starves for seconds: the UI freezes, and the Bluetooth link (served by
   the main loop) reports a disconnect that never happened. The dictaphone's
   tasks sleep a tick outside the lock after every block (ADR 0032).
+- **A constant in a `ScreenManager*.cpp` anonymous namespace loses to a
+  `ScreenManager` class constant of the same name** inside member
+  functions -- C++ looks in the class first. The full-screen cover's
+  `kTimePillY = 14` silently became Now Playing's 286 (2026-10-14). Give
+  file-local layout constants names the class does not use.
+- **`SWIPE` over serial used to never go back**: the driver's released
+  sample carries leftover coordinates, and the gesture recognizer measured
+  the swipe to them. The injected release now ends where the swipe did
+  (2026-10-14, ADR 0033).
 - **The vibration motor is an LRA** (DRV2605L at 0x5A on the touch I2C
   bus). In the chip's factory ERM mode it stays silent while every write
   succeeds. `Drv2605Driver` sets LRA open loop. LVGL's `feedback_cb`

@@ -259,6 +259,10 @@ class ScreenManager : public input::KnobSink {
   // every other screen. Call after any encoder tick.
   void updateToneGeneratorDisplay();
 
+  // Closes Now Playing's full-screen cover (ADR 0033), as the back swipe
+  // does there. False when it was not open.
+  bool closeCoverView();
+
   // Keeps the play button in step with the session (a lock can stop it)
   // and redraws the scope at ~30 fps while it is actually seen. Call
   // every loop().
@@ -350,6 +354,14 @@ class ScreenManager : public input::KnobSink {
   static void onCircuitPressed(lv_event_t *e);
   static void onCircuitReleased(lv_event_t *e);
   static void onCircuitTapped(lv_event_t *e);
+  // ScreenManagerCoverView.cpp (ADR 0033).
+  void openCoverView();
+  void forgetCoverView();
+  bool loadCoverView(const std::string &album);
+  void renderCoverView();
+  void updateCoverViewTime();
+  static void onCoverViewPressed(lv_event_t *e);
+  static void onCoverViewReleased(lv_event_t *e);
   // ScreenManagerDictaphone.cpp.
   void renderDictaphone();
   void renderRecording();
@@ -823,6 +835,20 @@ class ScreenManager : public input::KnobSink {
   lv_obj_t *toneScaleLabel_ = nullptr;
   ui_widgets::PageDots toneDots_;
   static constexpr uint32_t kToneScopeFrameMs = 33;
+
+  // Now Playing's full-screen cover (ADR 0033): the cover alone, then
+  // with time and title. Pixels kept per album, so a re-render does not
+  // decode again.
+  enum class CoverView : uint8_t { Closed, Cover, Info };
+  CoverView coverView_ = CoverView::Closed;
+  std::string coverViewAlbum_;
+  std::vector<uint16_t> coverViewPixels_;
+  std::vector<uint16_t> coverViewBackdrop_;
+  lv_img_dsc_t coverViewDsc_{};
+  lv_img_dsc_t coverViewBackdropDsc_{};
+  lv_obj_t *coverViewTimeLabel_ = nullptr;
+  int32_t coverViewShownSecond_ = -1;
+  lv_point_t coverViewPressPoint_{};
 
   // Dictaphone (ADR 0032). The recorder and a recording never show at
   // once, so they share one band, kept across renders like the tone

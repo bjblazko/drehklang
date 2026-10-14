@@ -167,6 +167,7 @@ void ScreenManager::render() {
   dictaphoneNameLabel_ = nullptr;
   dictaphoneRunDot_ = nullptr;
   dictaphonePrimary_ = nullptr;
+  coverViewTimeLabel_ = nullptr;
   dictaphoneSecondary_ = nullptr;
   deleteDialog_ = nullptr;
   tableTennisPlayerScore_.detach();
@@ -198,7 +199,10 @@ void ScreenManager::render() {
     toneBand_.release();
   }
   leaveDictaphoneScreens(current.kind);
-  if (current.kind != ScreenKind::NowPlaying) slotBand_.release();
+  if (current.kind != ScreenKind::NowPlaying) {
+    slotBand_.release();
+    forgetCoverView();
+  }
   if (current.kind != renderedKind_) {
     renderedKind_ = current.kind;
     messages_.dismissScreenMessage();
@@ -206,6 +210,11 @@ void ScreenManager::render() {
     optionsPanelOpen_ = false;
   }
 
+  if (current.kind == ScreenKind::NowPlaying && coverView_ != CoverView::Closed) {
+    // The whole screen, no back button or caption.
+    renderCoverView();
+    return;
+  }
   if (current.kind == ScreenKind::NowPlaying) {
     renderNowPlaying();
   } else if (current.kind == ScreenKind::Home) {
@@ -1635,6 +1644,7 @@ void ScreenManager::tickVolumeHud(uint32_t nowMs) {
 }
 
 void ScreenManager::updateElapsedTimeDisplay() {
+  updateCoverViewTime();
   if (!elapsedLabel_) return;
   uint32_t elapsedMs = playback_.elapsedMs(millis());
   uint32_t totalSeconds = elapsedMs / 1000;
@@ -2077,7 +2087,7 @@ void ScreenManager::onSlotPressed(lv_event_t *e) {
 }
 
 // Right to left turns to the next page, left to right back, like the tone
-// generator's band; a tap does nothing.
+// generator's band; a tap on the cover opens it full-screen (ADR 0033).
 void ScreenManager::onSlotReleased(lv_event_t *e) {
   constexpr lv_coord_t kSwipeMinPx = 40;
   auto *self = static_cast<ScreenManager *>(lv_event_get_user_data(e));
@@ -2085,7 +2095,13 @@ void ScreenManager::onSlotReleased(lv_event_t *e) {
   lv_point_t point;
   lv_indev_get_point(lv_indev_get_act(), &point);
   const lv_coord_t dx = point.x - self->slotSwipeStartX_;
-  if (dx > -kSwipeMinPx && dx < kSwipeMinPx) return;
+  if (dx > -kSwipeMinPx && dx < kSwipeMinPx) {
+    if (lv_event_get_code(e) == LV_EVENT_RELEASED && self->coverImg_ &&
+        !lv_obj_has_flag(self->coverImg_, LV_OBJ_FLAG_HIDDEN)) {
+      self->openCoverView();
+    }
+    return;
+  }
   if (self->slotPages_.step(dx < 0 ? 1 : -1, self->coverImg_ != nullptr)) {
     self->applyCoverSlotMode();
   }

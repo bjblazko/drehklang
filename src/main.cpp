@@ -762,6 +762,13 @@ void loop() {
           g_injectedTapY + (g_injectedTapToY - g_injectedTapY) * done / total);
     } else {
       g_injectedTapUntilMs = 0;
+      // The "up" where the injected finger left off: the real driver's
+      // released sample carries leftover coordinates, and the gesture
+      // recognizer measures a swipe to that point -- an injected SWIPE
+      // never went back (found 2026-10-14).
+      touchSample.pressed = false;
+      touchSample.x = g_injectedTapToX;
+      touchSample.y = g_injectedTapToY;
     }
   }
 
@@ -879,6 +886,11 @@ void loop() {
       // A swipe that began on an on-screen control was a tap aimed at
       // that control, however far the finger slid: acting on it too
       // would navigate away from the very thing being tapped (ADR 0021).
+      // On the full-screen cover the back swipe closes just that (ADR 0033).
+      if (gesture && gesture->type == drehklang::input::GestureType::SwipeLeftToRight &&
+          g_screenManager.closeCoverView()) {
+        gesture.reset();
+      }
       if (gesture && !g_screenManager.swipeStartsOnControl(gesture->startX,
                                                            gesture->startY)) {
         g_inputRouter.onGesture(*gesture);
