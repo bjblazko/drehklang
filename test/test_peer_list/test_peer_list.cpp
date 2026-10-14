@@ -73,12 +73,12 @@ void test_remove_forgets_one_peer() {
 void test_the_list_round_trips_through_bytes() {
   PeerList list;
   list.add(addr(1), "Major V");
-  list.add(addr(2), "Blazko\xE2\x80\x99s AirPods");
+  list.add(addr(2), "Kim\xE2\x80\x99s Earbuds");
   std::vector<uint8_t> bytes = list.serialize();
   PeerList back;
   TEST_ASSERT_TRUE(back.deserialize(bytes.data(), bytes.size()));
   TEST_ASSERT_EQUAL(2, back.peers().size());
-  TEST_ASSERT_EQUAL_STRING("Blazko\xE2\x80\x99s AirPods", back.peers()[0].name.c_str());
+  TEST_ASSERT_EQUAL_STRING("Kim\xE2\x80\x99s Earbuds", back.peers()[0].name.c_str());
   TEST_ASSERT_EQUAL_UINT8_ARRAY(addr(1).data(), back.peers()[1].address.data(), 6);
 }
 
