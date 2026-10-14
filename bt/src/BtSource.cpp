@@ -183,6 +183,18 @@ void BtSource::onGap(int event, void *raw) {
       break;
     case ESP_BT_GAP_ACL_CONN_CMPL_STAT_EVT:
       log("acl connected: status %d", static_cast<int>(param->acl_conn_cmpl_stat.stat));
+      if (param->acl_conn_cmpl_stat.stat == ESP_BT_STATUS_SUCCESS) {
+        g_self->post(BtSourceEvent{BtSourceEvent::Kind::AclUp});
+      }
+      break;
+    // For the drop ~30 s after connecting (LMP response timeout, 2026-10-14):
+    // which power mode and encryption the link was in when it went.
+    case ESP_BT_GAP_MODE_CHG_EVT:
+      log("power mode %d, interval %u", static_cast<int>(param->mode_chg.mode),
+          static_cast<unsigned>(param->mode_chg.interval));
+      break;
+    case ESP_BT_GAP_ENC_CHG_EVT:
+      log("encryption %d", static_cast<int>(param->enc_chg.enc_mode));
       break;
     case ESP_BT_GAP_ACL_DISCONN_CMPL_STAT_EVT:
       log("acl disconnected: reason 0x%02x", static_cast<int>(param->acl_disconn_cmpl_stat.reason));

@@ -16,7 +16,8 @@ namespace drehklang::bt {
 // callback ever sends on the link or calls back into the stack.
 struct BtSourceEvent {
   // Log: a line for loop() to print (`text`) -- callbacks never print.
-  enum class Kind : uint8_t { Found, Button, Connected, Disconnected, Log } kind;
+  // AclUp: a baseband link came up, ours or the headphones' own.
+  enum class Kind : uint8_t { Found, Button, Connected, Disconnected, AclUp, Log } kind;
   btlink::Address address{};
   int8_t rssi = 0;
   btlink::ButtonCode button = btlink::ButtonCode::Play;

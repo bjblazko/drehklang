@@ -48,6 +48,10 @@ constexpr uint32_t kConnectTimeoutMs = 60000;
 // 2026-10-06 with Marshall Major V). The pause also leaves room for
 // headphones switched back on to connect to us themselves.
 constexpr uint32_t kAfterDisconnectMs = 3000;
+// Headphones that come back by themselves (their baseband link up while we
+// sit idle) set up A2DP next. A connect of ours in between collided with
+// theirs and hung in "connecting" for 28 s (BT log, 2026-10-14).
+constexpr uint32_t kAfterTheirLinkMs = 8000;
 
 bool g_enabled = false;
 uint32_t g_lastStateMs = 0;
@@ -181,6 +185,12 @@ void onSourceEvent(const bt::BtSourceEvent &event) {
       report("disconnected");
       postponeConnect(kAfterDisconnectMs);
       sendState();
+      break;
+    case bt::BtSourceEvent::Kind::AclUp:
+      if (g_source.link() == btlink::LinkState::Idle) {
+        report("they came back; waiting before connecting");
+        postponeConnect(kAfterTheirLinkMs);
+      }
       break;
     case bt::BtSourceEvent::Kind::Log:
       report("%s", event.text);
