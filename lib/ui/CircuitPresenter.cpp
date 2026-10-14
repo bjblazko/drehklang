@@ -6,7 +6,6 @@
 
 #include <new>
 
-#include "CpuClock.h"
 
 namespace drehklang::ui {
 
@@ -61,14 +60,12 @@ bool CircuitPresenter::open() {
     return false;
   }
   glue_.setPanelOwnedByGame(true);
-  drivers::setFullCpuSpeed(true);
   return true;
 }
 
 void CircuitPresenter::close() {
   if (!renderer_) return;
   glue_.setPanelOwnedByGame(false);
-  drivers::setFullCpuSpeed(false);
   // present() waits for every frame it starts, so the task is idle here.
   for (Stripe &stripe : stripes_) {
     heap_caps_free(stripe.pixels);

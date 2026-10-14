@@ -24,7 +24,6 @@
 #include "EncoderPins.h"
 #include "Esp32AudioI2SDriver.h"
 #include "TaskLoad.h"
-#include "CpuClock.h"
 #include "ToneOutput.h"
 #include "ToneSession.h"
 #include "GestureRecognizer.h"
@@ -371,7 +370,6 @@ void setup() {
   // failed and every track played silently (2026-10-13). Shorter strings
   // live inside std::string itself.
   heap_caps_malloc_extmem_enable(16);
-  drehklang::drivers::setFullCpuSpeed(false);
   // Before USB traffic can reach the drive (ADR 0016); asks for its DMA
   // buffer explicitly, so it isn't affected by the line above.
   g_usbStorage.begin();

@@ -41,8 +41,8 @@ Measured on the device (2026-10-13), 320 px wide pictures:
    got the gaps left by the library's decoder (prio 2, ~40 % of core 0):
    80 ms per frame, and 847 of 1498 frames were dropped. At priority 3
    all 1499 of 1499 were shown, and the sound has ~280 ms of buffers to
-   catch up from. The CPU runs at 240 MHz while a film is open, like
-   Circuit.
+   catch up from. All of it at 240 MHz (the clock is not lowered any
+   more since 2.4.1).
 4. **The music's track is lent, not stopped.** The film's sound borrows
    the decoder (`playVideoSound()` / `endVideoSound()`). The track comes
    back parked with its position and timing, and `filePosition()` keeps

@@ -10,7 +10,6 @@
 
 #include "AudioHooks.h"
 #include "AudioTap.h"
-#include "CpuClock.h"
 #include "St77916Driver.h"
 #include "VideoShelf.h"
 
@@ -110,7 +109,6 @@ bool VideoPresenter::open(const std::string &title, const video::VideoResume &fr
   shownFrame_ = start_.frame;
   frameSize_ = 0;
   soundStarted_ = false;
-  drivers::setFullCpuSpeed(true);
   state_ = State::Cued;
   if (play) {
     resume();
@@ -125,7 +123,6 @@ void VideoPresenter::close() {
   waitForStripes();
   audio_.endVideoSound();
   glue_.setPanelOwnedByGame(false);
-  drivers::setFullCpuSpeed(false);
   release();
   state_ = State::Closed;
 }

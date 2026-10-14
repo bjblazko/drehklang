@@ -415,11 +415,13 @@ duplicating it.
   Anything on core 0 below prio 2 only gets the gaps: a stripe push there
   took 80 ms instead of 18. The library's own tone control
   (`settings.IIR_FILTER`) is off since then; it cost ~4 % for nothing.
-- **The CPU runs at 160 MHz, 240 only while Circuit owns the panel**
-  (`lib/drivers-power/CpuClock.h`). The prebuilt core has no power
-  management, so nothing scales by itself. At 160 the music's decoder takes
-  ~48 % of core 0. Anything new that fills a core (video, a game) must ask
-  for 240 the same way; `INFO` prints the current clock.
+- **The CPU stays at 240 MHz.** 2.2.3 ran it at 160 (240 only for Circuit
+  and films) and 2.4.1 took that back: Ogg/Vorbis stuttered at 160 even
+  with the screen dark, and music stuttered while the spectrum ran
+  (2026-10-14). The prebuilt core has no power management, so any lower
+  clock would have to be switched by hand per format and per screen,
+  and the saving was never measured. Don't lower it again without a
+  current meter and a listen to every format.
 - **ESP32-audioI2S's durations and time seeks are estimates, wrong for
   VBR.** Every MP3 here is VBR (checked 2026-09-15); the library converts
   seconds to bytes with an average bitrate. `library::Mp3Duration` and

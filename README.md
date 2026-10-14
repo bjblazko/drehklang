@@ -345,6 +345,9 @@ Copy both files into `/Videos`. The list shows each film once.
 - Less delay on Bluetooth headphones in games (~300 ms today; ADR 0027's
   open points)
 - Wi-Fi: internet radio, and podcasts downloaded to the SD card
+- Maybe: a lower CPU clock while the screen is dark and an MP3 or AAC
+  plays, if a current meter shows it saves enough. 160 MHz everywhere was
+  too little (2.4.1: Vorbis and the spectrum stuttered)
 - Maybe: films through Espressif's `esp_new_jpeg` (SIMD, already in the
   Arduino core) instead of JPEGDEC, for a bigger and cleaner picture. The
   factory firmware used it. It is binary-only, so the licence has to be
