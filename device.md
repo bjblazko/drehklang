@@ -74,7 +74,7 @@ flowchart LR
 | CST816 | Touch | X needs calibrating; NACKs while untouched |
 | DRV2605L | Haptics, driving an LRA | Silent in its factory ERM mode; LRA open loop works |
 | Encoders | Rotation only, no push | Not quadrature: never `00` (see AGENTS.md) |
-| Microphone | PDM MEMS, GPIO 45/46 | From the schematic; unused and untested |
+| Microphone | PDM MEMS, GPIO 45/46 | Answers on the **left** PDM slot only (right reads a constant). I2S0 PDM RX with the PCM filter, 16 kHz: DC offset ~1375, quiet room ~-70 dBFS, speech at arm's length -45..-33 dBFS RMS, peaks ~2500 above the offset, so it needs a DC filter and ~+18 dB of gain (2026-10-14, ADR 0032). PDM RX exists on I2S0 only, the port the DAC uses |
 | LEDs | none | The board has no LEDs; the display is the only status output |
 | Motion sensor | none | An I2C scan of the bus (GPIO 11/12) finds only 0x15 (touch) and 0x5A (haptics), 2026-10-14. The factory firmware's "Imu control music" string has no hardware behind it on this board |
 | Battery | 3.7 V Li-ion, 800 mAh, PH1.25 | With it plugged in, unplugging USB is no power cycle |

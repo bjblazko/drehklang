@@ -39,10 +39,10 @@ void test_hiding_an_entry_hides_only_that_one() {
 
 void test_toggling_twice_puts_it_back() {
   auto menu = makeMenu();
-  const uint8_t before = menu.mask();
+  const uint16_t before = menu.mask();
   menu.toggle(1);
   menu.toggle(1);
-  TEST_ASSERT_EQUAL_UINT8(before, menu.mask());
+  TEST_ASSERT_EQUAL_UINT16(before, menu.mask());
   TEST_ASSERT_TRUE(menu.visible(1));
 }
 
@@ -78,13 +78,13 @@ void test_a_hidden_entry_can_always_be_shown_again() {
 
 void test_entries_outside_the_table_are_inert() {
   auto menu = makeMenu();
-  const uint8_t before = menu.mask();
+  const uint16_t before = menu.mask();
   TEST_ASSERT_FALSE(menu.visible(-1));
   TEST_ASSERT_FALSE(menu.visible(kEntries));
   menu.toggle(-1);
   menu.toggle(kEntries);
   menu.toggle(99);
-  TEST_ASSERT_EQUAL_UINT8(before, menu.mask());
+  TEST_ASSERT_EQUAL_UINT16(before, menu.mask());
   TEST_ASSERT_EQUAL(kEntries, menu.visibleCount());
 }
 
@@ -92,7 +92,7 @@ void test_a_stored_mask_round_trips() {
   auto menu = makeMenu();
   menu.toggle(0);
   menu.toggle(4);
-  const uint8_t saved = menu.mask();
+  const uint16_t saved = menu.mask();
 
   auto restored = makeMenu();
   restored.setMask(saved);
@@ -127,6 +127,39 @@ void test_a_version_1_mask_is_taken_as_stored() {
   TEST_ASSERT_TRUE(menu.visible(5));
 }
 
+// Dictaphone (ADR 0032) is the ninth entry: past what one byte holds.
+void test_a_ninth_entry_has_its_own_bit() {
+  MenuVisibility menu(9, kSettingsPinned);
+  TEST_ASSERT_TRUE(menu.visible(8));
+  menu.toggle(8);
+  TEST_ASSERT_FALSE(menu.visible(8));
+  TEST_ASSERT_EQUAL_UINT16(0, menu.mask() & (1u << 8));
+  TEST_ASSERT_TRUE(menu.visible(7));
+}
+
+// A version 1 mask was one byte: an entry beyond it gets its default,
+// while the user's choices within it stay.
+void test_a_version_1_byte_shows_a_later_entry_by_default() {
+  MenuVisibility menu(9, kSettingsPinned, 1u << 7);
+  menu.loadStored(0xFF & ~(1u << 2) & ~(1u << 7), 1);
+  TEST_ASSERT_TRUE(menu.visible(8));
+  TEST_ASSERT_FALSE(menu.visible(2));
+  TEST_ASSERT_FALSE(menu.visible(7));
+}
+
+void test_a_version_1_byte_keeps_a_later_hidden_entry_hidden() {
+  MenuVisibility menu(10, kSettingsPinned, 1u << 9);
+  menu.loadStored(0xFF, 1);
+  TEST_ASSERT_TRUE(menu.visible(8));
+  TEST_ASSERT_FALSE(menu.visible(9));
+}
+
+void test_a_version_2_mask_keeps_a_hidden_ninth_entry_hidden() {
+  MenuVisibility menu(9, kSettingsPinned);
+  menu.loadStored(0x00FF, 2);
+  TEST_ASSERT_FALSE(menu.visible(8));
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_everything_shows_before_the_user_changes_anything);
@@ -140,5 +173,9 @@ int main(int, char **) {
   RUN_TEST(test_an_entry_hidden_by_default_starts_hidden);
   RUN_TEST(test_a_mask_from_before_version_1_keeps_new_entries_hidden);
   RUN_TEST(test_a_version_1_mask_is_taken_as_stored);
+  RUN_TEST(test_a_ninth_entry_has_its_own_bit);
+  RUN_TEST(test_a_version_1_byte_shows_a_later_entry_by_default);
+  RUN_TEST(test_a_version_1_byte_keeps_a_later_hidden_entry_hidden);
+  RUN_TEST(test_a_version_2_mask_keeps_a_hidden_ninth_entry_hidden);
   return UNITY_END();
 }

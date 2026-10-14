@@ -30,8 +30,9 @@ class SdDirectoryReader : public library::DirectoryReader {
       // 2026-09-12. Without stripping it here, FolderEntry.name would
       // hold a full path, breaking both display and the child-path
       // building in ScreenManager.
-      result.push_back(
-          library::FolderEntry{basename(entry.name()), entry.isDirectory()});
+      const bool isDirectory = entry.isDirectory();
+      result.push_back(library::FolderEntry{basename(entry.name()), isDirectory,
+                                            isDirectory ? 0u : static_cast<uint32_t>(entry.size())});
       entry.close();
     }
     return result;

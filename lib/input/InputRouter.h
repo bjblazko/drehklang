@@ -64,6 +64,10 @@ class InputRouter {
         // (ADR 0031) -- the screen knows which.
         knobSink_.onGameKnob(delta);
         break;
+      case navigation::ScreenKind::Recording:
+        // A recording plays at the music's volume (ADR 0032).
+        playback_.adjustVolume(delta, nowMs);
+        break;
       case navigation::ScreenKind::NowPlaying:
         // Holding the time pill turns the knob into a shuttle (ADR 0013);
         // the volume never changes during a hold.

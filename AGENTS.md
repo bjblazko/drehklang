@@ -372,6 +372,19 @@ duplicating it.
   starved the link and both outputs stuttered (`BT` shows `U4WDH
   underruns` climbing). The AVI must stay under 1 GB (no OpenDML); the
   reader refuses anything else.
+- **The microphone answers on the left PDM slot only** (right reads a
+  constant), at a DC offset of ~1375 and quiet: `dictaphone::MicConditioner`
+  filters and adds +18 dB. PDM RX exists on I2S0 only, so the microphone
+  and the dictaphone's WAV player are two more `DacOwner`s next to the
+  player and the tone output -- opening the recorder parks the music
+  (ADR 0032). Their tasks keep their stacks in PSRAM
+  (`xTaskCreatePinnedToCoreWithCaps`) to spare the internal RAM the music
+  player needs; a new mostly-idle task should do the same.
+- **A task must not hold a lock across a blocking I2S call and take it
+  straight back.** The main loop waiting for that lock on the other core
+  starves for seconds: the UI freezes, and the Bluetooth link (served by
+  the main loop) reports a disconnect that never happened. The dictaphone's
+  tasks sleep a tick outside the lock after every block (ADR 0032).
 - **The vibration motor is an LRA** (DRV2605L at 0x5A on the touch I2C
   bus). In the chip's factory ERM mode it stays silent while every write
   succeeds. `Drv2605Driver` sets LRA open loop. LVGL's `feedback_cb`

@@ -160,6 +160,15 @@ void ScreenManager::render() {
   toneValueLabel_ = nullptr;
   tonePlayButton_ = nullptr;
   toneBand_.detach();
+  dictaphoneBand_.detach();
+  dictaphoneDots_.detach();
+  dictaphoneScaleLabel_ = nullptr;
+  dictaphoneTimeLabel_ = nullptr;
+  dictaphoneNameLabel_ = nullptr;
+  dictaphoneRunDot_ = nullptr;
+  dictaphonePrimary_ = nullptr;
+  dictaphoneSecondary_ = nullptr;
+  deleteDialog_ = nullptr;
   tableTennisPlayerScore_.detach();
   tableTennisAiScore_.detach();
   miniBar_ = nullptr;
@@ -188,6 +197,7 @@ void ScreenManager::render() {
     if (toneSession_ && toneSession_->running()) toneSession_->stop();
     toneBand_.release();
   }
+  leaveDictaphoneScreens(current.kind);
   if (current.kind != ScreenKind::NowPlaying) slotBand_.release();
   if (current.kind != renderedKind_) {
     renderedKind_ = current.kind;
@@ -210,6 +220,10 @@ void ScreenManager::render() {
     renderSleepTimer();
   } else if (current.kind == ScreenKind::ToneGenerator) {
     renderToneGenerator();
+  } else if (current.kind == ScreenKind::Dictaphone) {
+    renderDictaphone();
+  } else if (current.kind == ScreenKind::Recording) {
+    renderRecording();
   } else if (current.kind == ScreenKind::LicenceDetail) {
     renderLicenceDetail();
   } else if (current.kind == ScreenKind::About) {
@@ -365,6 +379,15 @@ void ScreenManager::render() {
         videoTitles_ = video::filmTitlesIn(directoryReader_);
         for (size_t i = 0; i < videoTitles_.size(); ++i) {
           items.emplace_back(videoTitles_[i], static_cast<int>(i));
+        }
+        break;
+      case ScreenKind::Recordings:
+        // Read again on every visit, like Video's: a recording may have
+        // been made or deleted since.
+        recordings_ = dictaphone::recordingsIn(directoryReader_);
+        for (size_t i = 0; i < recordings_.size(); ++i) {
+          items.emplace_back(dictaphone::recordingTitle(recordings_[i].number),
+                             static_cast<int>(i));
         }
         break;
       case ScreenKind::Games:
@@ -546,6 +569,15 @@ void ScreenManager::renderList(
     } else if (current.kind == ScreenKind::Bluetooth) {
       secondaryText = bluetoothRowValue(items[i].second);
       if (!secondaryText.empty()) secondary = secondaryText.c_str();
+    } else if (current.kind == ScreenKind::Recordings &&
+               static_cast<size_t>(items[i].second) < recordings_.size()) {
+      // A recording's length (ADR 0032).
+      char length[16];
+      dictaphone::formatDuration(
+          length, sizeof(length),
+          dictaphone::recordingDurationMs(recordings_[items[i].second].bytes));
+      secondaryText = length;
+      secondary = secondaryText.c_str();
     }
     if (secondary) {
       lv_obj_t *valueLabel = lv_label_create(btn);
@@ -641,6 +673,7 @@ const char *ScreenManager::emptyListText(const navigation::Screen &screen) const
   if (screen.kind == ScreenKind::Bluetooth) return bluetoothEmptyText();
   if (screen.kind == ScreenKind::Folder) return "Empty folder";
   if (screen.kind == ScreenKind::Videos) return "No films in /Videos\nSee the README";
+  if (screen.kind == ScreenKind::Recordings) return "No recordings yet";
   if (library().tracks.empty()) return "Nothing scanned yet\nSettings > Rescan SD card";
   switch (screen.kind) {
     case ScreenKind::Genres:
@@ -793,6 +826,12 @@ std::string ScreenManager::captionTextFor(
       return "About";
     case ScreenKind::ToneGenerator:
       return "Tones";
+    case ScreenKind::Dictaphone:
+      return "Dictaphone";
+    case ScreenKind::Recordings:
+      return "Recordings";
+    case ScreenKind::Recording:
+      return dictaphone::recordingTitle(screen.params.row);
     case ScreenKind::Brightness:
       return "Brightness";
     case ScreenKind::Rotation:
@@ -966,10 +1005,12 @@ bool ScreenManager::swipeStartsOnControl(int16_t x, int16_t y) const {
   // calibrated touch still scatters around the finger.
   constexpr lv_coord_t kSlop = 10;
   // The tone generator's band takes swipes of its own: they turn its
-  // page between scope and spectrum (ADR 0024).
+  // page between scope and spectrum (ADR 0024), and so does the
+  // dictaphone's (ADR 0032).
   // So does Now Playing's cover slot (ADR 0028), and the equalizer's
   // sliders take vertical drags that may wander sideways (ADR 0029).
-  for (lv_obj_t *control : {caption_, toneBand_.raw(), slotSwipeBox_, eqArea_}) {
+  for (lv_obj_t *control :
+       {caption_, toneBand_.raw(), dictaphoneBand_.raw(), slotSwipeBox_, eqArea_}) {
     if (!control) continue;
     lv_area_t area;
     lv_obj_get_coords(control, &area);
@@ -1916,6 +1957,9 @@ void ScreenManager::onListItemClicked(lv_event_t *e) {
         self->tabs_.activeStack().push(Screen{ScreenKind::LicenceDetail, params});
         self->render();
       }
+      break;
+    case ScreenKind::Recordings:
+      if (ctx->index >= 0) self->openRecording(static_cast<size_t>(ctx->index));
       break;
     case ScreenKind::Videos:
       if (ctx->index >= 0 && static_cast<size_t>(ctx->index) < self->videoTitles_.size()) {

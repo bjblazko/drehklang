@@ -21,6 +21,8 @@
 #include "InputRouter.h"
 #include "Bookmarks.h"
 #include "CollectionSet.h"
+#include "DictaphonePorts.h"
+#include "RecordingShelf.h"
 #include "HapticFeedback.h"
 #include "MenuVisibility.h"
 #include "VideoResume.h"
@@ -226,6 +228,16 @@ class ScreenManager : public input::KnobSink {
   // What the scope draws: the samples that actually reached the DAC.
   void setScopeSource(signal::SampleSource &source) { scopeSource_ = &source; }
 
+  // The dictaphone (ADR 0032). Optional like the tone session: without it
+  // the recorder shows nothing to record with.
+  void setDictaphone(dictaphone::Recorder &recorder, dictaphone::RecordingPlayer &player) {
+    recorder_ = &recorder;
+    recordingPlayer_ = &player;
+  }
+  // Recording time, position, the play button and the band at ~30 fps
+  // while seen. Call every loop().
+  void tickDictaphone(uint32_t nowMs, bool visible);
+
   // Bluetooth headphones (ADR 0027). Optional: without a controller
   // Settings shows no Bluetooth row content and the button does nothing.
   void setBluetooth(bluetooth::BtController &bt) { bluetooth_ = &bt; }
@@ -338,6 +350,34 @@ class ScreenManager : public input::KnobSink {
   static void onCircuitPressed(lv_event_t *e);
   static void onCircuitReleased(lv_event_t *e);
   static void onCircuitTapped(lv_event_t *e);
+  // ScreenManagerDictaphone.cpp.
+  void renderDictaphone();
+  void renderRecording();
+  void leaveDictaphoneScreens(navigation::ScreenKind next);
+  lv_obj_t *makeDictaphoneBand();
+  void makeDictaphoneLabels();
+  void applyDictaphoneView();
+  void applyDictaphoneLabel();
+  void applyRecordButton();
+  void applyRecordingPlayButton();
+  void updateRecorderTime();
+  void updateRecordingTime();
+  void drawDictaphoneBand(signal::SampleSource &source, uint32_t dtMs);
+  void openRecording(size_t index);
+  void showDeleteDialog();
+  static void onDictaphoneBandPressed(lv_event_t *e);
+  static void onDictaphoneBandReleased(lv_event_t *e);
+  static void onRecordClicked(lv_event_t *e);
+  static void onRecordingsClicked(lv_event_t *e);
+  static void onRecorderSideClicked(lv_event_t *e);
+  void startReview();
+  void endReview(bool listen);
+  bool reviewing() const;
+  static void onRecordingRewindClicked(lv_event_t *e);
+  static void onRecordingPlayClicked(lv_event_t *e);
+  static void onRecordingDeleteClicked(lv_event_t *e);
+  static void onDeleteCancelled(lv_event_t *e);
+  static void onDeleteConfirmed(lv_event_t *e);
   // ScreenManagerToneGenerator.cpp.
   void renderToneGenerator();
   void layoutToneChips();
@@ -608,6 +648,7 @@ class ScreenManager : public input::KnobSink {
   // has never opened this screen should look like.
   static constexpr char kMenuVisibilityKey[] = "menuVis";
   static constexpr char kMenuVisibilityVersionKey[] = "menuVisV";
+  static constexpr char kMenuVisibilityHighKey[] = "menuVisH";
   // Constructed in ScreenManagerMenu.cpp, where the menu table (and so the
   // entry count and which entry is pinned) lives.
   navigation::MenuVisibility menuVisibility_;
@@ -782,6 +823,37 @@ class ScreenManager : public input::KnobSink {
   lv_obj_t *toneScaleLabel_ = nullptr;
   ui_widgets::PageDots toneDots_;
   static constexpr uint32_t kToneScopeFrameMs = 33;
+
+  // Dictaphone (ADR 0032). The recorder and a recording never show at
+  // once, so they share one band, kept across renders like the tone
+  // generator's.
+  dictaphone::Recorder *recorder_ = nullptr;
+  dictaphone::RecordingPlayer *recordingPlayer_ = nullptr;
+  // As listed, so a row's index names its file.
+  std::vector<dictaphone::Recording> recordings_;
+  // The file the player has open, empty when none -- on Recording, or on
+  // the recorder while it plays back the last recording.
+  std::string openRecordingPath_;
+  int nextRecordingNumber_ = 1;
+  // The recording made last on the recorder, to play back there; cleared
+  // on leaving it.
+  std::string lastRecordingPath_;
+  int lastRecordingNumber_ = 0;
+  SignalBand dictaphoneBand_;
+  ui_widgets::PageDots dictaphoneDots_;
+  lv_obj_t *dictaphoneScaleLabel_ = nullptr;
+  lv_obj_t *dictaphoneTimeLabel_ = nullptr;
+  lv_obj_t *dictaphoneNameLabel_ = nullptr;
+  lv_obj_t *dictaphoneRunDot_ = nullptr;
+  lv_obj_t *dictaphonePrimary_ = nullptr;
+  lv_obj_t *dictaphoneSecondary_ = nullptr;
+  lv_obj_t *deleteDialog_ = nullptr;
+  lv_coord_t dictaphoneSwipeStartX_ = 0;
+  uint32_t lastDictaphoneFrameMs_ = 0;
+  uint32_t shownDictaphoneSecond_ = UINT32_MAX;
+  bool shownRecording_ = false;
+  bool shownRecordingPaused_ = false;
+  bool shownRecordingPlaying_ = false;
   uint32_t lastTableTennisDrawMs_ = 0;
   lv_obj_t *volumeArcHost_ = nullptr;
   lv_obj_t *volumeHudPill_ = nullptr;

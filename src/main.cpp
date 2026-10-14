@@ -43,6 +43,7 @@
 #include "Drv2605Driver.h"
 #include "HapticFeedback.h"
 #include "LvglGlue.h"
+#include "MicRecorder.h"
 #include "BookmarkKeeper.h"
 #include "Bookmarks.h"
 #include "PlaybackResumeSource.h"
@@ -71,6 +72,7 @@
 #include "UsbMscStorage.h"
 #include "Version.h"
 #include "VolumePersistence.h"
+#include "WavPlayer.h"
 
 namespace {
 
@@ -243,6 +245,10 @@ drehklang::playback::DacArbiter g_dac;
 drehklang::drivers::Esp32AudioI2SDriver g_audioDriver(g_dac);
 // A game's blips (ADR 0022) and the tone generator's voice (ADR 0024).
 drehklang::drivers::ToneOutput g_toneOutput(g_dac);
+// The dictaphone (ADR 0032): two more owners of I2S0.
+drehklang::drivers::SdWavWriter g_wavWriter;
+drehklang::drivers::MicRecorder g_micRecorder(g_dac, g_wavWriter);
+drehklang::drivers::WavPlayer g_wavPlayer(g_dac);
 // Bluetooth headphones (ADR 0027). The ring's storage comes from PSRAM in
 // setup() -- PSRAM is not up yet while globals are constructed.
 constexpr uint32_t kBtRingSamples = 8192;  // 16 KB, ~85 ms at 48 kHz.
@@ -386,6 +392,9 @@ void setup() {
   g_batteryAdc.begin();
   g_audioDriver.begin();
   g_toneOutput.begin();
+  g_wavWriter.begin();
+  g_micRecorder.begin();
+  g_wavPlayer.begin();
   g_btRing.attach(static_cast<int16_t *>(heap_caps_calloc(
                       kBtRingSamples, sizeof(int16_t), MALLOC_CAP_SPIRAM)),
                   kBtRingSamples);
@@ -516,6 +525,7 @@ void setup() {
     g_screenManager.setToneSession(g_toneSession);
     g_screenManager.setBluetooth(g_btController);
     g_screenManager.setScopeSource(g_toneOutput);
+    g_screenManager.setDictaphone(g_micRecorder, g_wavPlayer);
     g_screenManager.begin();
     // Created after the first screen so it's above it on LVGL's top
     // layer from the start -- see LockOverlay.h.
@@ -988,6 +998,9 @@ void loop() {
   // pocket is no place for a 1 kHz sine.
   if (g_lockController.isLocked() && g_toneSession.running()) g_toneSession.stop();
   g_screenManager.tickToneGenerator(now, displayOn && !g_lockController.isLocked());
+  // Not stopped by the lock, unlike a tone: a recording in a pocket is the
+  // point of a dictaphone.
+  g_screenManager.tickDictaphone(now, displayOn && !g_lockController.isLocked());
   // Cheap (no full re-render), a no-op on any screen other than Now
   // Playing -- see ScreenManager::updateElapsedTimeDisplay().
   if (displayOn) g_screenManager.updateElapsedTimeDisplay();

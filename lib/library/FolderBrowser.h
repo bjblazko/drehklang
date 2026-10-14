@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -8,6 +9,7 @@ namespace drehklang::library {
 struct FolderEntry {
   std::string name;  // Just the entry's own name, not a full path.
   bool isDirectory;
+  uint32_t size = 0;  // Bytes, for a file; what the listing already knows.
 };
 
 // Lists a single directory's immediate children. Separate from

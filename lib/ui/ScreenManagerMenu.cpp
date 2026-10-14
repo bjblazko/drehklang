@@ -125,11 +125,15 @@ constexpr MenuEntry kMenuEntries[] = {
        tabs.activeStack().push(Screen{ScreenKind::Videos, {}});
      },
      /*showsSleepTimer=*/false, /*alwaysVisible=*/false, /*hiddenByDefault=*/true},
+    {DREHKLANG_ICON_MIC, "Dictaphone",
+     [](navigation::TabController &tabs) {
+       tabs.activeStack().push(Screen{ScreenKind::Dictaphone, {}});
+     }},
 };
 constexpr int kMenuEntryCount =
     static_cast<int>(sizeof(kMenuEntries) / sizeof(kMenuEntries[0]));
-static_assert(kMenuEntryCount <= 8,
-              "the visibility setting is one bit per entry in a uint8_t");
+static_assert(kMenuEntryCount <= navigation::MenuVisibility::kMaxEntries,
+              "the visibility setting is one bit per entry in a uint16_t");
 
 // A solid mark the calibration screen draws at (cx, cy): a cross bar or a
 // dot, centered there.
@@ -340,11 +344,11 @@ std::vector<int> ScreenManager::visibleMenuEntries() const {
 }
 
 navigation::MenuVisibility ScreenManager::makeMenuVisibility() {
-  uint8_t pinned = 0;
-  uint8_t hidden = 0;
+  uint16_t pinned = 0;
+  uint16_t hidden = 0;
   for (int i = 0; i < kMenuEntryCount; ++i) {
-    if (kMenuEntries[i].alwaysVisible) pinned |= static_cast<uint8_t>(1u << i);
-    if (kMenuEntries[i].hiddenByDefault) hidden |= static_cast<uint8_t>(1u << i);
+    if (kMenuEntries[i].alwaysVisible) pinned |= static_cast<uint16_t>(1u << i);
+    if (kMenuEntries[i].hiddenByDefault) hidden |= static_cast<uint16_t>(1u << i);
   }
   return navigation::MenuVisibility(kMenuEntryCount, pinned, hidden);
 }
@@ -358,19 +362,25 @@ void ScreenManager::refuse(const char *text, ui_widgets::MessageAnchor anchor) {
   if (haptics_) haptics_->feel(haptics::Feel::Refusal, millis());
 }
 
-// A mask stored before Video existed is corrected once and written back
-// with the current version (MenuVisibility::loadStored()).
+// A mask stored before Video or the Dictaphone existed is corrected once
+// and written back with the current version (MenuVisibility::loadStored()).
+// The mask's high byte has a key of its own, so the low byte stays where
+// older firmware reads it.
 void ScreenManager::loadMenuVisibility() {
-  uint8_t stored = 0;
-  if (!settings_.getU8(kMenuVisibilityKey, stored)) return;
+  uint8_t low = 0;
+  if (!settings_.getU8(kMenuVisibilityKey, low)) return;
+  uint8_t high = 0;
+  settings_.getU8(kMenuVisibilityHighKey, high);
   uint8_t version = 0;
   settings_.getU8(kMenuVisibilityVersionKey, version);
-  menuVisibility_.loadStored(stored, version);
+  menuVisibility_.loadStored(static_cast<uint16_t>(low | (high << 8)), version);
   if (version < navigation::MenuVisibility::kMaskVersion) saveMenuVisibility();
 }
 
 void ScreenManager::saveMenuVisibility() {
-  settings_.setU8(kMenuVisibilityKey, menuVisibility_.mask());
+  const uint16_t mask = menuVisibility_.mask();
+  settings_.setU8(kMenuVisibilityKey, static_cast<uint8_t>(mask & 0xFF));
+  settings_.setU8(kMenuVisibilityHighKey, static_cast<uint8_t>(mask >> 8));
   settings_.setU8(kMenuVisibilityVersionKey, navigation::MenuVisibility::kMaskVersion);
 }
 
@@ -1030,10 +1040,16 @@ void ScreenManager::startUsbDrive() {
   // The card is the computer's until the session ends: nothing here may
   // read or write it, so close the playing file and keep the sleep timer
   // from powering down mid-copy.
-  playback_.stop();
-  sleepTimer_.cancel();
   constexpr ui_widgets::MessageAnchor kAnchor{drivers::kLcdHorRes / 2,
                                               drivers::kLcdVerRes / 2};
+  // A recording is finished on its own task a moment after it stops
+  // (ADR 0032); the card is not the computer's before that.
+  if (recorder_ && recorder_->saving()) {
+    refuse("Saving recording", kAnchor);
+    return;
+  }
+  playback_.stop();
+  sleepTimer_.cancel();
   if (!usbDrive_.start(millis())) {
     refuse("No SD card", kAnchor);
     return;

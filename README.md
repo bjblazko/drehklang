@@ -24,7 +24,8 @@ tap to choose. No app, no account, no cloud: nothing leaves the device.
 - A seven-band equalizer from 31 Hz to 16 kHz that never clips
 - Cover, dot-matrix spectrum, oscilloscope or spectrum in Now Playing,
   swiped through; a tone generator with oscilloscope, a
-  sleep timer, and two games for the knob
+  dictaphone with the same live scope and spectrum, a sleep timer, and
+  two games for the knob
 - The SD card as a USB drive, for copying music over the cable
 - A calm, Braun-inspired design: one orange control per screen, nothing
   that blinks for its own sake
@@ -153,6 +154,14 @@ screens.
   swiping it shows a spectrum. Its oscillator, scope and spectrum live in
   `lib/signal/`, built to be reused by a recorder and an analyzer — see
   [ADR 0024](docs/adr/0024-tone-generator.md).
+- Dictaphone: records the onboard microphone to `/Recordings` as plain
+  WAV (16 kHz, mono), numbered "Recording 1, 2, …" because the board has
+  no clock. The recorder shows the microphone live in the tone
+  generator's scope and spectrum, also while nothing is recorded, and
+  can pause a recording and play it back right there after Stop; a list opens each recording to play it (in the
+  same band, with five seconds back) or delete it. Opening
+  it pauses the music. See
+  [ADR 0032](docs/adr/0032-dictaphone.md).
 - Bluetooth headphones, through the board's second chip (the ESP32-S3
   has no Classic Bluetooth): everything audible goes to them while the
   jack keeps playing, one volume for both, Play/Pause on the headphones,
@@ -368,12 +377,12 @@ Copy both files into `/Videos`. The list shows each film once.
 - Theming (selectable color schemes / customizable look)
 - General visual polish and animation ("eye candy") beyond the planned
   one-time gesture-hint nudge and screen-transition slide
-- Voice memo / dictation recording via the onboard PDM microphone, and
-  a spectrum analyzer (microphone or Drehklang's own output) -- both on
-  `lib/signal/`'s oscillator, scope and `SampleSource` (ADR 0024)
+- A spectrum analyzer (microphone or Drehklang's own output) on
+  `lib/signal/`'s scope and `SampleSource`, like the dictaphone (ADR 0024,
+  0032)
 - For Tones: a frequency sweep, stereo channel selection
 - DOOM (v1 shareware, the WAD supplied on the SD card) via a prboom port,
-  after the recorder and analyzer. Likely feasible on the S3's CPU and
+  after the analyzer. Likely feasible on the S3's CPU and
   8 MB PSRAM; the real work is controls on one knob plus touch zones, the
   320x200 picture inside the round screen (~305x191 fits), and OPL music
   (skip at first). Start with a spike: the demo loop from SD, measured
@@ -451,7 +460,8 @@ umlauts and accents render as written, and
 jump-by-letter and Music's browse axes, and
 [ADR 0024](docs/adr/0024-tone-generator.md) for the tone generator, and
 [ADR 0027](docs/adr/0027-bluetooth-headphones.md) for Bluetooth
-headphones.
+headphones, and
+[ADR 0032](docs/adr/0032-dictaphone.md) for the dictaphone.
 
 ### What goes on the SD card
 
@@ -464,6 +474,7 @@ Each collection is its own top-level folder, laid out
 /Audiobooks/…    Audiobooks
 /RadioPlays/…    Radio Plays
 /Videos/         films, converted first (see below)
+/Recordings/     the dictaphone's recordings (written by the device)
 /drehklang/        indexes and cached covers (written by the device)
 ```
 

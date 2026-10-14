@@ -208,6 +208,10 @@ backlight. Every screen, the lock screen included, uses `surface`.
   beyond its drawn bounds (`makeButton()` in `LvglButtonHelpers.h`), so
   keep at least ~20px between adjacent tappable controls to avoid
   overlapping hit areas.
+- **Deleting asks first, in words.** Removing a file cannot be undone,
+  so it opens a modal layer naming what goes ("Delete Recording 2?") with
+  a grey Cancel beside a red Delete — red because it needs attention, and
+  the only coloured control while the question shows (ADR 0032).
 - **A setting that can break touch** is never kept unconfirmed: apply it
   live, ask for a tap on a Primary "Keep" with a countdown ring, revert on
   timeout, and let the knob cancel (Touch calibration, ADR 0010).

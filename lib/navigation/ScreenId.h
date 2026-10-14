@@ -78,6 +78,14 @@ enum class ScreenKind {
   // VideoPlayer's film is ScreenParams::folderPath (its title).
   Videos,
   VideoPlayer,
+  // The dictaphone (ADR 0032): the recorder, its recordings, and one of
+  // them playing. Appended like everything above; past NowPlaying, so a
+  // resume never opens the microphone. Recording's file is
+  // ScreenParams::folderPath (its name in /Recordings), its number
+  // ScreenParams::row.
+  Dictaphone,
+  Recordings,
+  Recording,
 };
 
 // Parameters a screen needs to render itself. Only the fields relevant

@@ -50,6 +50,10 @@ LV_FONT_DECLARE(drehklang_icon_font_48);
 // The Video tile ("movie"): a clapperboard, which no audio tile could be
 // mistaken for.
 #define DREHKLANG_ICON_MOVIE "\xEE\x90\x84"           // U+E404
+// The Dictaphone tile ("mic"), ADR 0032.
+#define DREHKLANG_ICON_MIC "\xEE\x80\xA9"             // U+E029
+// A recording's five-seconds-back button ("replay_5"), ADR 0032.
+#define DREHKLANG_ICON_REPLAY_5 "\xEE\x81\x9B"  // U+E05B
 // Settings > Screen rotation's screen ("screen_rotation"), like light_mode on
 // Brightness's.
 #define DREHKLANG_ICON_SCREEN_ROTATION "\xEE\x87\x81"  // U+E1C1
