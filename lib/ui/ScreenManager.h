@@ -419,12 +419,14 @@ class ScreenManager : public input::KnobSink {
   // ScreenManagerBluetooth.cpp (ADR 0027).
   void appendBluetoothRows(std::vector<std::pair<std::string, int>> &items) const;
   void appendBluetoothSearchRows(std::vector<std::pair<std::string, int>> &items) const;
+  void appendBluetoothForgetRows(std::vector<std::pair<std::string, int>> &items) const;
   std::string bluetoothRowValue(int itemId) const;
   std::string bluetoothSettingsValue() const;
   const char *bluetoothEmptyText() const;
   std::string bluetoothSearchCaption() const;
   void onBluetoothRow(int itemId);
   void onBluetoothSearchRow(int itemId);
+  void onBluetoothForgetRow(int itemId);
   void openBluetoothSearch();
   void showBluetoothEvent(bluetooth::BtEvent event, uint32_t nowMs);
   void onHeadphoneButton(bluetooth::BtEvent event);
@@ -432,9 +434,10 @@ class ScreenManager : public input::KnobSink {
   // Bluetooth screen row ids. The rows come and go with the state, so a
   // click is dispatched by id, never by position.
   static constexpr int kBtToggleRow = 0;
-  static constexpr int kBtDeviceRow = 1;
   static constexpr int kBtFindRow = 2;
   static constexpr int kBtForgetRow = 3;
+  // Remembered headphones: this plus their place in the list.
+  static constexpr int kBtPeerRowBase = 10;
   // The search's first row; results use their index.
   static constexpr int kBtSearchAgainItemId = -4;
   // What a Bluetooth-related screen shows, as text: it is redrawn only
@@ -448,6 +451,9 @@ class ScreenManager : public input::KnobSink {
   // The addresses of the search's rows as last drawn: a tap resolves its
   // row by address, since the list re-sorts as results arrive.
   mutable std::vector<btlink::Address> shownBtResults_;
+  // The same for the remembered headphones' rows, whose order changes
+  // with every connection.
+  mutable std::vector<btlink::Address> shownBtPeers_;
   bool shownBtScanning_ = false;
   bool btSearchOpen_ = false;
   // Settings > Main menu (ADR 0018): which destinations Home shows.

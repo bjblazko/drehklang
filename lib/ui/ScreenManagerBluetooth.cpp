@@ -39,7 +39,7 @@ std::string ScreenManager::bluetoothSettingsValue() const {
     case BtState::Off:
       return "Off";
     case BtState::Connected:
-      return bluetooth_->pairedName();
+      return bluetooth_->connectedName();
     case BtState::Idle:
     case BtState::Connecting:
     default:
@@ -65,23 +65,42 @@ void ScreenManager::appendBluetoothRows(std::vector<std::pair<std::string, int>>
   if (bluetooth_ == nullptr || !answering(bluetooth_->state())) return;
   items.emplace_back("Bluetooth", kBtToggleRow);
   if (!bluetooth_->enabled()) return;
-  if (bluetooth_->paired()) items.emplace_back(bluetooth_->pairedName(), kBtDeviceRow);
+  const auto &peers = bluetooth_->peers();
+  shownBtPeers_.clear();
+  for (size_t i = 0; i < peers.size(); ++i) {
+    items.emplace_back(peers[i].name, kBtPeerRowBase + static_cast<int>(i));
+    shownBtPeers_.push_back(peers[i].address);
+  }
   items.emplace_back("Find headphones", kBtFindRow);
-  if (bluetooth_->paired()) items.emplace_back("Forget headphones", kBtForgetRow);
+  if (!peers.empty()) items.emplace_back("Forget headphones", kBtForgetRow);
+}
+
+void ScreenManager::appendBluetoothForgetRows(
+    std::vector<std::pair<std::string, int>> &items) const {
+  if (bluetooth_ == nullptr) return;
+  const auto &peers = bluetooth_->peers();
+  shownBtPeers_.clear();
+  for (size_t i = 0; i < peers.size(); ++i) {
+    items.emplace_back(peers[i].name, static_cast<int>(i));
+    shownBtPeers_.push_back(peers[i].address);
+  }
 }
 
 std::string ScreenManager::bluetoothRowValue(int itemId) const {
   if (bluetooth_ == nullptr) return {};
   if (itemId == kBtToggleRow) return bluetooth_->enabled() ? "On" : "Off";
-  if (itemId != kBtDeviceRow) return {};
-  switch (bluetooth_->state()) {
-    case BtState::Connected:
-      return "Connected";
-    case BtState::Connecting:
-      return "Connecting\xE2\x80\xA6";
-    default:
-      return "Not in range";
+  const int index = itemId - kBtPeerRowBase;
+  const auto &peers = bluetooth_->peers();
+  if (index < 0 || static_cast<size_t>(index) >= peers.size()) return {};
+  if (bluetooth_->state() == BtState::Connected && bluetooth_->activePeer() == index) {
+    return "Connected";
   }
+  // Only the headphones asked for: the others are tried in turn in the
+  // background, and a value hopping between rows would say nothing.
+  if (bluetooth_->pendingAddress() == peers[static_cast<size_t>(index)].address) {
+    return "Connecting\xE2\x80\xA6";
+  }
+  return {};
 }
 
 void ScreenManager::onBluetoothRow(int itemId) {
@@ -90,18 +109,36 @@ void ScreenManager::onBluetoothRow(int itemId) {
     case kBtToggleRow:
       bluetooth_->setEnabled(!bluetooth_->enabled());
       break;
-    case kBtDeviceRow:
-      if (bluetooth_->state() != BtState::Connected) bluetooth_->reconnect(millis());
-      break;
     case kBtFindRow:
       openBluetoothSearch();
       return;
     case kBtForgetRow:
-      bluetooth_->forget();
+      // One pair goes at once, as before; of several, the user picks.
+      if (bluetooth_->peers().size() == 1) {
+        bluetooth_->forget(bluetooth_->peers()[0].address);
+        break;
+      }
+      tabs_.activeStack().push(Screen{ScreenKind::BluetoothForget, {}});
       break;
-    default:
-      return;
+    default: {
+      const int index = itemId - kBtPeerRowBase;
+      if (index < 0 || static_cast<size_t>(index) >= shownBtPeers_.size()) return;
+      const bool connectedHere = bluetooth_->state() == BtState::Connected &&
+                                 bluetooth_->activePeer() == index;
+      if (!connectedHere) bluetooth_->select(shownBtPeers_[static_cast<size_t>(index)], millis());
+      break;
+    }
   }
+  render();
+}
+
+void ScreenManager::onBluetoothForgetRow(int itemId) {
+  if (bluetooth_ == nullptr || itemId < 0 ||
+      static_cast<size_t>(itemId) >= shownBtPeers_.size()) {
+    return;
+  }
+  bluetooth_->forget(shownBtPeers_[static_cast<size_t>(itemId)]);
+  tabs_.activeStack().pop();
   render();
 }
 
@@ -230,7 +267,8 @@ void ScreenManager::tickBluetooth(uint32_t nowMs) {
 
   if (bluetooth_->revision() == shownBtRevision_) return;
   const bool showsBluetooth = kind == ScreenKind::Settings || kind == ScreenKind::Bluetooth ||
-                              kind == ScreenKind::BluetoothSearch;
+                              kind == ScreenKind::BluetoothSearch ||
+                              kind == ScreenKind::BluetoothForget;
   if (!showsBluetooth) {
     shownBtRevision_ = bluetooth_->revision();
     return;
@@ -257,6 +295,9 @@ std::string ScreenManager::bluetoothView(ScreenKind kind) const {
     case ScreenKind::BluetoothSearch:
       view = bluetoothSearchCaption();
       for (const auto &entry : bluetooth_->scanResults()) view += "\n" + entry.name;
+      return view;
+    case ScreenKind::BluetoothForget:
+      for (const auto &peer : bluetooth_->peers()) view += "\n" + peer.name;
       return view;
     default:
       return {};

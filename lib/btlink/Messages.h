@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "Packet.h"
 
@@ -82,30 +83,70 @@ inline void getAddress(const uint8_t *in, Address &address) {
 
 }  // namespace detail
 
-// STATE: link u8, flags u8 (bit 0 scanning, bit 1 paired), the paired
-// address, the paired name.
-struct StateMessage {
-  LinkState link = LinkState::Off;
-  bool scanning = false;
-  bool paired = false;
+// Remembered headphones (ADR 0027): the U4WDH keeps this many bonds and
+// tries them in turn.
+inline constexpr size_t kMaxPeers = 4;
+
+struct Peer {
   Address address{};
   std::string name;
 };
 
+// STATE: link u8, flags u8 (bit 0 scanning), active i8 (the peer the link
+// is with or being made with, -1 none), count u8, then count x (address,
+// name), the most recently used first.
+struct StateMessage {
+  LinkState link = LinkState::Off;
+  bool scanning = false;
+  int8_t active = -1;
+  std::vector<Peer> peers;
+};
+
 inline size_t encodeState(const StateMessage &m, uint8_t *out) {
   out[0] = static_cast<uint8_t>(m.link);
-  out[1] = static_cast<uint8_t>((m.scanning ? 1 : 0) | (m.paired ? 2 : 0));
-  detail::putAddress(out + 2, m.address);
-  return 8 + detail::putName(out + 8, m.name);
+  out[1] = static_cast<uint8_t>(m.scanning ? 1 : 0);
+  out[2] = static_cast<uint8_t>(m.active);
+  const size_t count = std::min(m.peers.size(), kMaxPeers);
+  out[3] = static_cast<uint8_t>(count);
+  size_t at = 4;
+  for (size_t i = 0; i < count; ++i) {
+    detail::putAddress(out + at, m.peers[i].address);
+    at += 6;
+    at += detail::putName(out + at, m.peers[i].name);
+  }
+  return at;
 }
 
 inline bool decodeState(const Packet &p, StateMessage &m) {
-  if (p.type != PacketType::State || p.length < 9 || p.payload[0] > 3) return false;
+  if (p.type != PacketType::State || p.length < 4 || p.payload[0] > 3) return false;
+  const size_t count = p.payload[3];
+  const auto active = static_cast<int8_t>(p.payload[2]);
+  if (count > kMaxPeers || active < -1 || active >= static_cast<int>(count)) return false;
   m.link = static_cast<LinkState>(p.payload[0]);
   m.scanning = (p.payload[1] & 1) != 0;
-  m.paired = (p.payload[1] & 2) != 0;
-  detail::getAddress(&p.payload[2], m.address);
-  return detail::getName(p, 8, m.name);
+  m.active = active;
+  m.peers.assign(count, Peer{});
+  size_t at = 4;
+  for (auto &peer : m.peers) {
+    if (at + 6 > p.length) return false;
+    detail::getAddress(&p.payload[at], peer.address);
+    at += 6;
+    if (!detail::getName(p, at, peer.name)) return false;
+    at += 1 + peer.name.size();
+  }
+  return true;
+}
+
+// SELECT and FORGET: one remembered peer's address.
+inline size_t encodeAddress(const Address &address, uint8_t *out) {
+  detail::putAddress(out, address);
+  return 6;
+}
+
+inline bool decodeAddress(const Packet &p, PacketType type, Address &address) {
+  if (p.type != type || p.length < 6) return false;
+  detail::getAddress(&p.payload[0], address);
+  return true;
 }
 
 // SCAN_RESULT: address, RSSI i8, name.

@@ -290,9 +290,11 @@ Full architecture: [ADR 0004](../adr/0004-navigation-library-and-index-architect
   it (its handle turns accent, the value being set), turn the knob to set
   it in 1 dB steps, or drag it; Flat is the screen's one secondary button.
   Bluetooth (ADR 0027) is a row like the others, ending in its state or
-  the connected headphones' name. Its screen is a list -- the switch, the
-  paired headphones with their state, Find headphones, Forget headphones
-  -- and when the Bluetooth chip has no Drehklang firmware it says so
+  the connected headphones' name. Its screen is a list -- the switch, one
+  row per remembered pair of headphones (up to four; a tap switches to
+  them, the row ending in "Connected" or, while asked for,
+  "Connecting…"), Find headphones, Forget headphones (of several, a list
+  to pick the one from) -- and when the Bluetooth chip has no Drehklang firmware it says so
   instead of offering a switch that would do nothing.
 - **Two swipeable browse tabs per collection** — Library (tag-based
   Artist → Album → Track) and Files (folder browse within that

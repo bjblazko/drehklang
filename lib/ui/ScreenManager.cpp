@@ -344,6 +344,9 @@ void ScreenManager::render() {
       case ScreenKind::BluetoothSearch:
         appendBluetoothSearchRows(items);
         break;
+      case ScreenKind::BluetoothForget:
+        appendBluetoothForgetRows(items);
+        break;
       case ScreenKind::AlbumsFlat:
         // Every album, or one year's, or one genre's -- shelfAlbums()
         // reads the filter off the screen.
@@ -680,6 +683,7 @@ std::vector<std::string> ScreenManager::letterKeysFor(
 // an empty shelf right after a firmware update means exactly that.
 const char *ScreenManager::emptyListText(const navigation::Screen &screen) const {
   if (screen.kind == ScreenKind::Bluetooth) return bluetoothEmptyText();
+  if (screen.kind == ScreenKind::BluetoothForget) return "No headphones remembered";
   if (screen.kind == ScreenKind::Folder) return "Empty folder";
   if (screen.kind == ScreenKind::Videos) return "No films in /Videos\nSee the README";
   if (screen.kind == ScreenKind::Recordings) return "No recordings yet";
@@ -824,6 +828,8 @@ std::string ScreenManager::captionTextFor(
       return "Bluetooth";
     case ScreenKind::BluetoothSearch:
       return bluetoothSearchCaption();
+    case ScreenKind::BluetoothForget:
+      return "Forget";
     case ScreenKind::Games:
       return "Games";
     case ScreenKind::Videos:
@@ -1956,6 +1962,9 @@ void ScreenManager::onListItemClicked(lv_event_t *e) {
       break;
     case ScreenKind::BluetoothSearch:
       self->onBluetoothSearchRow(ctx->itemId);
+      break;
+    case ScreenKind::BluetoothForget:
+      self->onBluetoothForgetRow(ctx->itemId);
       break;
     case ScreenKind::BrowseAxis:
       self->openBrowseAxis(ctx->index);

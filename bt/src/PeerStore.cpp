@@ -2,11 +2,14 @@
 
 #include <Preferences.h>
 
+#include <vector>
+
 namespace drehklang::bt {
 
 namespace {
 constexpr char kNamespace[] = "btpeer";
-}
+constexpr char kListKey[] = "peers";
+}  // namespace
 
 void PeerStore::begin() {
   Preferences prefs;
@@ -14,31 +17,30 @@ void PeerStore::begin() {
   // exist yet (first boot) logs an error.
   prefs.begin(kNamespace, false);
   // isKey() first: Preferences logs an error for every key it cannot find.
-  has_ = prefs.isKey("addr") &&
-         prefs.getBytes("addr", address_.data(), address_.size()) == address_.size();
-  if (prefs.isKey("name")) name_ = prefs.getString("name", "").c_str();
+  if (prefs.isKey(kListKey)) {
+    std::vector<uint8_t> bytes(prefs.getBytesLength(kListKey));
+    prefs.getBytes(kListKey, bytes.data(), bytes.size());
+    list_.deserialize(bytes.data(), bytes.size());
+  } else if (prefs.isKey("addr")) {
+    // Protocol 1 kept one pair as "addr" and "name": it becomes the list.
+    btlink::Address address{};
+    if (prefs.getBytes("addr", address.data(), address.size()) == address.size()) {
+      list_.add(address, prefs.isKey("name") ? prefs.getString("name", "").c_str() : "");
+    }
+    prefs.remove("addr");
+    if (prefs.isKey("name")) prefs.remove("name");
+    const std::vector<uint8_t> bytes = list_.serialize();
+    prefs.putBytes(kListKey, bytes.data(), bytes.size());
+  }
   prefs.end();
 }
 
-void PeerStore::save(const btlink::Address &address, const std::string &name) {
+void PeerStore::save() {
   Preferences prefs;
   prefs.begin(kNamespace, false);
-  prefs.putBytes("addr", address.data(), address.size());
-  prefs.putString("name", name.c_str());
+  const std::vector<uint8_t> bytes = list_.serialize();
+  prefs.putBytes(kListKey, bytes.data(), bytes.size());
   prefs.end();
-  has_ = true;
-  address_ = address;
-  name_ = name;
-}
-
-void PeerStore::clear() {
-  Preferences prefs;
-  prefs.begin(kNamespace, false);
-  prefs.clear();
-  prefs.end();
-  has_ = false;
-  address_ = {};
-  name_.clear();
 }
 
 }  // namespace drehklang::bt

@@ -11,7 +11,7 @@ namespace drehklang::btlink {
 // The link between the S3 and the ESP32-U4WDH (ADR 0027). Bump the version
 // on any change to a packet's layout: HELLO carries it, and the S3 refuses
 // a U4WDH firmware that speaks another one.
-inline constexpr uint8_t kProtocolVersion = 1;
+inline constexpr uint8_t kProtocolVersion = 2;
 inline constexpr uint32_t kBaudRate = 3000000;
 inline constexpr uint8_t kSync0 = 0xD5;
 inline constexpr uint8_t kSync1 = 0x4B;
@@ -28,7 +28,9 @@ enum class PacketType : uint8_t {
   ScanStart = 0x03,
   ScanStop = 0x04,
   Pair = 0x05,
+  // FORGET and SELECT carry the address of one remembered peer (protocol 2).
   Forget = 0x06,
+  Select = 0x07,
   Audio = 0x10,
   // U4WDH -> S3.
   State = 0x41,

@@ -1,26 +1,22 @@
 #pragma once
 
-#include <string>
-
 #include "Messages.h"
+#include "PeerList.h"
 
 namespace drehklang::bt {
 
-// The one paired pair of headphones, in this chip's own NVS. The bonding
-// keys are Bluedroid's own business; this keeps whom to reconnect to.
+// The remembered headphones (btlink::PeerList), in this chip's own NVS.
+// The bonding keys are Bluedroid's own business; this keeps whom to try,
+// in which order. Change the list through list(), then save().
 class PeerStore {
  public:
   void begin();
-  bool has() const { return has_; }
-  const btlink::Address &address() const { return address_; }
-  const std::string &name() const { return name_; }
-  void save(const btlink::Address &address, const std::string &name);
-  void clear();
+  btlink::PeerList &list() { return list_; }
+  const btlink::PeerList &list() const { return list_; }
+  void save();
 
  private:
-  bool has_ = false;
-  btlink::Address address_{};
-  std::string name_;
+  btlink::PeerList list_;
 };
 
 }  // namespace drehklang::bt

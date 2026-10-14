@@ -18,6 +18,7 @@ namespace drehklang::bt {
 struct BtSourceEvent {
   // Log: a line for loop() to print (`text`) -- callbacks never print.
   // AclUp: a baseband link came up, ours or the headphones' own.
+  // Connected carries the headphones' address.
   enum class Kind : uint8_t { Found, Button, Connected, Disconnected, AclUp, Log } kind;
   btlink::Address address{};
   int8_t rssi = 0;
@@ -45,6 +46,8 @@ class BtSource {
   // attempt dropped in Bluedroid too. Call from
   // loop() when Connecting has lasted too long.
   void abandonConnect();
+  // The same, without the log line: the user picked other headphones.
+  void cancelConnect();
   // Since when the link has been Connecting, either side having started it.
   uint32_t connectingSinceMs() const { return connectingSince_.load(); }
   void disconnect();

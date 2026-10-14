@@ -86,6 +86,9 @@ enum class ScreenKind {
   Dictaphone,
   Recordings,
   Recording,
+  // Settings > Bluetooth > Forget headphones, when more than one pair is
+  // remembered (ADR 0027). Appended like everything above.
+  BluetoothForget,
 };
 
 // Parameters a screen needs to render itself. Only the fields relevant

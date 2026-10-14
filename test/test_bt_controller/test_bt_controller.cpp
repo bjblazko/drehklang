@@ -56,14 +56,16 @@ Packet hello(uint8_t version) {
   return p;
 }
 
-Packet state(btlink::LinkState link, bool scanning = false, bool paired = false,
-             const std::string &name = "") {
+const btlink::Address kBuds = {1, 2, 3, 4, 5, 6};
+const btlink::Address kMajor = {6, 5, 4, 3, 2, 1};
+
+Packet state(btlink::LinkState link, bool scanning = false,
+             std::vector<btlink::Peer> peers = {}, int8_t active = -1) {
   btlink::StateMessage m;
   m.link = link;
   m.scanning = scanning;
-  m.paired = paired;
-  m.address = {1, 2, 3, 4, 5, 6};
-  m.name = name;
+  m.peers = std::move(peers);
+  m.active = active;
   Packet p;
   p.type = PacketType::State;
   p.length = static_cast<uint16_t>(btlink::encodeState(m, p.payload.data()));
@@ -173,9 +175,11 @@ void test_connecting_forwards_audio_and_reports_it() {
   Fixture f;
   f.answer();
   TEST_ASSERT_FALSE(f.controller.forwardAudio());
-  f.controller.onPacket(state(btlink::LinkState::Connected, false, true, "Buds"), 300);
+  f.controller.onPacket(
+      state(btlink::LinkState::Connected, false, {{kMajor, "Major V"}, {kBuds, "Buds"}}, 1), 300);
   TEST_ASSERT_TRUE(f.controller.forwardAudio());
-  TEST_ASSERT_EQUAL_STRING("Buds", f.controller.pairedName().c_str());
+  TEST_ASSERT_EQUAL_STRING("Buds", f.controller.connectedName().c_str());
+  TEST_ASSERT_EQUAL(2, f.controller.peers().size());
   auto event = f.controller.takeEvent();
   TEST_ASSERT_TRUE(event.has_value());
   TEST_ASSERT_EQUAL(static_cast<int>(BtEvent::Connected), static_cast<int>(*event));
@@ -191,7 +195,9 @@ void test_state_disagreeing_with_enabled_resends_enable() {
   TEST_ASSERT_EQUAL(enables + 1, f.link.count(PacketType::Enable));
 }
 
-void test_pairing_that_does_not_connect_in_15_s_fails() {
+// A first pairing can sit 30 s in its first authentication and still
+// succeed (BT log, 2026-10-14): "Could not connect" waits past that.
+void test_pairing_that_does_not_connect_in_45_s_fails() {
   Fixture f;
   f.answer();
   bluetooth::ScanEntry entry;
@@ -199,15 +205,63 @@ void test_pairing_that_does_not_connect_in_15_s_fails() {
   entry.name = "Buds";
   f.controller.pair(entry, 1000);
   TEST_ASSERT_EQUAL(1, f.link.count(PacketType::Pair));
-  f.controller.onPacket(state(btlink::LinkState::Connecting), 15000);
-  f.controller.tick(15999);
+  f.controller.onPacket(state(btlink::LinkState::Connecting), 45000);
+  f.controller.tick(45999);
   TEST_ASSERT_FALSE(f.controller.takeEvent().has_value());
-  f.controller.onPacket(state(btlink::LinkState::Connecting), 16000);
-  f.controller.tick(16000);
+  f.controller.onPacket(state(btlink::LinkState::Connecting), 46000);
+  f.controller.tick(46000);
   auto event = f.controller.takeEvent();
   TEST_ASSERT_TRUE(event.has_value());
   TEST_ASSERT_EQUAL(static_cast<int>(BtEvent::PairFailed), static_cast<int>(*event));
   TEST_ASSERT_EQUAL_STRING("Buds", f.controller.pairingName().c_str());
+}
+
+void test_nobody_is_connected_while_idle() {
+  Fixture f;
+  f.answer();
+  f.controller.onPacket(state(btlink::LinkState::Connecting, false, {{kBuds, "Buds"}}, 0), 300);
+  TEST_ASSERT_TRUE(f.controller.connectedName().empty());
+  TEST_ASSERT_EQUAL(0, f.controller.activePeer());
+}
+
+void test_selecting_remembered_headphones_sends_their_address() {
+  Fixture f;
+  f.answer();
+  f.controller.onPacket(state(btlink::LinkState::Idle, false, {{kBuds, "Buds"}, {kMajor, "Major V"}}),
+                        200);
+  f.controller.select(kMajor, 300);
+  TEST_ASSERT_EQUAL(static_cast<int>(PacketType::Select), static_cast<int>(f.link.sent.back().type));
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(kMajor.data(), f.link.sent.back().payload.data(), 6);
+  TEST_ASSERT_TRUE(f.controller.pendingAddress() == kMajor);
+  TEST_ASSERT_EQUAL_STRING("Major V", f.controller.pairingName().c_str());
+}
+
+void test_a_connection_ends_the_pending_pick() {
+  Fixture f;
+  f.answer();
+  f.controller.onPacket(state(btlink::LinkState::Idle, false, {{kBuds, "Buds"}}), 200);
+  f.controller.select(kBuds, 300);
+  f.controller.onPacket(state(btlink::LinkState::Connected, false, {{kBuds, "Buds"}}, 0), 900);
+  TEST_ASSERT_FALSE(f.controller.pendingAddress().has_value());
+}
+
+void test_forgetting_sends_the_address() {
+  Fixture f;
+  f.answer();
+  f.controller.forget(kMajor);
+  TEST_ASSERT_EQUAL(static_cast<int>(PacketType::Forget), static_cast<int>(f.link.sent.back().type));
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(kMajor.data(), f.link.sent.back().payload.data(), 6);
+}
+
+void test_a_changed_peer_list_changes_the_revision() {
+  Fixture f;
+  f.answer();
+  const uint32_t before = f.controller.revision();
+  f.controller.onPacket(state(btlink::LinkState::Idle, false, {{kBuds, "Buds"}}), 200);
+  const uint32_t after = f.controller.revision();
+  TEST_ASSERT_NOT_EQUAL(before, after);
+  f.controller.onPacket(state(btlink::LinkState::Idle, false, {{kBuds, "Buds"}}), 1200);
+  TEST_ASSERT_EQUAL(after, f.controller.revision());
 }
 
 void test_scan_results_are_sorted_by_signal() {
@@ -344,7 +398,12 @@ int main() {
   RUN_TEST(test_silence_after_answering_means_not_answering);
   RUN_TEST(test_connecting_forwards_audio_and_reports_it);
   RUN_TEST(test_state_disagreeing_with_enabled_resends_enable);
-  RUN_TEST(test_pairing_that_does_not_connect_in_15_s_fails);
+  RUN_TEST(test_pairing_that_does_not_connect_in_45_s_fails);
+  RUN_TEST(test_nobody_is_connected_while_idle);
+  RUN_TEST(test_selecting_remembered_headphones_sends_their_address);
+  RUN_TEST(test_a_connection_ends_the_pending_pick);
+  RUN_TEST(test_forgetting_sends_the_address);
+  RUN_TEST(test_a_changed_peer_list_changes_the_revision);
   RUN_TEST(test_scan_results_are_sorted_by_signal);
   RUN_TEST(test_scan_result_for_known_address_updates_in_place);
   RUN_TEST(test_a_result_is_found_by_address_after_a_re_sort);

@@ -47,9 +47,8 @@ void test_state_round_trips_through_the_reader() {
   StateMessage sent;
   sent.link = LinkState::Connected;
   sent.scanning = true;
-  sent.paired = true;
-  sent.address = {1, 2, 3, 4, 5, 6};
-  sent.name = "WH-1000XM4";
+  sent.active = 1;
+  sent.peers = {{{6, 5, 4, 3, 2, 1}, "Buds"}, {{1, 2, 3, 4, 5, 6}, "WH-1000XM4"}};
   PacketReader reader;
   TEST_ASSERT_EQUAL(1, feedAll(reader, statePacket(7, sent)));
   StateMessage got;
@@ -57,9 +56,45 @@ void test_state_round_trips_through_the_reader() {
   TEST_ASSERT_EQUAL(7, reader.packet().seq);
   TEST_ASSERT_EQUAL(static_cast<int>(LinkState::Connected), static_cast<int>(got.link));
   TEST_ASSERT_TRUE(got.scanning);
-  TEST_ASSERT_TRUE(got.paired);
-  TEST_ASSERT_EQUAL_UINT8_ARRAY(sent.address.data(), got.address.data(), 6);
-  TEST_ASSERT_EQUAL_STRING("WH-1000XM4", got.name.c_str());
+  TEST_ASSERT_EQUAL(1, got.active);
+  TEST_ASSERT_EQUAL(2, got.peers.size());
+  TEST_ASSERT_EQUAL_STRING("Buds", got.peers[0].name.c_str());
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(sent.peers[1].address.data(), got.peers[1].address.data(), 6);
+  TEST_ASSERT_EQUAL_STRING("WH-1000XM4", got.peers[1].name.c_str());
+}
+
+void test_state_without_peers_has_no_active_one() {
+  StateMessage sent;
+  sent.link = LinkState::Idle;
+  PacketReader reader;
+  feedAll(reader, statePacket(0, sent));
+  StateMessage got;
+  got.peers = {{{1, 1, 1, 1, 1, 1}, "old"}};
+  TEST_ASSERT_TRUE(decodeState(reader.packet(), got));
+  TEST_ASSERT_EQUAL(-1, got.active);
+  TEST_ASSERT_TRUE(got.peers.empty());
+}
+
+void test_state_with_an_active_index_past_the_peers_is_rejected() {
+  StateMessage sent;
+  sent.active = 1;
+  sent.peers = {{{1, 1, 1, 1, 1, 1}, "Buds"}};
+  PacketReader reader;
+  feedAll(reader, statePacket(0, sent));
+  StateMessage got;
+  TEST_ASSERT_FALSE(decodeState(reader.packet(), got));
+}
+
+void test_select_and_forget_carry_an_address() {
+  uint8_t payload[kMaxPayload];
+  PacketReader reader;
+  const Address sent = {1, 2, 3, 4, 5, 6};
+  feedAll(reader, encoded(PacketType::Select, 0, payload,
+                          static_cast<uint16_t>(encodeAddress(sent, payload))));
+  Address got{};
+  TEST_ASSERT_TRUE(decodeAddress(reader.packet(), PacketType::Select, got));
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(sent.data(), got.data(), 6);
+  TEST_ASSERT_FALSE(decodeAddress(reader.packet(), PacketType::Forget, got));
 }
 
 void test_a_wrong_crc_is_rejected() {
@@ -116,12 +151,12 @@ void test_a_length_past_the_cap_is_rejected() {
 
 void test_long_name_is_cut_at_a_character_boundary() {
   StateMessage sent;
-  sent.name = std::string(31, 'a') + "\xC3\xBC" + "tail";  // 31 + ü + more.
+  sent.peers = {{{}, std::string(31, 'a') + "\xC3\xBC" + "tail"}};  // 31 + ü + more.
   PacketReader reader;
   feedAll(reader, statePacket(0, sent));
   StateMessage got;
   TEST_ASSERT_TRUE(decodeState(reader.packet(), got));
-  TEST_ASSERT_EQUAL(31, got.name.size());
+  TEST_ASSERT_EQUAL(31, got.peers[0].name.size());
 }
 
 void test_scan_result_pair_and_stats_round_trip() {
@@ -161,7 +196,7 @@ void test_scan_result_pair_and_stats_round_trip() {
 
 void test_a_name_running_past_the_payload_is_rejected() {
   StateMessage sent;
-  sent.name = "abc";
+  sent.peers = {{{}, "abc"}};
   PacketReader reader;
   auto bytes = statePacket(0, sent);
   feedAll(reader, bytes);
@@ -192,6 +227,9 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_crc_matches_the_ccitt_false_check_value);
   RUN_TEST(test_state_round_trips_through_the_reader);
+  RUN_TEST(test_state_without_peers_has_no_active_one);
+  RUN_TEST(test_state_with_an_active_index_past_the_peers_is_rejected);
+  RUN_TEST(test_select_and_forget_carry_an_address);
   RUN_TEST(test_a_wrong_crc_is_rejected);
   RUN_TEST(test_garbage_before_a_packet_is_skipped);
   RUN_TEST(test_the_reader_recovers_after_a_packet_cut_short);

@@ -241,6 +241,52 @@ found:
      line of its own is logged by number. The host never sees LMP itself,
      so this narrows the request down rather than naming it.
 
+9. **Several remembered headphones, and switching between them,
+   2026-10-14** (the user asked: AirPods sometimes, the Major V other
+   times; pick one when both are there). The log on the SD card showed
+   why switching and pairing anew were rough:
+   - **Switching hung.** Picking other headphones disconnected the current
+     ones and connected to the new ones in the same millisecond -- the
+     hang of 7. again: A2DP sat in "connecting" without ever paging, for a
+     minute and more, and switching back hung the same way until "connect
+     never answered" (95 s).
+   - **The AirPods then refused pairing within 0.2 s** (`auth status 9`),
+     every time: by then their pairing mode had most likely run out
+     (not provable from the log).
+   - **The headphones' row re-paired.** A tap on it sent PAIR, which
+     removes the bond, so it only worked with the headphones in pairing
+     mode.
+   - **The 0x122 drop 30 s after connecting** (8.) came, both times in
+     this log and once more while testing, right after the U4WDH restarted
+     in the middle of a connection (flashing, or opening its serial port):
+     the headphones presumably still hold the old link. Rare in daily use.
+   - **A first pairing of the Major V still sat 30 s** in authentication
+     and failed, then the headphones connected back and it worked within
+     a second. The connect used to start in the same millisecond as the
+     bond's removal; it now waits 1 s (`kAfterBondRemovalMs`). Whether that
+     was the cause is open.
+
+   **Decision:**
+   - The U4WDH remembers up to four headphones (`btlink::PeerList`, NVS
+     key `peers`; the old single pair is taken over), the most recently
+     used first. A fifth pairing drops the oldest and its bond.
+   - It tries them in turn, the most recently used first, 3 s apart, and
+     pauses 10 s after a round (`btlink::ConnectPlan`). With one pair that
+     is the 10 s retry it was. Headphones the user picks are tried alone
+     for a minute.
+   - **Switching** (SELECT, protocol 2) disconnects first and connects
+     only once the link is gone (3 s after DISCONNECTED), keeping the bond.
+     A second tap on headphones already connecting changes nothing.
+     Pairing from the search goes the same way, after removing that one
+     bond.
+   - STATE carries the list and which entry the link is with; FORGET
+     carries an address. Settings shows one row per pair (see the UX
+     guidelines); "Could not connect" waits 45 s instead of 15, past a
+     first pairing's 30 s.
+   - Checked on the device: the Major V taken over from protocol 1 and
+     reconnected; AirPods Pro (2nd gen.) paired from the search 4 s after
+     the tap (switch included); back to the Major V by its row in 6 s.
+
 ## Open
 
 - **Legal check (2026-10-05) before merging.**

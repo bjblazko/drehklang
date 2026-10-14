@@ -659,10 +659,14 @@ void pollSerialCommands() {
           // The Bluetooth link at a glance (ADR 0027), for checking on the
           // device without the UI.
           const auto &stats = g_btController.stats();
-          Serial.printf("[bt] state %d enabled %d scanning %d paired '%s' results %u "
+          std::string peers;
+          for (const auto &peer : g_btController.peers()) {
+            peers += (peers.empty() ? "'" : ", '") + peer.name + "'";
+          }
+          Serial.printf("[bt] state %d enabled %d scanning %d peers %s active %d results %u "
                         "tap rate %lu dropped %lu | U4WDH underruns %lu crc %lu lost %lu\n",
                         static_cast<int>(g_btController.state()), g_btController.enabled(),
-                        g_btController.scanning(), g_btController.pairedName().c_str(),
+                        g_btController.scanning(), peers.c_str(), g_btController.activePeer(),
                         static_cast<unsigned>(g_btController.scanResults().size()),
                         static_cast<unsigned long>(g_btTap.rate()),
                         static_cast<unsigned long>(g_btTap.dropped()),

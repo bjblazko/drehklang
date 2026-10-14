@@ -8,6 +8,7 @@
 #include <cstring>
 
 #include "BtSource.h"
+#include "ConnectPlan.h"
 #include "HeadphoneStream.h"
 #include "LinkUart.h"
 #include "Messages.h"
@@ -25,7 +26,10 @@ int16_t g_ringStorage[kRingSamples];
 btaudio::HeadphoneStream g_stream(g_ringStorage, kRingSamples);
 bt::LinkUart g_link(g_stream);
 bt::BtSource g_source(g_stream);
-bt::PeerStore g_peer;
+bt::PeerStore g_peers;
+btlink::ConnectPlan g_plan;
+// Whom the link is with, or is being made with; meaningless while Idle.
+btlink::Address g_target{};
 
 // IO32 drives the PCM5100A's XSMT (soft mute, active low). Left floating,
 // the DAC stays muted and the jack is silent -- the factory image drove it
@@ -35,7 +39,6 @@ constexpr int kDacUnmutePin = 32;
 
 constexpr uint32_t kStateIntervalMs = 1000;
 constexpr uint32_t kStatsIntervalMs = 5000;
-constexpr uint32_t kReconnectIntervalMs = 10000;
 // A connection attempt Bluedroid never reports back on is given up after
 // this, so the retry can start again (found 2026-10-05: a pairing that
 // stayed "Connecting" until the chip restarted). Well past Bluedroid's own
@@ -52,6 +55,12 @@ constexpr uint32_t kAfterDisconnectMs = 3000;
 // sit idle) set up A2DP next. A connect of ours in between collided with
 // theirs and hung in "connecting" for 28 s (BT log, 2026-10-14).
 constexpr uint32_t kAfterTheirLinkMs = 8000;
+// After removing a bond, before pairing afresh. Bluedroid removes it
+// asynchronously (GAP event 14); the connect used to start in the same
+// millisecond, and every such first pairing sat 30 s in authentication
+// before failing (BT log, 2026-10-14). Whether that is the cause is not
+// proven; the wait costs nothing.
+constexpr uint32_t kAfterBondRemovalMs = 1000;
 
 bool g_enabled = false;
 uint32_t g_lastStateMs = 0;
@@ -59,13 +68,19 @@ uint32_t g_lastStatsMs = 0;
 // When we may next connect to the peer ourselves.
 uint32_t g_nextConnectMs = 0;
 
+bool linkIdle() { return g_source.link() == btlink::LinkState::Idle; }
+
+std::string nameOf(const btlink::Address &address) {
+  const int at = g_peers.list().indexOf(address);
+  return at < 0 ? std::string("?") : g_peers.list().peers()[static_cast<size_t>(at)].name;
+}
+
 void sendState() {
   btlink::StateMessage m;
   m.link = g_enabled ? g_source.link() : btlink::LinkState::Off;
   m.scanning = g_source.scanning();
-  m.paired = g_peer.has();
-  m.address = g_peer.address();
-  m.name = g_peer.name();
+  m.peers = g_peers.list().peers();
+  m.active = linkIdle() ? -1 : static_cast<int8_t>(g_peers.list().indexOf(g_target));
   uint8_t payload[btlink::kMaxPayload];
   g_link.send(btlink::PacketType::State, payload,
               static_cast<uint16_t>(btlink::encodeState(m, payload)));
@@ -100,26 +115,74 @@ void postponeConnect(uint32_t delayMs) {
   if (static_cast<int32_t>(at - g_nextConnectMs) > 0) g_nextConnectMs = at;
 }
 
-void connectToPeer(uint32_t nowMs) {
-  g_nextConnectMs = nowMs + kReconnectIntervalMs;
-  report("connecting to %s", g_peer.name().c_str());
-  g_source.connect(g_peer.address());
+// The next remembered headphones in turn, or the ones the user picked
+// (btlink::ConnectPlan).
+void connectNext(uint32_t nowMs) {
+  const auto attempt = g_plan.next(g_peers.list(), nowMs);
+  if (!attempt) return;
+  g_nextConnectMs = nowMs + attempt->pauseMs;
+  g_target = attempt->address;
+  report("connecting to %s", nameOf(g_target).c_str());
+  g_source.connect(g_target);
 }
 
-void onPair(const btlink::Packet &packet, uint32_t nowMs) {
+// Over to the headphones the user asked for. Whatever link there is goes
+// first, and the connect waits until it is gone: connecting into a link
+// still being torn down left A2DP stuck in "connecting" -- after a failed
+// pairing (2026-10-06) and on every switch to other headphones (BT log,
+// 2026-10-14, AirPods and Major V).
+void switchTo(const btlink::Address &address, uint32_t settleMs) {
+  const uint32_t now = millis();
+  g_plan.want(address, now);
+  // Already with them, or on the way: a second tap changes nothing.
+  if (!linkIdle() && g_target == address) return;
+  g_nextConnectMs = now + settleMs;
+  if (g_source.link() == btlink::LinkState::Connected) {
+    report("switching to %s", nameOf(address).c_str());
+    // Its DISCONNECTED postpones the connect by kAfterDisconnectMs.
+    g_source.disconnect();
+  } else if (g_source.link() == btlink::LinkState::Connecting) {
+    report("switching to %s", nameOf(address).c_str());
+    g_source.cancelConnect();
+    postponeConnect(kAfterDisconnectMs);
+  }
+}
+
+void onPair(const btlink::Packet &packet) {
   btlink::PairMessage m;
   if (!btlink::decodePair(packet, m)) return;
   g_source.stopScan();
-  if (g_peer.has() && g_peer.address() != m.address) {
-    g_source.disconnect();
-    g_source.removeBond(g_peer.address());
+  if (const auto evicted = g_peers.list().add(m.address, m.name)) {
+    g_plan.forget(evicted->address);
+    g_source.removeBond(evicted->address);
   }
+  g_peers.save();
   // Pairing from the search always pairs afresh. Headphones in pairing
   // mode have dropped their old key; using ours made authentication fail
   // after 30 s (found 2026-10-05 with Marshall Major V).
   g_source.removeBond(m.address);
-  g_peer.save(m.address, m.name);
-  if (g_enabled) connectToPeer(nowMs);
+  if (g_enabled) switchTo(m.address, kAfterBondRemovalMs);
+}
+
+// Remembered headphones, picked in Settings: their bond is kept.
+void onSelect(const btlink::Packet &packet) {
+  btlink::Address address{};
+  if (!btlink::decodeAddress(packet, btlink::PacketType::Select, address)) return;
+  if (g_peers.list().indexOf(address) < 0) return;
+  if (g_peers.list().touch(address)) g_peers.save();
+  if (g_enabled) switchTo(address, 0);
+}
+
+void onForget(const btlink::Packet &packet) {
+  btlink::Address address{};
+  if (!btlink::decodeAddress(packet, btlink::PacketType::Forget, address)) return;
+  if (!linkIdle() && g_target == address) {
+    g_source.cancelConnect();
+    g_source.disconnect();
+  }
+  g_plan.forget(address);
+  g_source.removeBond(address);
+  if (g_peers.list().remove(address)) g_peers.save();
 }
 
 void onControl(const btlink::Packet &packet, uint32_t nowMs) {
@@ -134,8 +197,8 @@ void onControl(const btlink::Packet &packet, uint32_t nowMs) {
       if (!g_enabled) {
         g_source.stopScan();
         g_source.disconnect();
-      } else if (g_peer.has() && g_source.link() == btlink::LinkState::Idle) {
-        connectToPeer(nowMs);
+      } else if (linkIdle()) {
+        connectNext(nowMs);
       }
       break;
     case btlink::PacketType::ScanStart:
@@ -149,12 +212,13 @@ void onControl(const btlink::Packet &packet, uint32_t nowMs) {
       g_source.stopScan();
       break;
     case btlink::PacketType::Pair:
-      onPair(packet, nowMs);
+      onPair(packet);
+      break;
+    case btlink::PacketType::Select:
+      onSelect(packet);
       break;
     case btlink::PacketType::Forget:
-      g_source.disconnect();
-      if (g_peer.has()) g_source.removeBond(g_peer.address());
-      g_peer.clear();
+      onForget(packet);
       break;
     default:
       break;
@@ -178,7 +242,12 @@ void onSourceEvent(const bt::BtSourceEvent &event) {
     }
     case bt::BtSourceEvent::Kind::Connected:
       g_source.startMedia();
-      report("connected");
+      // Whoever it is -- headphones also come back by themselves -- they are
+      // now the most recently used.
+      g_target = event.address;
+      if (g_peers.list().touch(g_target)) g_peers.save();
+      g_plan.connected();
+      report("connected to %s", nameOf(g_target).c_str());
       sendState();
       break;
     case bt::BtSourceEvent::Kind::Disconnected:
@@ -204,11 +273,12 @@ void setup() {
   pinMode(kDacUnmutePin, OUTPUT);
   digitalWrite(kDacUnmutePin, HIGH);
   Serial.begin(115200);
-  g_peer.begin();
+  g_peers.begin();
   g_link.begin();
   g_source.begin();
-  report("started, protocol %u, peer %s", btlink::kProtocolVersion,
-         g_peer.has() ? g_peer.name().c_str() : "none");
+  report("started, protocol %u, %u remembered", btlink::kProtocolVersion,
+         static_cast<unsigned>(g_peers.list().peers().size()));
+  for (const auto &peer : g_peers.list().peers()) report("remembered: %s", peer.name.c_str());
 }
 
 void loop() {
@@ -237,9 +307,8 @@ void loop() {
     g_source.abandonConnect();
     postponeConnect(kAfterDisconnectMs);
   }
-  if (g_enabled && g_peer.has() && g_source.link() == btlink::LinkState::Idle &&
-      static_cast<int32_t>(now - g_nextConnectMs) >= 0) {
-    connectToPeer(now);
+  if (g_enabled && linkIdle() && static_cast<int32_t>(now - g_nextConnectMs) >= 0) {
+    connectNext(now);
   }
   delay(5);
 }

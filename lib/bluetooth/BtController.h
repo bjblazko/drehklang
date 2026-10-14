@@ -49,7 +49,9 @@ class BtController {
   static constexpr uint32_t kHelloIntervalMs = 500;
   static constexpr uint32_t kAnswerTimeoutMs = 3000;
   static constexpr uint32_t kHeartbeatTimeoutMs = 2000;
-  static constexpr uint32_t kPairTimeoutMs = 15000;
+  // A first pairing can sit 30 s in its first authentication and then
+  // succeed (BT log, 2026-10-14), so "Could not connect" waits past that.
+  static constexpr uint32_t kPairTimeoutMs = 45000;
   // How long a fresh scan counts as running before the U4WDH confirms it:
   // its first STATE after SCAN_START still says not scanning.
   static constexpr uint32_t kScanStartGraceMs = 3000;
@@ -89,6 +91,7 @@ class BtController {
     }
     if (pairing_ && nowMs - pairingSinceMs_ >= kPairTimeoutMs) {
       pairing_ = false;
+      ++revision_;
       events_.push_back(BtEvent::PairFailed);
     }
   }
@@ -163,25 +166,43 @@ class BtController {
     uint8_t payload[btlink::kMaxPayload];
     link_.send(btlink::PacketType::Pair, payload,
                static_cast<uint16_t>(btlink::encodePair(message, payload)));
-    pairing_ = true;
-    pairingSinceMs_ = nowMs;
-    pairingName_ = entry.name;
+    startPending(entry.address, entry.name, nowMs);
   }
 
-  // The paired headphones' row: try now rather than at the next 10 s retry.
-  void reconnect(uint32_t nowMs) {
-    if (!paired_) return;
-    ScanEntry entry;
-    entry.address = pairedAddress_;
-    entry.name = pairedName_;
-    pair(entry, nowMs);
+  // Remembered headphones' row: these, now, switching over from any others
+  // (their bond is kept, unlike pair()).
+  void select(const btlink::Address &address, uint32_t nowMs) {
+    uint8_t payload[6];
+    link_.send(btlink::PacketType::Select, payload,
+               static_cast<uint16_t>(btlink::encodeAddress(address, payload)));
+    std::string name;
+    for (const auto &peer : peers_) {
+      if (peer.address == address) name = peer.name;
+    }
+    startPending(address, name, nowMs);
   }
 
-  void forget() { link_.send(btlink::PacketType::Forget, nullptr, 0); }
+  void forget(const btlink::Address &address) {
+    uint8_t payload[6];
+    link_.send(btlink::PacketType::Forget, payload,
+               static_cast<uint16_t>(btlink::encodeAddress(address, payload)));
+  }
 
-  bool paired() const { return paired_; }
-  const std::string &pairedName() const { return pairedName_; }
-  // Whom the last pair() was for, for "Could not connect to ...".
+  // The remembered headphones, the most recently used first.
+  const std::vector<btlink::Peer> &peers() const { return peers_; }
+  // Which of them the link is with or being made with, -1 none.
+  int activePeer() const { return active_; }
+  // Empty unless connected.
+  std::string connectedName() const {
+    if (state_ != BtState::Connected || active_ < 0) return {};
+    return peers_[static_cast<size_t>(active_)].name;
+  }
+  // The headphones a pair() or select() is still waiting for.
+  std::optional<btlink::Address> pendingAddress() const {
+    if (!pairing_) return std::nullopt;
+    return pairingAddress_;
+  }
+  // Whom the last pair() or select() was for, for "Could not connect to ...".
   const std::string &pairingName() const { return pairingName_; }
 
   bool forwardAudio() const { return state_ == BtState::Connected; }
@@ -208,6 +229,14 @@ class BtController {
   const btlink::StatsMessage &stats() const { return stats_; }
 
  private:
+  void startPending(const btlink::Address &address, const std::string &name, uint32_t nowMs) {
+    pairing_ = true;
+    pairingSinceMs_ = nowMs;
+    pairingAddress_ = address;
+    pairingName_ = name;
+    ++revision_;
+  }
+
   void sendHello() {
     const uint8_t payload[] = {btlink::kProtocolVersion};
     link_.send(btlink::PacketType::Hello, payload, sizeof(payload));
@@ -235,10 +264,9 @@ class BtController {
     if (!btlink::decodeState(packet, m)) return;
     // The U4WDH starts up off: after a restart of its own it has forgotten.
     if ((m.link == btlink::LinkState::Off) == enabled_) sendEnable();
-    if (paired_ != m.paired || pairedName_ != m.name || pairedAddress_ != m.address) {
-      paired_ = m.paired;
-      pairedName_ = m.name;
-      pairedAddress_ = m.address;
+    if (!samePeers(m.peers) || active_ != m.active) {
+      peers_ = std::move(m.peers);
+      active_ = m.active;
       ++revision_;
     }
     if (m.scanning) scanConfirmed_ = true;
@@ -270,6 +298,14 @@ class BtController {
     } else if (packet.payload[0] == static_cast<uint8_t>(btlink::ButtonCode::Pause)) {
       events_.push_back(BtEvent::Pause);
     }
+  }
+
+  bool samePeers(const std::vector<btlink::Peer> &other) const {
+    if (other.size() != peers_.size()) return false;
+    for (size_t i = 0; i < other.size(); ++i) {
+      if (other[i].address != peers_[i].address || other[i].name != peers_[i].name) return false;
+    }
+    return true;
   }
 
   static BtState stateFor(btlink::LinkState link) {
@@ -343,10 +379,10 @@ class BtController {
   bool answered_ = false;
   bool scanning_ = false;
   bool scanConfirmed_ = true;
-  bool paired_ = false;
   bool pairing_ = false;
-  btlink::Address pairedAddress_{};
-  std::string pairedName_;
+  std::vector<btlink::Peer> peers_;
+  int active_ = -1;
+  btlink::Address pairingAddress_{};
   std::string pairingName_;
   std::vector<ScanEntry> results_;
   std::deque<BtEvent> events_;
