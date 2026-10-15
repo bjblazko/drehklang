@@ -102,6 +102,11 @@ struct StateMessage {
   std::vector<Peer> peers;
 };
 
+// The longest STATE: every peer with a name of kMaxNameBytes. The S3
+// drops control packets longer than its queue's entries, so those are
+// sized from this (lib/drivers-bluetooth/BtLink.h).
+inline constexpr size_t kMaxStatePayload = 4 + kMaxPeers * (6 + 1 + kMaxNameBytes);
+
 inline size_t encodeState(const StateMessage &m, uint8_t *out) {
   out[0] = static_cast<uint8_t>(m.link);
   out[1] = static_cast<uint8_t>(m.scanning ? 1 : 0);

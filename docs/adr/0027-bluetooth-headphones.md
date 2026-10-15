@@ -294,6 +294,14 @@ found:
      stream already carries it. The AirPods answer "absolute volume 127"
      and play. Headphones that kept their own volume until now (the
      Major V) may be louder at the same knob position.
+   - **With a third pair remembered, the S3 said "Bluetooth chip not
+     answering"** (2.5.2, 2026-10-15). The S3's link queues control
+     packets of at most 64 bytes and drops longer ones; STATE with three
+     names was 78. Every STATE, the heartbeat, was dropped, and only the
+     short log lines got through. The queue's entries are now sized from
+     the longest STATE (`btlink::kMaxStatePayload`, 160 bytes, tested) and
+     live in PSRAM. The U4WDH's own 64-byte cap only meets the S3's short
+     packets (PAIR, 39 bytes at most).
 
 ## Open
 

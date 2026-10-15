@@ -507,6 +507,12 @@ duplicating it.
   default_16MB.csv`). pioarduino's board file switched to
   `esp_sr_16.csv`; changing it would move NVS and lose settings and
   resume.
+- **The S3 drops control packets from the U4WDH longer than its queue
+  entries** (`BtLink::kMaxControlPayload`, sized from
+  `btlink::kMaxStatePayload`). When a message grows, check that cap: at
+  64 bytes, STATE with three remembered headphones was dropped, and since
+  STATE is the heartbeat, the UI said "Bluetooth chip not answering"
+  while log lines still arrived (2026-10-15, ADR 0027).
 - **On the new toolchain `uint32_t` is `unsigned long`**, so
   `std::min(uint32_value, 31u)` no longer compiles; give the type
   explicitly (`std::min<uint32_t>`).

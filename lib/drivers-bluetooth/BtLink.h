@@ -36,7 +36,12 @@ class BtLink : public bluetooth::PacketSender {
   bool receive(btlink::Packet &out);
 
  private:
-  static constexpr size_t kMaxControlPayload = 64;
+  // The longest control packet is STATE with four remembered headphones.
+  // At 64 bytes, three of them made it too long: every STATE was dropped,
+  // and with it the heartbeat -- "Bluetooth chip not answering"
+  // (2026-10-15).
+  static constexpr size_t kMaxControlPayload = btlink::kMaxStatePayload;
+  static_assert(kMaxControlPayload <= UINT8_MAX, "Control::length is one byte");
   struct Control {
     btlink::PacketType type;
     uint8_t length;

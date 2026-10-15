@@ -39,8 +39,10 @@ void BtLink::begin() {
   pcm_ = static_cast<int16_t *>(heap_caps_malloc(kPacketSamples * sizeof(int16_t), MALLOC_CAP_SPIRAM));
   payload_ = static_cast<uint8_t *>(heap_caps_malloc(btlink::kAudioPayloadBytes, MALLOC_CAP_SPIRAM));
   frame_ = static_cast<uint8_t *>(heap_caps_malloc(btlink::kMaxPacketBytes, MALLOC_CAP_SPIRAM));
-  toLink_ = xQueueCreate(kQueueDepth, sizeof(Control));
-  fromLink_ = xQueueCreate(kQueueDepth, sizeof(Control));
+  // In PSRAM: ~5 KB the internal heap does not have to spare. Neither
+  // queue is touched from an interrupt.
+  toLink_ = xQueueCreateWithCaps(kQueueDepth, sizeof(Control), MALLOC_CAP_SPIRAM);
+  fromLink_ = xQueueCreateWithCaps(kQueueDepth, sizeof(Control), MALLOC_CAP_SPIRAM);
   xTaskCreatePinnedToCore(&BtLink::taskTrampoline, "btlink", kTaskStackBytes, this,
                           kTaskPriority, nullptr, kLinkCore);
 }

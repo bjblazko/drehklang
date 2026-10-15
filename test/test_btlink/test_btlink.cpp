@@ -85,6 +85,18 @@ void test_state_with_an_active_index_past_the_peers_is_rejected() {
   TEST_ASSERT_FALSE(decodeState(reader.packet(), got));
 }
 
+// The S3 queues control packets up to this size and drops longer ones;
+// three remembered headphones once made STATE too long, and the S3 said
+// "not answering" (2026-10-15).
+void test_the_longest_state_fits_its_cap() {
+  StateMessage sent;
+  sent.link = LinkState::Connected;
+  sent.active = 3;
+  for (size_t i = 0; i < kMaxPeers; ++i) sent.peers.push_back({{}, std::string(40, 'x')});
+  uint8_t payload[kMaxPayload];
+  TEST_ASSERT_EQUAL(kMaxStatePayload, encodeState(sent, payload));
+}
+
 void test_select_and_forget_carry_an_address() {
   uint8_t payload[kMaxPayload];
   PacketReader reader;
@@ -229,6 +241,7 @@ int main() {
   RUN_TEST(test_state_round_trips_through_the_reader);
   RUN_TEST(test_state_without_peers_has_no_active_one);
   RUN_TEST(test_state_with_an_active_index_past_the_peers_is_rejected);
+  RUN_TEST(test_the_longest_state_fits_its_cap);
   RUN_TEST(test_select_and_forget_carry_an_address);
   RUN_TEST(test_a_wrong_crc_is_rejected);
   RUN_TEST(test_garbage_before_a_packet_is_skipped);
