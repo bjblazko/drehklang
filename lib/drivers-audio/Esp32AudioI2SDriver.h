@@ -57,6 +57,7 @@ class Esp32AudioI2SDriver : public playback::PlaybackDriver, public playback::Da
   bool isRunning() override;
   uint32_t durationSeconds() override;
   playback::SampleWindow readRecentSamples(int16_t *dst, size_t maxSamples) override;
+  signal::StereoLevels readLevels() override;
   // No-op: the loop task services the library continuously.
   void loop() override {}
 

@@ -18,6 +18,7 @@ void AudioOutputStage::noteMonoSample(int16_t mono) {
 }
 
 void AudioOutputStage::noteStereo32(const int32_t *interleaved, size_t words, float gain) {
+  levels_.noteBlock(interleaved, words, gain);
   for (size_t i = 0; i + 1 < words; i += 2) {
     const int64_t sum = static_cast<int64_t>(interleaved[i]) + interleaved[i + 1];
     int32_t mono = static_cast<int32_t>(sum >> 17);  // Average, then top 16 bits.

@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "PlaybackDriver.h"
+#include "StereoLevels.h"
 
 namespace drehklang::drivers {
 
@@ -43,7 +44,16 @@ class AudioOutputStage {
   playback::SampleWindow readRecentSamples(int16_t *dst, size_t maxSamples,
                                            uint32_t sampleRate);
 
+  // The VU meters' levels since the last call (ADR 0034): nothing while
+  // muted, as the spectrum shows nothing then.
+  signal::StereoLevels takeLevels() {
+    signal::StereoLevels levels = levels_.take();
+    if (volumeStep() == 0 || outputGain() == 0) return {};
+    return levels;
+  }
+
  private:
+  signal::StereoLevelMeter levels_;
   int16_t ring_[kSampleRingSize] = {};
   std::atomic<uint32_t> samplesWritten_{0};
   std::atomic<uint16_t> outputGain_{4096};

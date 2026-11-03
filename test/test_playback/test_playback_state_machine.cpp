@@ -44,7 +44,10 @@ class FakeDriver : public PlaybackDriver {
   drehklang::playback::SampleWindow readRecentSamples(int16_t *, size_t) override {
     return {};
   }
+  drehklang::signal::StereoLevels readLevels() override { return levels; }
   void loop() override {}
+
+  drehklang::signal::StereoLevels levels;
 
   std::string lastPlayed;
   int playCount = 0;
@@ -502,6 +505,25 @@ void test_track_generation_unchanged_by_pause_resume_and_cued_resume() {
   TEST_ASSERT_EQUAL_UINT32(cuedGeneration, cuedSm.trackGeneration());
 }
 
+void test_levels_only_while_playing() {
+  FakeDriver driver;
+  FakeStore store;
+  VolumePersistence volume(store);
+  PlaybackStateMachine sm(driver, volume);
+  sm.begin();
+  driver.levels.rms[0] = 0.5f;
+  driver.levels.fresh = true;
+
+  TEST_ASSERT_FALSE(sm.readLevels().fresh);  // Stopped.
+  sm.play({"/a.mp3"}, 0, 0);
+  TEST_ASSERT_EQUAL_FLOAT(0.5f, sm.readLevels().rms[0]);
+
+  sm.togglePlayPause(0);
+  const auto paused = sm.readLevels();
+  TEST_ASSERT_FALSE(paused.fresh);
+  TEST_ASSERT_EQUAL_FLOAT(0.0f, paused.rms[0]);
+}
+
 int main(int argc, char **argv) {
   UNITY_BEGIN();
   RUN_TEST(test_play_starts_playing_selected_track);
@@ -530,5 +552,6 @@ int main(int argc, char **argv) {
   RUN_TEST(test_stop_releases_the_file_and_keeps_the_queue);
   RUN_TEST(test_track_generation_increments_on_play_next_and_restart);
   RUN_TEST(test_track_generation_unchanged_by_pause_resume_and_cued_resume);
+  RUN_TEST(test_levels_only_while_playing);
   return UNITY_END();
 }

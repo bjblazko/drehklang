@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <string>
 
+#include "StereoLevels.h"
+
 namespace drehklang::playback {
 
 // What PlaybackDriver::readRecentSamples() copied out. `count == 0` means
@@ -49,6 +51,10 @@ class PlaybackDriver {
   // Copies up to `maxSamples` of the most recent mono samples sent to the
   // DAC into `dst`, oldest first -- the spectrum analyzer's input.
   virtual SampleWindow readRecentSamples(int16_t *dst, size_t maxSamples) = 0;
+  // Per-channel RMS and peak of the music since the last read, before the
+  // volume -- the VU meters' input (ADR 0034). Nothing by default, so a
+  // driver without meters needs no code.
+  virtual signal::StereoLevels readLevels() { return {}; }
   // Pumps the underlying codec; call every loop() iteration.
   virtual void loop() = 0;
 };

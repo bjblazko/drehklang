@@ -240,6 +240,12 @@ class PlaybackStateMachine {
     return driver_.readRecentSamples(dst, maxSamples);
   }
 
+  // The VU meters' levels (ADR 0034), likewise nothing unless playing.
+  signal::StereoLevels readLevels() {
+    if (state_ != PlaybackState::Playing) return {};
+    return driver_.readLevels();
+  }
+
   // Milliseconds of actual playback since the current track started,
   // excluding time spent paused. 0 when stopped.
   uint32_t elapsedMs(uint32_t nowMs) const {

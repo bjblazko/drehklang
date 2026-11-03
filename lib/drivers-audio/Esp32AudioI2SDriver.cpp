@@ -292,6 +292,11 @@ playback::SampleWindow Esp32AudioI2SDriver::readRecentSamples(int16_t *dst,
                                               sampleRate_.load(std::memory_order_relaxed));
 }
 
+// Without mutex_ for the same reason as readRecentSamples().
+signal::StereoLevels Esp32AudioI2SDriver::readLevels() {
+  return audioOutputStage().takeLevels();
+}
+
 // One extra open per track start, before the decoder opens the file; not
 // under mutex_: it's a separate handle, and SD_MMC serializes card access
 // itself.
