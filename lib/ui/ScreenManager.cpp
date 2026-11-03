@@ -88,6 +88,7 @@ const collection::CollectionProfile &ScreenManager::playingProfile() const {
 void ScreenManager::begin() {
   uint8_t stored = 0;
   slotPages_.begin();
+  vizSettings_.begin();
   if (settings_.getU8(kRepeatSettingKey, stored) && stored <= 2) {
     playback_.setRepeat(static_cast<playback::RepeatMode>(stored));
   }
@@ -168,6 +169,7 @@ void ScreenManager::render() {
   dictaphoneRunDot_ = nullptr;
   dictaphonePrimary_ = nullptr;
   coverViewTimeLabel_ = nullptr;
+  forgetVisualizationObjects();
   dictaphoneSecondary_ = nullptr;
   deleteDialog_ = nullptr;
   tableTennisPlayerScore_.detach();
@@ -202,6 +204,7 @@ void ScreenManager::render() {
   if (current.kind != ScreenKind::NowPlaying) {
     slotBand_.release();
     forgetCoverView();
+    visualizationOpen_ = false;
   }
   if (current.kind != renderedKind_) {
     renderedKind_ = current.kind;
@@ -210,6 +213,11 @@ void ScreenManager::render() {
     optionsPanelOpen_ = false;
   }
 
+  if (current.kind == ScreenKind::NowPlaying && visualizationOpen_) {
+    // Like the cover: the whole screen.
+    renderVisualization();
+    return;
+  }
   if (current.kind == ScreenKind::NowPlaying && coverView_ != CoverView::Closed) {
     // The whole screen, no back button or caption.
     renderCoverView();
@@ -1418,7 +1426,7 @@ void ScreenManager::renderOptionsPanel(bool animate) {
     lv_event_cb_t cb;
   };
   playback::RepeatMode repeat = playback_.repeat();
-  Option options[3];
+  Option options[4];
   int kCount = 0;
   // No Shuffle for spoken word (ADR 0018). The lists already drop their
   // Shuffle row; leaving the toggle here was the one way left to shuffle
@@ -1434,6 +1442,8 @@ void ScreenManager::renderOptionsPanel(bool animate) {
                            : DREHKLANG_ICON_REPEAT,
                        "Repeat", repeat != playback::RepeatMode::Off,
                        &ScreenManager::onRepeatClicked};
+  options[kCount++] = {DREHKLANG_ICON_EQUALIZER, "Visuals", false,
+                       &ScreenManager::onVisualsClicked};
   options[kCount++] = {DREHKLANG_ICON_LOCK, "Lock", false,
                        &ScreenManager::onLockClicked};
   for (int i = 0; i < kCount; ++i) {

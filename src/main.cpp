@@ -892,7 +892,7 @@ void loop() {
       // would navigate away from the very thing being tapped (ADR 0021).
       // On the full-screen cover the back swipe closes just that (ADR 0033).
       if (gesture && gesture->type == drehklang::input::GestureType::SwipeLeftToRight &&
-          g_screenManager.closeCoverView()) {
+          (g_screenManager.closeCoverView() || g_screenManager.closeVisualization())) {
         gesture.reset();
       }
       if (gesture && !g_screenManager.swipeStartsOnControl(gesture->startX,
@@ -1041,6 +1041,10 @@ void loop() {
   }
   // And so does a film while it plays (ADR 0031).
   if (g_screenManager.tickVideo(now, displayOn && !g_lockController.isLocked())) {
+    g_idleTimer.noteActivity(now);
+  }
+  // The visualization's toggle holds it awake while music plays (ADR 0034).
+  if (g_screenManager.tickVisualization(now, displayOn && !g_lockController.isLocked())) {
     g_idleTimer.noteActivity(now);
   }
 

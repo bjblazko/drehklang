@@ -200,7 +200,7 @@ def library(dev):
     dev.shot("now-playing")
     dev.tap(180, 340)  # The options handle.
     dev.shot("options")
-    dev.tap(252, 238)  # Lock, the third of three (ADR 0028).
+    dev.tap(288, 244)  # Lock, the fourth of four (ADR 0034).
     dev.shot("locked")
     unlock(dev)
 

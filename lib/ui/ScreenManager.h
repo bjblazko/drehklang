@@ -53,6 +53,10 @@
 #include "ToneSession.h"
 #include "TouchCalibrator.h"
 #include "UsbDriveSession.h"
+#include "BarMeter.h"
+#include "StereoLevels.h"
+#include "VisualizationSettings.h"
+#include "VuNeedle.h"
 
 namespace drehklang::ui {
 
@@ -107,7 +111,8 @@ class ScreenManager : public input::KnobSink {
         messages_(messages),
         bookmarks_(bookmarks),
         menuVisibility_(makeMenuVisibility()),
-        slotPages_(settings) {}
+        slotPages_(settings),
+        vizSettings_(settings) {}
 
   void begin();
 
@@ -263,6 +268,15 @@ class ScreenManager : public input::KnobSink {
   // does there. False when it was not open.
   bool closeCoverView();
 
+  // The full-screen visualization (ADR 0034), opened from the options
+  // panel. close...() is the back swipe there; false when it was not open.
+  void openVisualization();
+  bool closeVisualization();
+  // Moves the meters at ~30 fps while seen. True while the view should
+  // hold the display awake (its toggle on and music playing). Call every
+  // loop().
+  bool tickVisualization(uint32_t nowMs, bool visible);
+
   // Keeps the play button in step with the session (a lock can stop it)
   // and redraws the scope at ~30 fps while it is actually seen. Call
   // every loop().
@@ -362,6 +376,20 @@ class ScreenManager : public input::KnobSink {
   void updateCoverViewTime();
   static void onCoverViewPressed(lv_event_t *e);
   static void onCoverViewReleased(lv_event_t *e);
+  // ScreenManagerVisualization.cpp (ADR 0034).
+  void forgetVisualizationObjects();
+  void renderVisualization();
+  void renderAnalogMeter();
+  void renderBarMeter();
+  void styleVizAwakeButton();
+  void updateVisualization();
+  void updateAnalogMeter();
+  void updateBarMeter();
+  static void onVizNeedleDraw(lv_event_t *e);
+  static void onVizPressed(lv_event_t *e);
+  static void onVizReleased(lv_event_t *e);
+  static void onVizAwakeClicked(lv_event_t *e);
+  static void onVisualsClicked(lv_event_t *e);
   // ScreenManagerDictaphone.cpp.
   void renderDictaphone();
   void renderRecording();
@@ -855,6 +883,26 @@ class ScreenManager : public input::KnobSink {
   lv_obj_t *coverViewTimeLabel_ = nullptr;
   int32_t coverViewShownSecond_ = -1;
   lv_point_t coverViewPressPoint_{};
+
+  // The full-screen visualization (ADR 0034). The models run whichever
+  // meter is shown, so switching shows a settled value.
+  bool visualizationOpen_ = false;
+  visualizer::VisualizationSettings vizSettings_;
+  signal::LevelHold vizHold_;
+  visualizer::vu::NeedleBallistics vizNeedle_;
+  visualizer::vu::PeakLamp vizPeakLamp_;
+  visualizer::bars::BarMeter vizBars_[2];
+  uint32_t lastVizTickMs_ = 0;
+  float vizShownNeedle_ = -1.0f;
+  int vizShownLamp_ = -1;
+  int vizShownLit_[2] = {-1, -1};
+  int vizShownHold_[2] = {-2, -2};
+  lv_obj_t *vizNeedleLayer_ = nullptr;
+  lv_obj_t *vizLampImg_ = nullptr;
+  lv_obj_t *vizLevelClip_[2] = {nullptr, nullptr};
+  lv_obj_t *vizHoldClip_[2] = {nullptr, nullptr};
+  lv_obj_t *vizAwakeButton_ = nullptr;
+  lv_point_t vizPressPoint_{};
 
   // Dictaphone (ADR 0032). The recorder and a recording never show at
   // once, so they share one band, kept across renders like the tone

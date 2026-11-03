@@ -22,9 +22,9 @@ LV_FONT_DECLARE(drehklang_icon_font_28);
 #define DREHKLANG_ICON_SHUFFLE "\xEE\x81\x83"     // U+E043
 #define DREHKLANG_ICON_REPEAT "\xEE\x81\x80"      // U+E040
 #define DREHKLANG_ICON_REPEAT_ONE "\xEE\x81\x81"  // U+E041
-// U+E3F4 "image" and U+E01D "equalizer" are still in IconFont.c: the
-// options panel's cover/spectrum switch (ADR 0014) used them until the
-// cover slot became swiped pages (ADR 0028).
+// The options panel's Visuals button (ADR 0034). U+E3F4 "image" is still
+// in IconFont.c, unused since the cover slot became swiped pages (ADR 0028).
+#define DREHKLANG_ICON_EQUALIZER "\xEE\x80\x9D"  // U+E01D
 
 // 48px glyphs for the main menu tiles and the Brightness and Sleep
 // screens (ADR 0010, ADR 0015) -- IconFont48.c, same source font.
@@ -32,6 +32,7 @@ LV_FONT_DECLARE(drehklang_icon_font_48);
 
 #define DREHKLANG_ICON_MUSIC_NOTE "\xEE\x90\x85"  // U+E405
 #define DREHKLANG_ICON_SETTINGS "\xEE\xA2\xB8"    // U+E8B8
+// Also in the 28 px font, for the visualization's keep-awake toggle (ADR 0034).
 #define DREHKLANG_ICON_LIGHT_MODE "\xEE\x94\x98"  // U+E518
 #define DREHKLANG_ICON_BEDTIME "\xEE\xBD\x84"     // U+EF44
 // Audiobooks ("menu_book") and Radio Plays ("theater_comedy") -- the two
