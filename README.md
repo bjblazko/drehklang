@@ -24,7 +24,8 @@ tap to choose. No app, no account, no cloud: nothing leaves the device.
 - A seven-band equalizer from 31 Hz to 16 kHz that never clips
 - Cover, dot-matrix spectrum, oscilloscope or spectrum in Now Playing,
   swiped through; a tap shows the cover full-screen on a blurred copy of
-  itself; a tone generator with oscilloscope, a
+  itself; an analog VU meter and a fluorescent bar meter full-screen,
+  in the style of a 1990s cassette deck; a tone generator with oscilloscope, a
   dictaphone with the same live scope and spectrum, a sleep timer, and
   two games for the knob
 - The SD card as a USB drive, for copying music over the cable
@@ -108,6 +109,11 @@ screens.
   music, with page dots under it — see
   [ADR 0009](docs/adr/0009-now-playing-spectrum-analyzer.md) and
   [ADR 0028](docs/adr/0028-now-playing-slot-pages.md).
+- Visuals, from Now Playing's options panel: a backlit analog VU meter
+  (one needle for left and right, true VU ballistics, a peak lamp) or a
+  fluorescent bar meter (left and right, peak hold), full-screen, with a
+  toggle that keeps the display on while music plays — see
+  [ADR 0034](docs/adr/0034-vu-meter-visualization.md).
   No charging indicator: the board exposes no charge-status signal (no
   dedicated pin, no voltage change on plug/unplug, no status LED).
 - Collections: Music, Audiobooks and Radio Plays are separate shelves,

@@ -156,15 +156,26 @@ on a monitor.
    knob seen from above, echoing the round display and the rotary encoder
    the way the circular transport buttons do.
 
-6. **A game is the one exception, and only a game.** Table Tennis
+6. **A game is one exception, a visualization the other.** Table Tennis
    (ADR 0022) is white on black, and its screen is the only place in the app that does
    not take its colours from `Theme.h`. The rule above is about controls
    — colour here signals function and operability, and a screen with no
    controls on it has no function to signal. A game is a cabinet, not a
    front panel; a light-grey version of it is a picture of the game. The
    exception is
-   bounded to games on purpose: the next screen that wants to be dark
-   argues its own case rather than citing this one.
+   bounded on purpose: the next screen that wants to be dark argues its
+   own case rather than citing this one.
+
+   The full-screen visualizations (ADR 0034) are the second case, argued
+   on their own: an analog VU meter and a fluorescent bar meter are
+   pictures of instruments, and their gradients, lamp light, glass and
+   glow are what the instrument looks like, not decoration on a control.
+   They are a recorded deviation from huepattl-rams-design, bounded to the
+   visualization view. Even its one control, the keep-awake toggle, takes
+   the meter's colours rather than Theme.h, because a light-grey Theme.h
+   button looked pasted onto the meter (the user's call, 2026-11-03). It
+   still has a 44 px touch target, and its state still shows as unlit
+   against lit.
 
 ### Why a light theme
 
