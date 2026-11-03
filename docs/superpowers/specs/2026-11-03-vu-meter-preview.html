@@ -1,0 +1,427 @@
+<title>Drehklang VU-Meter</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: a dark showroom shelf, two round displays side by side at device size, controls below. Single dark look on purpose. */
+:root {
+  color-scheme: dark;
+  --bg: #121214;
+  --shelf: #1b1b1e;
+  --fg: #e8e6e1;
+  --muted: #9a978f;
+  --line: #2c2c30;
+  --accent: #e8a33a;
+  --case: #232326;
+  --case-edge: #3a3a3f;
+  --font-ui: "IBM Plex Sans", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, monospace;
+}
+html, body { height: auto; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui);
+  font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 48px;
+}
+main { max-width: 860px; margin: 0 auto; display: grid; gap: 28px; }
+header h1 { font-size: 22px; font-weight: 600; margin: 0 0 6px; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 62ch; }
+.stage {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 40px 48px;
+  background: var(--shelf); border: 1px solid var(--line); border-radius: 8px;
+  padding: 36px 16px 28px;
+}
+figure { margin: 0; display: grid; justify-items: center; gap: 14px; min-width: 0; }
+.device {
+  width: 360px; max-width: calc(100vw - 72px); aspect-ratio: 1; border-radius: 50%;
+  background: #000;
+  box-shadow: 0 0 0 9px var(--case), 0 0 0 10px var(--case-edge), 0 14px 30px 6px rgba(0,0,0,.55);
+}
+.device canvas { width: 100%; height: 100%; display: block; border-radius: 50%; }
+figcaption { text-align: center; display: grid; gap: 2px; margin-top: 8px; }
+figcaption strong { font-weight: 600; }
+figcaption span { color: var(--muted); font-size: 13px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--case-edge); border-radius: 4px; overflow: hidden; }
+.seg button, .btn {
+  font: 500 14px var(--font-ui); color: var(--fg); background: transparent;
+  border: 0; height: 36px; padding: 0 14px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--case-edge); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.btn { border: 1px solid var(--case-edge); border-radius: 4px; min-width: 110px; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.label { color: var(--muted); font-size: 13px; }
+.notes { display: grid; gap: 10px; color: var(--muted); max-width: 70ch; border-top: 1px solid var(--line); padding-top: 20px; }
+.notes h2 { font-size: 15px; color: var(--fg); margin: 0; font-weight: 600; }
+.notes ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.num { font-family: var(--font-num); font-size: 13px; }
+</style>
+
+<main>
+  <header>
+    <h1>VU-Meter für das Vollbild</h1>
+    <p>Zwei Entwürfe in Gerätegröße (360 px, rund), angetrieben von einem simulierten Musiksignal. Kein Ton, nur Pegel.</p>
+  </header>
+
+  <section class="stage" aria-label="Vorschau">
+    <figure>
+      <div class="device"><canvas id="analog" width="360" height="360" aria-label="Analoges VU-Meter"></canvas></div>
+      <figcaption><strong>Analog, Zeigerinstrument</strong><span>warm hinterleuchtet, ein Zeiger für L+R, VU-Ballistik 300 ms</span></figcaption>
+    </figure>
+    <figure>
+      <div class="device"><canvas id="digital" width="360" height="360" aria-label="Digitale Pegelanzeige"></canvas></div>
+      <figcaption><strong>Digital, Leuchtsegmente</strong><span>Fluoreszenz-Look, L und R getrennt, Spitzenwert mit Haltepunkt</span></figcaption>
+    </figure>
+  </section>
+
+  <div class="controls">
+    <span class="label" id="profLabel">Signal</span>
+    <div class="seg" role="group" aria-labelledby="profLabel">
+      <button id="p-pop" data-p="pop" aria-pressed="true">Pop, laut</button>
+      <button id="p-classic" data-p="classic" aria-pressed="false">Klassik</button>
+      <button id="p-speech" data-p="speech" aria-pressed="false">Hörbuch</button>
+    </div>
+    <button class="btn" id="pause">Pause</button>
+  </div>
+
+  <section class="notes">
+    <h2>So würde es auf dem Gerät gebaut</h2>
+    <ul>
+      <li>Alles Statische (Skala, Lampenlicht, Glas, unbeleuchtete Segmente) ist ein fertiges Bild, ca. 253 KB im PSRAM. Die Vorschau malt es ebenfalls nur einmal.</li>
+      <li>Pro Frame kommen nur Zeiger bzw. leuchtende Segmente dazu. Auf dem Gerät wird nur dieser Bereich neu übertragen.</li>
+      <li>Annahme: <span class="num">0 VU = −14 dBFS</span>. Die Digitalanzeige zeigt dBFS-Spitzen, <span class="num">0</span> ist die Übersteuerungsgrenze. Die rote PEAK-Lampe am Zeigerinstrument leuchtet ab <span class="num">−1 dBFS</span>.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+(() => {
+  const S = 360, C = 180;
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+  const REF_DBFS = -14;          // 0 VU
+  const VU_MAX = Math.pow(10, 3 / 20); // +3 VU = full scale
+
+  function setup(cv) {
+    cv.width = S * DPR; cv.height = S * DPR;
+    const ctx = cv.getContext('2d'); ctx.scale(DPR, DPR); return ctx;
+  }
+  function layer(fn) {
+    const c = document.createElement('canvas'); c.width = S * DPR; c.height = S * DPR;
+    const x = c.getContext('2d'); x.scale(DPR, DPR); fn(x); return c;
+  }
+  const circle = (x, r) => { x.beginPath(); x.arc(C, C, r, 0, Math.PI * 2); };
+
+  /* ---------- Analog ---------- */
+  const PIV = { x: 180, y: 318 }, RS = 156, SPAN = 48 * Math.PI / 180;
+  const posOfVu = vu => Math.pow(10, vu / 20) / VU_MAX;
+  const ang = p => -SPAN + 2 * SPAN * p;               // from vertical, clockwise
+  const polar = (a, r) => [PIV.x + r * Math.sin(a), PIV.y - r * Math.cos(a)];
+  const FACE = 174;
+
+  function analogBg(x) {
+    circle(x, 180); x.fillStyle = '#0a0a0b'; x.fill();
+    x.save(); circle(x, FACE); x.clip();
+    let g = x.createRadialGradient(180, 330, 10, 180, 240, 270);
+    g.addColorStop(0, '#fff7dc'); g.addColorStop(.33, '#f9df9c');
+    g.addColorStop(.68, '#dca952'); g.addColorStop(1, '#6e4917');
+    x.fillStyle = g; x.fillRect(0, 0, S, S);
+    // two lamps behind the face, just above the housing edge
+    x.globalCompositeOperation = 'screen';
+    for (const lx of [112, 248]) {
+      const h = x.createRadialGradient(lx, 312, 0, lx, 312, 125);
+      h.addColorStop(0, 'rgba(255,238,185,.75)'); h.addColorStop(.5, 'rgba(255,214,130,.25)'); h.addColorStop(1, 'rgba(255,200,110,0)');
+      x.fillStyle = h; x.fillRect(0, 0, S, S);
+    }
+    x.globalCompositeOperation = 'source-over';
+    // paper texture: faint speckle
+    for (let i = 0; i < 1400; i++) {
+      x.fillStyle = `rgba(90,60,20,${Math.random() * .05})`;
+      x.fillRect(Math.random() * S, Math.random() * S, 1, 1);
+    }
+    drawScale(x);
+    // housing at the bottom hides the pivot
+    x.beginPath(); x.moveTo(0, 304); x.quadraticCurveTo(180, 290, 360, 304); x.lineTo(360, 360); x.lineTo(0, 360); x.closePath();
+    g = x.createLinearGradient(0, 292, 0, 360); g.addColorStop(0, '#2d2a26'); g.addColorStop(.25, '#151412'); g.addColorStop(1, '#060606');
+    x.fillStyle = g; x.fill();
+    x.strokeStyle = 'rgba(255,240,210,.18)'; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(0, 304); x.quadraticCurveTo(180, 290, 360, 304); x.stroke();
+    // light shadow the housing throws upward
+    g = x.createLinearGradient(0, 280, 0, 300); g.addColorStop(0, 'rgba(60,35,0,0)'); g.addColorStop(1, 'rgba(60,35,0,.22)');
+    x.fillStyle = g; x.fillRect(0, 278, S, 20);
+    // vignette at the rim
+    g = x.createRadialGradient(180, 180, FACE * .78, 180, 180, FACE);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(25,12,0,.6)');
+    x.fillStyle = g; x.fillRect(0, 0, S, S);
+    x.restore();
+    // bezel ring
+    circle(x, FACE + 1.5); x.lineWidth = 3;
+    g = x.createLinearGradient(0, 0, 0, S); g.addColorStop(0, '#5a5a5e'); g.addColorStop(.5, '#1d1d20'); g.addColorStop(1, '#46464a');
+    x.strokeStyle = g; x.stroke();
+  }
+
+  function drawScale(x) {
+    const ink = '#1d1712', red = '#c22a1c';
+    const arc = (r, a0, a1, w, col) => {
+      x.beginPath(); x.arc(PIV.x, PIV.y, r, -Math.PI / 2 + a0, -Math.PI / 2 + a1);
+      x.lineWidth = w; x.strokeStyle = col; x.stroke();
+    };
+    const a0 = ang(posOfVu(-20)), aZero = ang(posOfVu(0)), aMax = ang(1);
+    arc(RS, a0, aZero, 1.6, ink);
+    arc(RS, aZero, aMax, 1.6, red);
+    arc(RS + 5, aZero, aMax, 8, red);
+    const major = [-20, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3];
+    const minor = [-15, -6, -4, -0.5, 0.5, 1.5, 2.5];
+    x.lineCap = 'butt';
+    const tick = (vu, len, w) => {
+      const a = ang(posOfVu(vu)); const [x1, y1] = polar(a, RS); const [x2, y2] = polar(a, RS + len);
+      x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y2); x.lineWidth = w; x.strokeStyle = vu > 0 ? red : ink; x.stroke();
+    };
+    minor.forEach(v => tick(v, 7, 1)); major.forEach(v => tick(v, 14, 1.8));
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '600 17px "Archivo Narrow", sans-serif';
+    major.forEach(v => {
+      if (v === -20 || v === -10 || v === -7 || v === -5 || v === -3 || v === -2 || v === -1 || v >= 0) {
+        const [tx, ty] = polar(ang(posOfVu(v)), RS + 27);
+        x.fillStyle = v > 0 ? red : ink; x.fillText(String(Math.abs(v)), tx, ty);
+      }
+    });
+    x.font = '700 22px "Archivo Narrow", sans-serif';
+    let [tx, ty] = polar(a0 - .09, RS + 22); x.fillStyle = ink; x.fillText('−', tx, ty);
+    [tx, ty] = polar(aMax + .08, RS + 22); x.fillStyle = red; x.fillText('+', tx, ty);
+    // percent scale inside
+    x.font = '500 10px "Archivo Narrow", sans-serif'; x.fillStyle = ink;
+    for (const pct of [0, 20, 40, 60, 80, 100]) {
+      const a = ang(pct / 100 / VU_MAX);
+      const [x1, y1] = polar(a, RS - 2); const [x2, y2] = polar(a, RS - 9);
+      x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y2); x.lineWidth = 1; x.strokeStyle = ink; x.stroke();
+      const [lx, ly] = polar(a, RS - 19); x.fillText(String(pct), lx, ly);
+    }
+    x.font = '700 38px "Archivo Narrow", sans-serif'; x.fillStyle = ink;
+    x.fillText('VU', 180, 254);
+    x.font = '600 11px "Archivo Narrow", sans-serif'; x.fillStyle = 'rgba(29,23,18,.75)';
+    if ('letterSpacing' in x) x.letterSpacing = '2px';
+    x.fillText('L + R', 180, 282);
+    x.fillText('PEAK', 268, 282);
+    if ('letterSpacing' in x) x.letterSpacing = '0px';
+    // peak lamp, off
+    const lg = x.createRadialGradient(266, 262, 1, 268, 264, 7);
+    lg.addColorStop(0, '#7a2a20'); lg.addColorStop(1, '#2a0d09');
+    x.beginPath(); x.arc(268, 264, 6, 0, Math.PI * 2); x.fillStyle = lg; x.fill();
+    x.lineWidth = 1.5; x.strokeStyle = '#2a2420'; x.stroke();
+  }
+
+  function analogGlass(x) {
+    x.save(); circle(x, FACE); x.clip();
+    const g = x.createLinearGradient(40, 20, 210, 220);
+    g.addColorStop(0, 'rgba(255,255,255,.30)'); g.addColorStop(.5, 'rgba(255,255,255,.06)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.beginPath(); x.ellipse(120, 70, 190, 110, -0.45, 0, Math.PI * 2); x.fillStyle = g; x.fill();
+    x.restore();
+  }
+
+  function drawNeedle(x, p) {
+    const a = ang(p);
+    const [tx, ty] = polar(a, RS + 12);
+    const nx = Math.cos(a), ny = Math.sin(a); // normal
+    x.save(); circle(x, FACE); x.clip();
+    x.shadowColor = 'rgba(70,40,0,.35)'; x.shadowBlur = 3; x.shadowOffsetX = 3; x.shadowOffsetY = 5;
+    x.beginPath();
+    x.moveTo(PIV.x - nx * 1.8, PIV.y - ny * 1.8);
+    x.lineTo(tx - nx * .5, ty - ny * .5); x.lineTo(tx + nx * .5, ty + ny * .5);
+    x.lineTo(PIV.x + nx * 1.8, PIV.y + ny * 1.8); x.closePath();
+    x.fillStyle = '#141210'; x.fill();
+    x.restore();
+  }
+
+  function drawPeakLamp(x, on) {
+    if (on <= 0) return;
+    x.save(); x.globalAlpha = Math.min(1, on);
+    const g = x.createRadialGradient(268, 264, 0, 268, 264, 22);
+    g.addColorStop(0, 'rgba(255,90,60,.9)'); g.addColorStop(.3, 'rgba(255,60,30,.35)'); g.addColorStop(1, 'rgba(255,40,20,0)');
+    x.fillStyle = g; x.fillRect(240, 236, 56, 56);
+    x.beginPath(); x.arc(268, 264, 5, 0, Math.PI * 2); x.fillStyle = '#ff6a48'; x.fill();
+    x.restore();
+  }
+
+  /* ---------- Digital ---------- */
+  const N = 32, X0 = 52, X1 = 316, GAP = 2.4, SW = (X1 - X0 - GAP * (N - 1)) / N;
+  const BARS = [{ y: 126, h: 34, name: 'L' }, { y: 212, h: 34, name: 'R' }];
+  const SCALE = [[-50, 0], [-30, .25], [-20, .42], [-10, .64], [-6, .75], [-3, .85], [0, 1]];
+  const posOfDb = db => {
+    if (db <= SCALE[0][0]) return 0;
+    for (let i = 1; i < SCALE.length; i++) {
+      const [d1, p1] = SCALE[i], [d0, p0] = SCALE[i - 1];
+      if (db <= d1) return p0 + (p1 - p0) * (db - d0) / (d1 - d0);
+    }
+    return 1;
+  };
+  const RED_FROM = Math.floor(posOfDb(-3) * N);
+  const segX = i => X0 + i * (SW + GAP);
+  const BLUE = '#8ae9ff', BLUE_GLOW = 'rgba(40,190,255,.9)', REDC = '#ff7556', RED_GLOW = 'rgba(255,60,30,.9)';
+  const DIM = '#59c6dd';
+
+  function digitalBg(x) {
+    circle(x, 180); x.fillStyle = '#000'; x.fill();
+    let g = x.createRadialGradient(180, 170, 20, 180, 180, 178);
+    g.addColorStop(0, '#0b171c'); g.addColorStop(.75, '#060c0f'); g.addColorStop(1, '#010203');
+    circle(x, 176); x.fillStyle = g; x.fill();
+    // ghost segments
+    for (const b of BARS) for (let i = 0; i < N; i++) {
+      x.fillStyle = i >= RED_FROM ? '#24120f' : '#0d232a';
+      x.fillRect(segX(i), b.y, SW, b.h);
+    }
+    // static lit legends
+    x.save();
+    x.shadowColor = 'rgba(40,190,255,.7)'; x.shadowBlur = 6;
+    x.fillStyle = DIM; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '20px "Share Tech Mono", monospace';
+    BARS.forEach(b => x.fillText(b.name, 36, b.y + b.h / 2 + 1));
+    x.font = '12px "Share Tech Mono", monospace';
+    const labels = [[-50, '50'], [-30, '30'], [-20, '20'], [-10, '10'], [-6, '6'], [-3, '3'], [0, '0']];
+    labels.forEach(([db, t]) => {
+      const i = Math.min(N - 1, Math.round(posOfDb(db) * N - 0.5));
+      const cx = segX(i) + SW / 2;
+      x.fillStyle = db >= -3 ? REDC : DIM;
+      x.shadowColor = db >= -3 ? 'rgba(255,60,30,.7)' : 'rgba(40,190,255,.7)';
+      x.fillText(t, cx, 186);
+      x.fillRect(cx - .5, 166, 1, 4); x.fillRect(cx - .5, 202, 1, 4);
+    });
+    x.fillStyle = DIM; x.shadowColor = 'rgba(40,190,255,.7)';
+    x.fillText('dB', 36, 186);
+    if ('letterSpacing' in x) x.letterSpacing = '3px';
+    x.font = '13px "Share Tech Mono", monospace';
+    x.fillText('PEAK LEVEL', 180, 92);
+    x.restore();
+    // "PEAK HOLD" indicator box
+    x.save();
+    x.strokeStyle = DIM; x.lineWidth = 1; x.shadowColor = 'rgba(40,190,255,.7)'; x.shadowBlur = 5;
+    x.strokeRect(134, 268, 92, 20);
+    x.fillStyle = DIM; x.font = '11px "Share Tech Mono", monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    if ('letterSpacing' in x) x.letterSpacing = '2px';
+    x.fillText('PEAK HOLD', 181, 279);
+    x.restore();
+  }
+
+  function digitalMesh(x) {
+    x.save(); circle(x, 176); x.clip();
+    x.fillStyle = 'rgba(0,0,0,.38)';
+    for (let i = 0; i < S; i += 3) { x.fillRect(i, 0, 1, S); x.fillRect(0, i, S, 1); }
+    const g = x.createLinearGradient(30, 0, 230, 200);
+    g.addColorStop(0, 'rgba(180,220,255,.10)'); g.addColorStop(.55, 'rgba(180,220,255,.02)'); g.addColorStop(1, 'rgba(180,220,255,0)');
+    x.beginPath(); x.ellipse(130, 70, 200, 95, -0.35, 0, Math.PI * 2); x.fillStyle = g; x.fill();
+    x.restore();
+  }
+
+  function drawBar(x, b, levelPos, holdPos) {
+    const lit = Math.round(levelPos * N);
+    const hold = Math.min(N - 1, Math.round(holdPos * N) - 1);
+    x.save(); x.shadowBlur = 9;
+    for (let i = 0; i < N; i++) {
+      if (i >= lit && i !== hold) continue;
+      const red = i >= RED_FROM;
+      x.shadowColor = red ? RED_GLOW : BLUE_GLOW; x.fillStyle = red ? REDC : BLUE;
+      x.fillRect(segX(i), b.y, SW, b.h);
+    }
+    x.restore();
+  }
+
+  /* ---------- Simulated signal ---------- */
+  const NOISE = Array.from({ length: 12 }, () => Array.from({ length: 1024 }, () => Math.random() * 2 - 1));
+  const noise = (t, rate, k) => {
+    const u = t * rate, i = Math.floor(u), f = u - i, s = f * f * (3 - 2 * f), a = NOISE[k % 12];
+    return a[i & 1023] * (1 - s) + a[(i + 1) & 1023] * s;
+  };
+  const PROFILES = {
+    pop(t, ch) {
+      const beat = (t * 2.05) % 1, ph = beat / 2.05;
+      const half = ((t * 2.05 + .5) % 1) / 2.05;
+      const kick = 4.5 * Math.exp(-ph / .11) + 2.5 * Math.exp(-half / .08);
+      const rms = -16 + 2.2 * noise(t, 1.3, ch) + kick + 1.2 * noise(t, .4, ch + 4);
+      return { rms, peak: rms + 7.5 + 2.2 * noise(t, 9, ch + 6) };
+    },
+    classic(t, ch) {
+      const rms = -27 + 9 * Math.sin(2 * Math.PI * t / 13) + 4 * Math.sin(2 * Math.PI * t / 4.1 + ch * .4) + 1.5 * noise(t, 2, ch);
+      return { rms, peak: rms + 12 + 2 * noise(t, 7, ch + 6) };
+    },
+    speech(t) {
+      const word = noise(t, 1.1, 9) > -0.3;
+      const syl = Math.max(0, Math.sin(2 * Math.PI * 4.3 * t + 2 * noise(t, .7, 10)));
+      if (!word || syl < .06) return { rms: -70, peak: -70 };
+      const rms = -19 + 20 * Math.log10(Math.pow(syl, .6)) + 2 * noise(t, 3, 11);
+      return { rms, peak: rms + 10 + 2 * noise(t, 8, 7) };
+    }
+  };
+  let profile = 'pop', paused = false;
+
+  /* ---------- Run ---------- */
+  const actx = setup(document.getElementById('analog'));
+  const dctx = setup(document.getElementById('digital'));
+  let aBg, aGlass, dBg, dMesh;
+
+  const needle = { p: 0, v: 0 };
+  const W = 20, Z = 0.8; // VU: ~300 ms to 99 %, ~1-2 % overshoot
+  let lamp = 0;
+  const dig = [{ lvl: 0, hold: 0, holdT: 0 }, { lvl: 0, hold: 0, holdT: 0 }];
+  let simT = 0, last = performance.now();
+
+  function frame(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    if (!paused) simT += dt;
+    const sig = [0, 1].map(ch => paused ? { rms: -90, peak: -90 } : PROFILES[profile](simT, ch));
+
+    // analog: average of L and R in linear RMS, then VU ballistics
+    const lin = (Math.pow(10, sig[0].rms / 20) + Math.pow(10, sig[1].rms / 20)) / 2;
+    const target = Math.min(1.2, lin / Math.pow(10, REF_DBFS / 20) / VU_MAX);
+    const steps = Math.ceil(dt / .001), h = dt / steps;
+    for (let i = 0; i < steps; i++) {
+      const acc = W * W * (target - needle.p) - 2 * Z * W * needle.v;
+      needle.v += acc * h; needle.p += needle.v * h;
+      if (needle.p < 0) { needle.p = 0; needle.v = -needle.v * .15; }
+      if (needle.p > 1.06) { needle.p = 1.06; needle.v = -needle.v * .2; }
+    }
+    const pk = Math.max(sig[0].peak, sig[1].peak);
+    lamp = pk > -1 ? 1 : Math.max(0, lamp - dt / .35);
+
+    actx.clearRect(0, 0, S, S);
+    actx.drawImage(aBg, 0, 0, S, S);
+    drawNeedle(actx, needle.p);
+    drawPeakLamp(actx, lamp);
+    actx.drawImage(aGlass, 0, 0, S, S);
+
+    // digital: instant attack, ~26 dB/s release, hold 1.5 s
+    dctx.clearRect(0, 0, S, S);
+    dctx.drawImage(dBg, 0, 0, S, S);
+    dig.forEach((d, ch) => {
+      const p = posOfDb(Math.min(0, sig[ch].peak));
+      d.lvl = p >= d.lvl ? p : Math.max(p, d.lvl - dt * .55);
+      if (p >= d.hold) { d.hold = p; d.holdT = 1.5; }
+      else if ((d.holdT -= dt) <= 0) d.hold = Math.max(d.lvl, d.hold - dt * .4);
+      drawBar(dctx, BARS[ch], d.lvl, d.hold);
+    });
+    dctx.drawImage(dMesh, 0, 0, S, S);
+    requestAnimationFrame(frame);
+  }
+
+  function start() {
+    aBg = layer(analogBg); aGlass = layer(analogGlass);
+    dBg = layer(digitalBg); dMesh = layer(digitalMesh);
+    last = performance.now();
+    requestAnimationFrame(frame);
+  }
+  const fonts = ['600 17px "Archivo Narrow"', '700 38px "Archivo Narrow"', '13px "Share Tech Mono"'];
+  Promise.race([
+    Promise.all(fonts.map(f => document.fonts.load(f))).catch(() => {}),
+    new Promise(r => setTimeout(r, 1500))
+  ]).then(start);
+
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    profile = b.dataset.p;
+    document.querySelectorAll('.seg button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+  }));
+  const pb = document.getElementById('pause');
+  pb.addEventListener('click', () => { paused = !paused; pb.textContent = paused ? 'Weiter' : 'Pause'; });
+})();
+</script>
