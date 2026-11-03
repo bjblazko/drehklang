@@ -1,0 +1,10 @@
+{
+  "name": "drehklang-vu-art",
+  "private": true,
+  "description": "Renders the VU meter art into lib/visualizer-art (ADR 0034). Build-time only.",
+  "type": "module",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "@napi-rs/canvas": "1.0.11"
+  }
+}

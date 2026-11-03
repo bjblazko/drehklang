@@ -24,8 +24,11 @@ three in step).
 | [ESP-DSP](https://github.com/espressif/esp-dsp), bundled with the core | The FFT ESP32-audioI2S links | Apache-2.0 | |
 | [Material Symbols](https://github.com/google/material-design-icons) | The icon glyphs in `lib/ui-widgets/IconFont*.c` | Apache-2.0 | |
 | [Montserrat](https://fonts.google.com/specimen/Montserrat) (Medium, bundled by LVGL as `scripts/built_in_font/Montserrat-Medium.ttf`) | Text glyphs in `lib/ui-widgets/TextFont*.c` (replaces LVGL's built-in Montserrat fonts, extended to Latin-1 Supplement/Latin Extended-A for European tag text) | OFL-1.1 | |
+| [Archivo Narrow](https://fonts.google.com/specimen/Archivo+Narrow) (Omnibus-Type; `scripts/vu-art/fonts/`) | Lettering of the analog VU meter's scale, rendered as pixels into `lib/visualizer-art/VuMeterArt.c` | OFL-1.1 | |
+| [Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono) (Carrois Type Design; `scripts/vu-art/fonts/`) | Legends of the bar meter, rendered as pixels into `lib/visualizer-art/VuMeterArt.c` | OFL-1.1 | |
 | [Font Awesome 5 Free](https://fontawesome.com) (bundled by LVGL as `scripts/built_in_font/FontAwesome5-Solid+Brands+Regular.woff`) | The `LV_SYMBOL_*` icon glyphs embedded in `lib/ui-widgets/TextFont*.c` (same codepoint range as LVGL's own built-in Montserrat fonts) | CC-BY-4.0 (icons) / OFL-1.1 (font) | Font Awesome by Fonticons, Inc. |
 | [Unity](https://github.com/ThrowTheSwitch/Unity) | Host-side unit tests only (not shipped) | MIT | |
+| [@napi-rs/canvas](https://github.com/Brooooooklyn/canvas) | Renders the VU meter art in `scripts/vu-art/` at build time only (not shipped) | MIT | |
 
 The Bluetooth firmware links Espressif's binary-only Bluetooth controller
 and radio libraries (`libbtdm_app`, `libbtbb`, `libphy`, `libcoexist`, part

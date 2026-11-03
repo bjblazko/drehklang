@@ -34,3 +34,4 @@ __pycache__/
 
 # PlatformIO installed by scripts/install.py when none was found
 .venv-pio/
+scripts/vu-art/node_modules/

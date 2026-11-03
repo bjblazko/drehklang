@@ -55,6 +55,10 @@ inline constexpr Credit kCredits[] = {
      nullptr, nullptr},
     {"Montserrat", "", "Text", "OFL-1.1", "fonts.google.com/specimen/Montserrat", nullptr,
      nullptr},
+    {"Archivo Narrow", "", "The analog VU meter's scale", "OFL-1.1",
+     "fonts.google.com/specimen/Archivo+Narrow", nullptr, nullptr},
+    {"Share Tech Mono", "", "The bar meter's legends", "OFL-1.1",
+     "fonts.google.com/specimen/Share+Tech+Mono", nullptr, nullptr},
     {"Font Awesome 5 Free", "", "Symbols in the text font", "CC-BY-4.0", "fontawesome.com",
      "Font Awesome by Fonticons, Inc.", nullptr},
 };
