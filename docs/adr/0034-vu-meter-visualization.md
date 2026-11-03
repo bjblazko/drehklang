@@ -40,15 +40,26 @@ Neither meter carries a brand name, a logo or a copy of a nameplate.
 ### Levels
 
 - `AudioOutputStage::noteStereo32()` measures every decoder block per
-  channel: RMS over the block and the largest sample, after the
-  equalizer with its headroom given back, before the volume
-  (`signal::StereoLevelMeter`). The audio task only stores floats into
-  atomics: no lock, no print, no allocation.
+  channel, after the equalizer with its headroom given back and before
+  the volume (`signal::StereoLevelMeter`): the sum of squares and the
+  largest sample since the last read, so the RMS covers all of them. A
+  block is 256 frames (5.8 ms at 44.1 kHz). One block per frame would
+  swing with the phase of a bass note. Per sample the work is integer
+  only (the top 24 bits squared into 64 bits), and the floats go into
+  atomics once per block: no lock, no print, no allocation.
+- Unread for 128 blocks, the meter stops measuring, and the next read
+  throws away what it had. So it costs nothing while the view is closed,
+  a film included, where core 0 has no time to spare (ADR 0031). An old
+  peak also never lights the lamp when the view opens or the display
+  wakes.
 - The main loop takes them once per frame through
   `PlaybackDriver::readLevels()`. They are zero unless playing and zero
   while muted, the same as for the spectrum. `signal::LevelHold` repeats
-  the last block for up to 250 ms, because a low-rate audiobook delivers
-  blocks up to ~150 ms apart.
+  the last read for up to 250 ms when a frame got no block: at 8 kHz a
+  block is 32 ms, about one per frame.
+- The levels run ahead of the sound by the I2S DMA queue (16 × 256
+  frames: ~93 ms at 44.1 kHz, ~0.5 s at 8 kHz) plus Bluetooth's latency,
+  as the spectrum does.
 
 ### The analog meter
 
@@ -98,9 +109,12 @@ when on; an unlit-segment teal on the bars and the legends' cyan when on.
 
 - Both meters render as the preview, and the needle and bars follow the
   music (MP3).
-- Core 0 with either meter open is the same as on Now Playing: IDLE0
-  ~34 %, the decoder's task ~58 %, `audio` 4 % (`TASKS`). The glass over
-  the needle costs nothing measurable.
+- The first version measured in double precision on every sample, all
+  the time. Software doubles cost the decoder's task ~8.7 points of core
+  0 (58.7 % against 50.0 % with the integer version, MP3, found in review).
+  Now, with the meter running (view open) against stopped (Now Playing),
+  IDLE0 reads 31.7 % against 32.3 %, the decoder's task 50.0 % against
+  50.1 % (`TASKS`). The glass over the needle costs nothing measurable.
 - The swipe goes back, and the options panel shows four buttons.
 - At volume 0 both meters stay still, as intended. This looked like a
   bug in the first screenshot.

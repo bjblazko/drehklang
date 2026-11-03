@@ -91,11 +91,57 @@ void test_peak_is_max_since_take_and_resets() {
   meter.noteBlock(quiet.data(), quiet.size(), 1.0f);
   StereoLevels levels = meter.take();
   TEST_ASSERT_FLOAT_WITHIN(1e-3f, 0.8f, levels.peak[0]);
-  TEST_ASSERT_FLOAT_WITHIN(1e-3f, 0.3f, levels.rms[0]);
 
   StereoLevels again = meter.take();
   TEST_ASSERT_FALSE(again.fresh);
   TEST_ASSERT_EQUAL_FLOAT(0.0f, again.peak[0]);
+}
+
+// The RMS covers every block since the last read, not only the latest:
+// one 5.8 ms block per frame swings with the phase of a bass note.
+void test_rms_covers_every_block_since_take() {
+  StereoLevelMeter meter;
+  auto loud = stereo(
+      16, [](size_t) { return constantAt(0.8); }, [](size_t) { return constantAt(0.8); });
+  auto quiet = stereo(
+      16, [](size_t) { return constantAt(0.3); }, [](size_t) { return constantAt(0.3); });
+  meter.noteBlock(loud.data(), loud.size(), 1.0f);
+  meter.noteBlock(quiet.data(), quiet.size(), 1.0f);
+  StereoLevels levels = meter.take();
+  TEST_ASSERT_FLOAT_WITHIN(1e-3f, 0.60415f, levels.rms[0]);  // sqrt((.64 + .09) / 2)
+  TEST_ASSERT_FLOAT_WITHIN(1e-3f, 0.60415f, levels.rms[1]);
+}
+
+// Unread for a while, the meter stops measuring (nothing is shown), and
+// the first read after that discards what it had: no stale peak flashes
+// when the view opens or the display wakes.
+void test_unread_meter_stops_and_discards_stale_levels() {
+  StereoLevelMeter meter;
+  auto loud = stereo(
+      16, [](size_t) { return constantAt(0.9); }, [](size_t) { return constantAt(0.9); });
+  auto quiet = stereo(
+      16, [](size_t) { return constantAt(0.3); }, [](size_t) { return constantAt(0.3); });
+  for (uint32_t i = 0; i < StereoLevelMeter::kIdleBlocks + 5; ++i) {
+    meter.noteBlock(loud.data(), loud.size(), 1.0f);
+  }
+  StereoLevels stale = meter.take();
+  TEST_ASSERT_FALSE(stale.fresh);
+  TEST_ASSERT_EQUAL_FLOAT(0.0f, stale.peak[0]);
+
+  meter.noteBlock(quiet.data(), quiet.size(), 1.0f);
+  StereoLevels now = meter.take();
+  TEST_ASSERT_TRUE(now.fresh);
+  TEST_ASSERT_FLOAT_WITHIN(1e-3f, 0.3f, now.peak[0]);
+  TEST_ASSERT_FLOAT_WITHIN(1e-3f, 0.3f, now.rms[0]);
+}
+
+void test_most_negative_sample_reads_as_full_scale() {
+  StereoLevelMeter meter;
+  int32_t words[2] = {INT32_MIN, INT32_MIN};
+  meter.noteBlock(words, 2, 1.0f);
+  StereoLevels levels = meter.take();
+  TEST_ASSERT_FLOAT_WITHIN(1e-3f, 1.0f, levels.peak[0]);
+  TEST_ASSERT_FLOAT_WITHIN(1e-3f, 1.0f, levels.rms[0]);
 }
 
 void test_odd_word_is_ignored() {
@@ -142,6 +188,9 @@ int main(int, char **) {
   RUN_TEST(test_gain_scales_levels);
   RUN_TEST(test_identical_channels_read_alike);
   RUN_TEST(test_peak_is_max_since_take_and_resets);
+  RUN_TEST(test_rms_covers_every_block_since_take);
+  RUN_TEST(test_unread_meter_stops_and_discards_stale_levels);
+  RUN_TEST(test_most_negative_sample_reads_as_full_scale);
   RUN_TEST(test_odd_word_is_ignored);
   RUN_TEST(test_hold_keeps_last_fresh_until_stale);
   RUN_TEST(test_hold_survives_slow_blocks);
