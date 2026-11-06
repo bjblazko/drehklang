@@ -14,6 +14,7 @@
 #include "Messages.h"
 #include "Packet.h"
 #include "PeerStore.h"
+#include "Version.h"
 
 using namespace drehklang;
 
@@ -281,7 +282,8 @@ void setup() {
   g_peers.begin();
   g_link.begin();
   g_source.begin();
-  report("started, protocol %u, %u remembered", btlink::kProtocolVersion,
+  report("started, version %s, protocol %u, %u remembered", drehklang::kVersion,
+         btlink::kProtocolVersion,
          static_cast<unsigned>(g_peers.list().peers().size()));
   for (const auto &peer : g_peers.list().peers()) report("remembered: %s", peer.name.c_str());
 }

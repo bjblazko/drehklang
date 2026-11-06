@@ -16,6 +16,15 @@ duplicating it.
   and fix. It's long but it's the actual debugging history — read it
   before assuming something works just because it compiles.
 
+## Versions
+
+**Every build that goes onto the device gets its own version**
+(`lib/version/Version.h`, `drehklang::kVersion`): patch for fixes only,
+minor when a feature came in, in its own `Release x.y.z: <what>` commit.
+Both chips log it at boot (`Drehklang x.y.z starting`, `[bt] started,
+version x.y.z`), and About shows it. Bump before flashing, not afterwards,
+so a log or a screenshot always names the source it came from.
+
 ## Hardware gotchas (quick index — see linked sections for detail)
 
 - **Touch X is miscalibrated in the raw CST816 data** (raw ~= 1.18 *

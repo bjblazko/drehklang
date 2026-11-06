@@ -2,9 +2,11 @@
 
 namespace drehklang {
 
-// Shown in About and logged at boot. Set by hand: there are no binary
-// releases (ADR 0027), so this names the source state a device was built
-// from. Bump it when a change is worth telling apart on a device.
-inline constexpr const char *kVersion = "2.5.3";
+// Shown in About and logged at boot by both chips. Set by hand: there are
+// no binary releases (ADR 0027), so this names the source state a device
+// was built from. Bump it for every build that goes onto the device:
+// patch for fixes only, minor when a feature came in, each its own
+// "Release x.y.z: ..." commit (AGENTS.md).
+inline constexpr const char *kVersion = "2.6.0";
 
 }  // namespace drehklang
