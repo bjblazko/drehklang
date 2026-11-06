@@ -186,7 +186,12 @@ bool ScreenManager::tickVisualization(uint32_t nowMs, bool visible) {
   lastVizTickMs_ = nowMs;
   dtMs = std::min<uint32_t>(dtMs, 100);  // After a stall, no jump.
 
-  const signal::StereoLevels levels = vizHold_.apply(playback_.readLevels(), dtMs);
+  if (playback_.trackGeneration() != vizTrackGeneration_) {
+    vizTrackGeneration_ = playback_.trackGeneration();
+    vizAutoLevel_.startTrack();
+  }
+  const signal::StereoLevels levels =
+      vizAutoLevel_.apply(vizHold_.apply(playback_.readLevels(), dtMs), dtMs);
   vizNeedle_.update(vu::needleTarget(levels.rms[0], levels.rms[1]), dtMs);
   vizPeakLamp_.update(levels.peak[0], levels.peak[1], dtMs);
   for (int ch = 0; ch < 2; ++ch) vizBars_[ch].update(levels.peak[ch], dtMs);

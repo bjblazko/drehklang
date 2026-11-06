@@ -53,6 +53,7 @@
 #include "ToneSession.h"
 #include "TouchCalibrator.h"
 #include "UsbDriveSession.h"
+#include "AutoLevel.h"
 #include "BarMeter.h"
 #include "StereoLevels.h"
 #include "VisualizationSettings.h"
@@ -889,6 +890,10 @@ class ScreenManager : public input::KnobSink {
   bool visualizationOpen_ = false;
   visualizer::VisualizationSettings vizSettings_;
   signal::LevelHold vizHold_;
+  // The meters' level, set per track (ADR 0034); trackGeneration() says
+  // when a new one starts.
+  visualizer::AutoLevel vizAutoLevel_;
+  uint32_t vizTrackGeneration_ = 0;
   visualizer::vu::NeedleBallistics vizNeedle_;
   visualizer::vu::PeakLamp vizPeakLamp_;
   visualizer::bars::BarMeter vizBars_[2];

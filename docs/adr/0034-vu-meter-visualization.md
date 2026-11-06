@@ -79,6 +79,28 @@ Neither meter carries a brand name, a logo or a copy of a nameplate.
   instant attack, a release of 0.55 of the scale per second, and a peak
   held for 1.5 s before it falls (`visualizer::bars::BarMeter`).
 
+### Level per track (2.7.0, 2026-11-06)
+
+- Loud modern masters pinned both meters at their stops: "Big Music"
+  (2014) kept the needle at +3 VU almost throughout. Test tones showed
+  the calibration right (RMS −20/−14/−26 dBFS read −6/0/−12 VU), so the
+  music really is that loud; and the equalizer did not cause it (a
+  100 Hz tone was not raised).
+- `visualizer::AutoLevel` now sets the level per track, like a deck's
+  recording level before a take, between the measurement and both
+  meters. For the first 6 s of sound in a track it follows the loud
+  passages (RMS and peak, smoothed over ~1 s, so a drum hit does not
+  count) and brings them to 0 VU and to −4 dB on the bars, just below
+  their red. Then the gain stays for the track, and the dynamics within
+  it stay visible. Silence below −50 dBFS does not count as learning;
+  until 1 s of sound the last track's gain holds; the gain stays within
+  ±15 dB. The PEAK lamp reads the same scaled peaks as the bars.
+- A new track is `PlaybackStateMachine::trackGeneration()` changing, so
+  seeking and resuming after a pause do not start over. The volume still
+  plays no part: the levels are taken before it.
+- What it cannot do: a heavily limited master has little dynamics, so its
+  needle swings around 0 VU instead of at the stop, but not by much.
+
 ### Drawing
 
 - The static art is rendered by `scripts/vu-art/generate.mjs`, which uses
