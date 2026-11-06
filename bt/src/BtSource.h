@@ -63,8 +63,16 @@ class BtSource {
   bool scanning() const { return scanning_.load(); }
 
  private:
+  static void startBluedroid();
+  static void startProfiles();
   static void onGap(int event, void *param);
+  static void onDiscovered(void *param);
+  static void onLinkStep(int event, void *param);
+  static void onAclUp(void *param);
+  static void onAclDown(void *param);
+  static void onPairingRequest(int event, void *param);
   static void onA2dp(int event, void *param);
+  static void onA2dpConnection(void *param);
   static void onAvrcTarget(int event, void *param);
   static void onAvrcController(int event, void *param);
   static int32_t onData(uint8_t *data, int32_t length);

@@ -58,6 +58,18 @@ BtSource::BtSource(btaudio::HeadphoneStream &stream) : stream_(stream) { g_self 
 
 void BtSource::begin() {
   events_ = xQueueCreate(16, sizeof(BtSourceEvent));
+  startBluedroid();
+  esp_bt_gap_set_device_name("Drehklang");
+  esp_bt_gap_register_callback(
+      [](esp_bt_gap_cb_event_t e, esp_bt_gap_cb_param_t *p) { onGap(e, p); });
+  // Headphones confirm nothing on a screen: "just works" pairing.
+  esp_bt_io_cap_t ioCap = ESP_BT_IO_CAP_NONE;
+  esp_bt_gap_set_security_param(ESP_BT_SP_IOCAP_MODE, &ioCap, sizeof(ioCap));
+  startProfiles();
+  esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_NON_DISCOVERABLE);
+}
+
+void BtSource::startBluedroid() {
   esp_bt_controller_config_t controller = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
   controller.mode = ESP_BT_MODE_CLASSIC_BT;
   esp_bt_controller_init(&controller);
@@ -65,14 +77,9 @@ void BtSource::begin() {
   esp_bluedroid_config_t stack = BT_BLUEDROID_INIT_CONFIG_DEFAULT();
   esp_bluedroid_init_with_cfg(&stack);
   esp_bluedroid_enable();
+}
 
-  esp_bt_gap_set_device_name("Drehklang");
-  esp_bt_gap_register_callback(
-      [](esp_bt_gap_cb_event_t e, esp_bt_gap_cb_param_t *p) { onGap(e, p); });
-  // Headphones confirm nothing on a screen: "just works" pairing.
-  esp_bt_io_cap_t ioCap = ESP_BT_IO_CAP_NONE;
-  esp_bt_gap_set_security_param(ESP_BT_SP_IOCAP_MODE, &ioCap, sizeof(ioCap));
-
+void BtSource::startProfiles() {
   // AVRCP before A2DP, as ESP-IDF asks. The controller's callback only
   // notes its connection for the link's timeline.
   esp_avrc_ct_register_callback(
@@ -87,8 +94,6 @@ void BtSource::begin() {
   esp_a2d_register_callback([](esp_a2d_cb_event_t e, esp_a2d_cb_param_t *p) { onA2dp(e, p); });
   esp_a2d_source_register_data_callback(&BtSource::onData);
   esp_a2d_source_init();
-
-  esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_NON_DISCOVERABLE);
 }
 
 bool BtSource::nextEvent(BtSourceEvent &out) {
@@ -167,29 +172,60 @@ void BtSource::log(const char *format, ...) {
 void BtSource::onGap(int event, void *raw) {
   auto *param = static_cast<esp_bt_gap_cb_param_t *>(raw);
   switch (static_cast<esp_bt_gap_cb_event_t>(event)) {
-    case ESP_BT_GAP_DISC_RES_EVT: {
-      uint32_t cod = 0;
-      int8_t rssi = -127;
-      for (int i = 0; i < param->disc_res.num_prop; ++i) {
-        const auto &prop = param->disc_res.prop[i];
-        if (prop.type == ESP_BT_GAP_DEV_PROP_COD) cod = *static_cast<uint32_t *>(prop.val);
-        if (prop.type == ESP_BT_GAP_DEV_PROP_RSSI) rssi = *static_cast<int8_t *>(prop.val);
-      }
-      // Headphones and speakers only: the list is for something to listen with.
-      if (!esp_bt_gap_is_valid_cod(cod) ||
-          esp_bt_gap_get_cod_major_dev(cod) != ESP_BT_COD_MAJOR_DEV_AV) {
-        return;
-      }
-      BtSourceEvent found{BtSourceEvent::Kind::Found};
-      toAddress(param->disc_res.bda, found.address);
-      found.rssi = rssi;
-      nameOf(param, found.name, sizeof(found.name));
-      g_self->post(found);
+    case ESP_BT_GAP_DISC_RES_EVT:
+      onDiscovered(raw);
       break;
-    }
     case ESP_BT_GAP_DISC_STATE_CHANGED_EVT:
       g_self->scanning_.store(param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STARTED);
       break;
+    case ESP_BT_GAP_AUTH_CMPL_EVT:
+    case ESP_BT_GAP_ACL_CONN_CMPL_STAT_EVT:
+    case ESP_BT_GAP_MODE_CHG_EVT:
+    case ESP_BT_GAP_ENC_CHG_EVT:
+      onLinkStep(event, raw);
+      break;
+    case ESP_BT_GAP_ACL_DISCONN_CMPL_STAT_EVT:
+      onAclDown(raw);
+      break;
+    case ESP_BT_GAP_KEY_REQ_EVT:
+    case ESP_BT_GAP_KEY_NOTIF_EVT:
+    case ESP_BT_GAP_PIN_REQ_EVT:
+    case ESP_BT_GAP_CFM_REQ_EVT:
+      onPairingRequest(event, raw);
+      break;
+    default:
+      // Anything else the stack reports, by number (esp_gap_bt_api.h):
+      // part of the picture when a link goes wrong.
+      log("gap event %d", event);
+      break;
+  }
+}
+
+void BtSource::onDiscovered(void *raw) {
+  auto *param = static_cast<esp_bt_gap_cb_param_t *>(raw);
+  uint32_t cod = 0;
+  int8_t rssi = -127;
+  for (int i = 0; i < param->disc_res.num_prop; ++i) {
+    const auto &prop = param->disc_res.prop[i];
+    if (prop.type == ESP_BT_GAP_DEV_PROP_COD) cod = *static_cast<uint32_t *>(prop.val);
+    if (prop.type == ESP_BT_GAP_DEV_PROP_RSSI) rssi = *static_cast<int8_t *>(prop.val);
+  }
+  // Headphones and speakers only: the list is for something to listen with.
+  if (!esp_bt_gap_is_valid_cod(cod) ||
+      esp_bt_gap_get_cod_major_dev(cod) != ESP_BT_COD_MAJOR_DEV_AV) {
+    return;
+  }
+  BtSourceEvent found{BtSourceEvent::Kind::Found};
+  toAddress(param->disc_res.bda, found.address);
+  found.rssi = rssi;
+  nameOf(param, found.name, sizeof(found.name));
+  g_self->post(found);
+}
+
+// What the baseband link goes through, for its timeline.
+void BtSource::onLinkStep(int event, void *raw) {
+  auto *param = static_cast<esp_bt_gap_cb_param_t *>(raw);
+  switch (static_cast<esp_bt_gap_cb_event_t>(event)) {
     case ESP_BT_GAP_AUTH_CMPL_EVT:
       log("auth %s: status %d", reinterpret_cast<const char *>(param->auth_cmpl.device_name),
           static_cast<int>(param->auth_cmpl.stat));
@@ -198,13 +234,7 @@ void BtSource::onGap(int event, void *raw) {
       }
       break;
     case ESP_BT_GAP_ACL_CONN_CMPL_STAT_EVT:
-      log("acl connected: status %d", static_cast<int>(param->acl_conn_cmpl_stat.stat));
-      if (param->acl_conn_cmpl_stat.stat == ESP_BT_STATUS_SUCCESS) {
-        // Ours when we were connecting; otherwise the headphones came to us.
-        g_self->timeline_.aclUp(millis(),
-                                g_self->link_.load() == btlink::LinkState::Connecting);
-        g_self->post(BtSourceEvent{BtSourceEvent::Kind::AclUp});
-      }
+      onAclUp(raw);
       break;
     // For the drop ~30 s after connecting (LMP response timeout, 2026-10-14):
     // which power mode and encryption the link was in when it went.
@@ -213,24 +243,37 @@ void BtSource::onGap(int event, void *raw) {
           static_cast<unsigned>(param->mode_chg.interval));
       g_self->timeline_.modeChanged(static_cast<uint8_t>(param->mode_chg.mode), millis());
       break;
-    case ESP_BT_GAP_ENC_CHG_EVT:
+    default:  // ESP_BT_GAP_ENC_CHG_EVT
       log("encryption %d", static_cast<int>(param->enc_chg.enc_mode));
       if (param->enc_chg.enc_mode != 0) {
         g_self->timeline_.done(btlink::LinkTimeline::Step::Encryption, millis());
       }
       break;
-    case ESP_BT_GAP_ACL_DISCONN_CMPL_STAT_EVT: {
-      const auto reason = static_cast<uint8_t>(param->acl_disconn_cmpl_stat.reason);
-      log("acl disconnected: reason 0x%02x", static_cast<int>(reason));
-      // Which steps the link got through, and which it never did: an LMP
-      // response timeout (0x22) left one of them unanswered.
-      g_self->timeline_.summarize(millis(), reason, [](const char *line) { log("%s", line); });
-      break;
-    }
-    case ESP_BT_GAP_KEY_REQ_EVT:
-    case ESP_BT_GAP_KEY_NOTIF_EVT:
-      log("pairing asks for a passkey (event %d)", event);
-      break;
+  }
+}
+
+void BtSource::onAclUp(void *raw) {
+  auto *param = static_cast<esp_bt_gap_cb_param_t *>(raw);
+  log("acl connected: status %d", static_cast<int>(param->acl_conn_cmpl_stat.stat));
+  if (param->acl_conn_cmpl_stat.stat == ESP_BT_STATUS_SUCCESS) {
+    // Ours when we were connecting; otherwise the headphones came to us.
+    g_self->timeline_.aclUp(millis(), g_self->link_.load() == btlink::LinkState::Connecting);
+    g_self->post(BtSourceEvent{BtSourceEvent::Kind::AclUp});
+  }
+}
+
+void BtSource::onAclDown(void *raw) {
+  auto *param = static_cast<esp_bt_gap_cb_param_t *>(raw);
+  const auto reason = static_cast<uint8_t>(param->acl_disconn_cmpl_stat.reason);
+  log("acl disconnected: reason 0x%02x", static_cast<int>(reason));
+  // Which steps the link got through, and which it never did: an LMP
+  // response timeout (0x22) left one of them unanswered.
+  g_self->timeline_.summarize(millis(), reason, [](const char *line) { log("%s", line); });
+}
+
+void BtSource::onPairingRequest(int event, void *raw) {
+  auto *param = static_cast<esp_bt_gap_cb_param_t *>(raw);
+  switch (static_cast<esp_bt_gap_cb_event_t>(event)) {
     case ESP_BT_GAP_PIN_REQ_EVT: {
       log("pin requested");
       // Legacy pairing: the PIN headphones nearly always use.
@@ -242,10 +285,8 @@ void BtSource::onGap(int event, void *raw) {
       log("ssp confirm %lu", static_cast<unsigned long>(param->cfm_req.num_val));
       esp_bt_gap_ssp_confirm_reply(param->cfm_req.bda, true);
       break;
-    default:
-      // Anything else the stack reports, by number (esp_gap_bt_api.h):
-      // part of the picture when a link goes wrong.
-      log("gap event %d", event);
+    default:  // ESP_BT_GAP_KEY_REQ_EVT, ESP_BT_GAP_KEY_NOTIF_EVT
+      log("pairing asks for a passkey (event %d)", event);
       break;
   }
 }
@@ -253,29 +294,9 @@ void BtSource::onGap(int event, void *raw) {
 void BtSource::onA2dp(int event, void *raw) {
   auto *param = static_cast<esp_a2d_cb_param_t *>(raw);
   switch (static_cast<esp_a2d_cb_event_t>(event)) {
-    case ESP_A2D_CONNECTION_STATE_EVT: {
-      const auto state = param->conn_stat.state;
-      log("a2dp state %d, reason %d", static_cast<int>(state),
-          static_cast<int>(param->conn_stat.disc_rsn));
-      if (state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
-        g_self->timeline_.done(btlink::LinkTimeline::Step::A2dp, millis());
-        toAddress(param->conn_stat.remote_bda, g_self->peer_);
-        g_self->link_.store(btlink::LinkState::Connected);
-        BtSourceEvent connected{BtSourceEvent::Kind::Connected};
-        toAddress(param->conn_stat.remote_bda, connected.address);
-        g_self->post(connected);
-      } else if (state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
-        g_self->link_.store(btlink::LinkState::Idle);
-        BtSourceEvent gone{BtSourceEvent::Kind::Disconnected};
-        g_self->post(gone);
-      } else if (state == ESP_A2D_CONNECTION_STATE_CONNECTING) {
-        if (g_self->link_.load() != btlink::LinkState::Connecting) {
-          g_self->connectingSince_.store(millis());
-        }
-        g_self->link_.store(btlink::LinkState::Connecting);
-      }
+    case ESP_A2D_CONNECTION_STATE_EVT:
+      onA2dpConnection(raw);
       break;
-    }
     case ESP_A2D_AUDIO_STATE_EVT:
       log("a2dp audio state %d", static_cast<int>(param->audio_stat.state));
       if (param->audio_stat.state == ESP_A2D_AUDIO_STATE_STARTED) {
@@ -294,6 +315,30 @@ void BtSource::onA2dp(int event, void *raw) {
       break;
     default:
       break;
+  }
+}
+
+void BtSource::onA2dpConnection(void *raw) {
+  auto *param = static_cast<esp_a2d_cb_param_t *>(raw);
+  const auto state = param->conn_stat.state;
+  log("a2dp state %d, reason %d", static_cast<int>(state),
+      static_cast<int>(param->conn_stat.disc_rsn));
+  if (state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
+    g_self->timeline_.done(btlink::LinkTimeline::Step::A2dp, millis());
+    toAddress(param->conn_stat.remote_bda, g_self->peer_);
+    g_self->link_.store(btlink::LinkState::Connected);
+    BtSourceEvent connected{BtSourceEvent::Kind::Connected};
+    toAddress(param->conn_stat.remote_bda, connected.address);
+    g_self->post(connected);
+  } else if (state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
+    g_self->link_.store(btlink::LinkState::Idle);
+    BtSourceEvent gone{BtSourceEvent::Kind::Disconnected};
+    g_self->post(gone);
+  } else if (state == ESP_A2D_CONNECTION_STATE_CONNECTING) {
+    if (g_self->link_.load() != btlink::LinkState::Connecting) {
+      g_self->connectingSince_.store(millis());
+    }
+    g_self->link_.store(btlink::LinkState::Connecting);
   }
 }
 

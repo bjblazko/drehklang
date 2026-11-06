@@ -186,28 +186,38 @@ void onForget(const btlink::Packet &packet) {
   if (g_peers.list().remove(address)) g_peers.save();
 }
 
+void sendHello() {
+  const uint8_t payload[] = {btlink::kProtocolVersion};
+  g_link.send(btlink::PacketType::Hello, payload, sizeof(payload));
+}
+
+void onEnable(const btlink::Packet &packet, uint32_t nowMs) {
+  g_enabled = packet.length > 0 && packet.payload[0] != 0;
+  if (!g_enabled) {
+    g_source.stopScan();
+    g_source.disconnect();
+  } else if (linkIdle()) {
+    connectNext(nowMs);
+  }
+}
+
+void onScanStart() {
+  if (!g_enabled) return;
+  const bool started = g_source.startScan();
+  report("scan %s (link %d)", started ? "started" : "refused",
+         static_cast<int>(g_source.link()));
+}
+
 void onControl(const btlink::Packet &packet, uint32_t nowMs) {
   switch (packet.type) {
-    case btlink::PacketType::Hello: {
-      const uint8_t payload[] = {btlink::kProtocolVersion};
-      g_link.send(btlink::PacketType::Hello, payload, sizeof(payload));
+    case btlink::PacketType::Hello:
+      sendHello();
       break;
-    }
     case btlink::PacketType::Enable:
-      g_enabled = packet.length > 0 && packet.payload[0] != 0;
-      if (!g_enabled) {
-        g_source.stopScan();
-        g_source.disconnect();
-      } else if (linkIdle()) {
-        connectNext(nowMs);
-      }
+      onEnable(packet, nowMs);
       break;
     case btlink::PacketType::ScanStart:
-      if (g_enabled) {
-        const bool started = g_source.startScan();
-        report("scan %s (link %d)", started ? "started" : "refused",
-               static_cast<int>(g_source.link()));
-      }
+      onScanStart();
       break;
     case btlink::PacketType::ScanStop:
       g_source.stopScan();
@@ -227,29 +237,47 @@ void onControl(const btlink::Packet &packet, uint32_t nowMs) {
   sendState();
 }
 
+void sendScanResult(const bt::BtSourceEvent &event) {
+  btlink::ScanResultMessage m{event.address, event.rssi, event.name};
+  uint8_t payload[btlink::kMaxPayload];
+  g_link.send(btlink::PacketType::ScanResult, payload,
+              static_cast<uint16_t>(btlink::encodeScanResult(m, payload)));
+}
+
+void sendButton(const bt::BtSourceEvent &event) {
+  const uint8_t payload[] = {static_cast<uint8_t>(event.button)};
+  g_link.send(btlink::PacketType::Button, payload, sizeof(payload));
+}
+
+void onConnected(const bt::BtSourceEvent &event) {
+  g_source.startMedia();
+  // Whoever it is -- headphones also come back by themselves -- they are
+  // now the most recently used.
+  g_target = event.address;
+  if (g_peers.list().touch(g_target)) g_peers.save();
+  g_plan.connected();
+  report("connected to %s", nameOf(g_target).c_str());
+  sendState();
+}
+
+// A baseband link while ours is idle: the headphones came to us.
+void onTheirLink() {
+  if (g_source.link() == btlink::LinkState::Idle) {
+    report("they came back; waiting before connecting");
+    postponeConnect(kAfterTheirLinkMs);
+  }
+}
+
 void onSourceEvent(const bt::BtSourceEvent &event) {
   switch (event.kind) {
-    case bt::BtSourceEvent::Kind::Found: {
-      btlink::ScanResultMessage m{event.address, event.rssi, event.name};
-      uint8_t payload[btlink::kMaxPayload];
-      g_link.send(btlink::PacketType::ScanResult, payload,
-                  static_cast<uint16_t>(btlink::encodeScanResult(m, payload)));
+    case bt::BtSourceEvent::Kind::Found:
+      sendScanResult(event);
       break;
-    }
-    case bt::BtSourceEvent::Kind::Button: {
-      const uint8_t payload[] = {static_cast<uint8_t>(event.button)};
-      g_link.send(btlink::PacketType::Button, payload, sizeof(payload));
+    case bt::BtSourceEvent::Kind::Button:
+      sendButton(event);
       break;
-    }
     case bt::BtSourceEvent::Kind::Connected:
-      g_source.startMedia();
-      // Whoever it is -- headphones also come back by themselves -- they are
-      // now the most recently used.
-      g_target = event.address;
-      if (g_peers.list().touch(g_target)) g_peers.save();
-      g_plan.connected();
-      report("connected to %s", nameOf(g_target).c_str());
-      sendState();
+      onConnected(event);
       break;
     case bt::BtSourceEvent::Kind::Disconnected:
       report("disconnected");
@@ -257,10 +285,7 @@ void onSourceEvent(const bt::BtSourceEvent &event) {
       sendState();
       break;
     case bt::BtSourceEvent::Kind::AclUp:
-      if (g_source.link() == btlink::LinkState::Idle) {
-        report("they came back; waiting before connecting");
-        postponeConnect(kAfterTheirLinkMs);
-      }
+      onTheirLink();
       break;
     case bt::BtSourceEvent::Kind::AvrcpUp:
       // Headphones with absolute volume (AirPods) wait for the source to
@@ -270,6 +295,25 @@ void onSourceEvent(const bt::BtSourceEvent &event) {
     case bt::BtSourceEvent::Kind::Log:
       report("%s", event.text);
       break;
+  }
+}
+
+void reportLinkStats() {
+  sendStats();
+  Serial.printf("[bt] link %d underruns %lu crc %lu lost %lu dropped %lu\n",
+                static_cast<int>(g_source.link()), static_cast<unsigned long>(g_stream.underruns()),
+                static_cast<unsigned long>(g_link.crcErrors()),
+                static_cast<unsigned long>(g_link.lostPackets()),
+                static_cast<unsigned long>(g_stream.dropped()));
+}
+
+// millis(), not the loop's `now`: a connect started in this very loop() is
+// newer than `now`, and the difference would wrap to a huge value.
+void giveUpStuckConnect() {
+  if (g_source.link() == btlink::LinkState::Connecting &&
+      millis() - g_source.connectingSinceMs() >= kConnectTimeoutMs) {
+    g_source.abandonConnect();
+    postponeConnect(kAfterDisconnectMs);
   }
 }
 
@@ -300,20 +344,9 @@ void loop() {
   }
   if (now - g_lastStatsMs >= kStatsIntervalMs) {
     g_lastStatsMs = now;
-    sendStats();
-    Serial.printf("[bt] link %d underruns %lu crc %lu lost %lu dropped %lu\n",
-                  static_cast<int>(g_source.link()), static_cast<unsigned long>(g_stream.underruns()),
-                  static_cast<unsigned long>(g_link.crcErrors()),
-                  static_cast<unsigned long>(g_link.lostPackets()),
-                  static_cast<unsigned long>(g_stream.dropped()));
+    reportLinkStats();
   }
-  // millis(), not `now`: a connect started in this very loop() is newer
-  // than `now`, and the difference would wrap to a huge value.
-  if (g_source.link() == btlink::LinkState::Connecting &&
-      millis() - g_source.connectingSinceMs() >= kConnectTimeoutMs) {
-    g_source.abandonConnect();
-    postponeConnect(kAfterDisconnectMs);
-  }
+  giveUpStuckConnect();
   if (g_enabled && linkIdle() && static_cast<int32_t>(now - g_nextConnectMs) >= 0) {
     connectNext(now);
   }
