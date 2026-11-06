@@ -312,11 +312,17 @@ void BtSource::configureTarget() {
 
 void BtSource::onAvrcTarget(int event, void *raw) {
   auto *param = static_cast<esp_avrc_tg_cb_param_t *>(raw);
-  if (static_cast<esp_avrc_tg_cb_event_t>(event) == ESP_AVRC_TG_PROF_STATE_EVT) {
-    if (param->avrc_tg_init_stat.state == ESP_AVRC_INIT_SUCCESS) configureTarget();
+  const auto kind = static_cast<esp_avrc_tg_cb_event_t>(event);
+  if (kind == ESP_AVRC_TG_PROF_STATE_EVT) {
+    const auto state = param->avrc_tg_init_stat.state;
+    if (state == ESP_AVRC_INIT_SUCCESS) {
+      configureTarget();
+    } else if (state != ESP_AVRC_DEINIT_SUCCESS) {
+      log("headphone buttons: target init state %d", static_cast<int>(state));
+    }
     return;
   }
-  if (static_cast<esp_avrc_tg_cb_event_t>(event) != ESP_AVRC_TG_PASSTHROUGH_CMD_EVT) return;
+  if (kind != ESP_AVRC_TG_PASSTHROUGH_CMD_EVT) return;
   if (param->psth_cmd.key_state != ESP_AVRC_PT_CMD_STATE_PRESSED) return;
   BtSourceEvent pressed{BtSourceEvent::Kind::Button};
   switch (param->psth_cmd.key_code) {

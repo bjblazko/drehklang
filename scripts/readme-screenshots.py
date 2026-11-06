@@ -188,6 +188,11 @@ def library(dev):
     dev.shot("tracks")
     dev.tap(120, 139)  # The first track: plays the album from there.
     dev.expect("NowPlaying")
+    now_playing(dev)
+
+
+def now_playing(dev):
+    """From Now Playing, music running: its pages, options, Visuals, lock."""
     # The cover slot's last page, the spectrum, then back one at a time
     # (ADR 0028): the cover page, first when there is one, is never shown.
     for _ in range(4):
