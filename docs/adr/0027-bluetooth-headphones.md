@@ -91,7 +91,10 @@ release as the S3 and takes `btlink` and `btaudio` from `../lib`.
   again.
 - **SBC.** Bluedroid's A2DP source encodes SBC itself, from the PCM the
   legacy data callback renders.
-- **AVRCP.** Only Play, Pause and Stop are used.
+- **AVRCP.** Only Play, Pause and Stop are used. The target's
+  passthrough filter is set once its init has finished
+  (`ESP_AVRC_TG_PROF_STATE_EVT`); set earlier, it stays empty and every
+  button is refused (Verified, item 10).
 - **Pairing.** It is "just works" (SSP with no I/O, or PIN 0000). The
   paired address and name live in the chip's own NVS.
 - **Reconnect.** Every 10 s while enabled.
@@ -302,6 +305,27 @@ found:
      the longest STATE (`btlink::kMaxStatePayload`, 160 bytes, tested) and
      live in PSRAM. The U4WDH's own 64-byte cap only meets the S3's short
      packets (PAIR, 39 bytes at most).
+10. **Play/Pause from the headphones did nothing, 2026-11-03 to 11-06**
+    (Marshall Major V, AirPods Pro, soundcore P30i; all of them work on a
+    phone).
+    - AVRCP connected both ways, and the SDP records (read from a Mac)
+      listed the AV Remote Control Target, AVRCP 1.6, category 1. Yet not
+      one `ESP_AVRC_TG_PASSTHROUGH_CMD_EVT` arrived.
+    - **Cause:** `esp_avrc_tg_init()` only posts to the Bluetooth task.
+      `begin()` read the allowed passthrough commands right after it,
+      before the init had run: `esp_avrc_tg_get_psth_cmd_filter()` returned
+      `ESP_ERR_INVALID_STATE` (logged on the device) and left the mask
+      empty, and the empty mask became the supported set. Bluedroid then
+      answers every button with NOT_IMPLEMENTED and tells the app nothing
+      (`bta_av_op_supported()`). Whether item 2's "headphone button works"
+      was a race won once is not known.
+    - **Fix:** the filters are set on `ESP_AVRC_TG_PROF_STATE_EVT`, when
+      the init has finished (`BtSource::configureTarget()`). The P30i's
+      Pause (0x46) and Play (0x44) arrive and pause and resume the music.
+    - The prebuilt libraries have no Bluedroid logs
+      (`CONFIG_BT_STACK_NO_LOG`), and this IDF refuses a play-status
+      notification capability for the target (`ESP_ERR_NOT_SUPPORTED`,
+      only volume change is allowed).
 
 ## Open
 

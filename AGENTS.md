@@ -513,6 +513,12 @@ duplicating it.
   64 bytes, STATE with three remembered headphones was dropped, and since
   STATE is the heartbeat, the UI said "Bluetooth chip not answering"
   while log lines still arrived (2026-10-15, ADR 0027).
+- **ESP-IDF's AVRCP/A2DP `*_init()` calls only post to the Bluetooth
+  task.** Any call right after them that checks "initialised" (e.g.
+  `esp_avrc_tg_get_psth_cmd_filter`) fails with `ESP_ERR_INVALID_STATE`;
+  that left the target's button mask empty, and no headphone button
+  ever arrived, silently (2026-11-06, ADR 0027 item 10). Configure on the
+  `*_PROF_STATE_EVT` and check every return value.
 - **On the new toolchain `uint32_t` is `unsigned long`**, so
   `std::min(uint32_value, 31u)` no longer compiles; give the type
   explicitly (`std::min<uint32_t>`).

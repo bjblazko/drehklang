@@ -81,9 +81,8 @@ void BtSource::begin() {
   esp_avrc_tg_register_callback(
       [](esp_avrc_tg_cb_event_t e, esp_avrc_tg_cb_param_t *p) { onAvrcTarget(e, p); });
   esp_avrc_tg_init();
-  esp_avrc_psth_bit_mask_t commands = {};
-  esp_avrc_tg_get_psth_cmd_filter(ESP_AVRC_PSTH_FILTER_ALLOWED_CMD, &commands);
-  esp_avrc_tg_set_psth_cmd_filter(ESP_AVRC_PSTH_FILTER_SUPPORTED_CMD, &commands);
+  // The target's filters are set once its init has finished
+  // (ESP_AVRC_TG_PROF_STATE_EVT, onAvrcTarget()).
 
   esp_a2d_register_callback([](esp_a2d_cb_event_t e, esp_a2d_cb_param_t *p) { onA2dp(e, p); });
   esp_a2d_source_register_data_callback(&BtSource::onData);
@@ -298,8 +297,25 @@ void BtSource::onA2dp(int event, void *raw) {
   }
 }
 
+// esp_avrc_tg_init() finishes on the Bluetooth task. Before that, reading
+// the allowed commands fails and leaves the mask empty -- and an empty
+// "supported" mask answers every headphone button with NOT_IMPLEMENTED,
+// silently (found 2026-11-06).
+void BtSource::configureTarget() {
+  esp_avrc_psth_bit_mask_t commands = {};
+  esp_err_t result = esp_avrc_tg_get_psth_cmd_filter(ESP_AVRC_PSTH_FILTER_ALLOWED_CMD, &commands);
+  if (result == ESP_OK) {
+    result = esp_avrc_tg_set_psth_cmd_filter(ESP_AVRC_PSTH_FILTER_SUPPORTED_CMD, &commands);
+  }
+  if (result != ESP_OK) log("headphone buttons refused: %s", esp_err_to_name(result));
+}
+
 void BtSource::onAvrcTarget(int event, void *raw) {
   auto *param = static_cast<esp_avrc_tg_cb_param_t *>(raw);
+  if (static_cast<esp_avrc_tg_cb_event_t>(event) == ESP_AVRC_TG_PROF_STATE_EVT) {
+    if (param->avrc_tg_init_stat.state == ESP_AVRC_INIT_SUCCESS) configureTarget();
+    return;
+  }
   if (static_cast<esp_avrc_tg_cb_event_t>(event) != ESP_AVRC_TG_PASSTHROUGH_CMD_EVT) return;
   if (param->psth_cmd.key_state != ESP_AVRC_PT_CMD_STATE_PRESSED) return;
   BtSourceEvent pressed{BtSourceEvent::Kind::Button};

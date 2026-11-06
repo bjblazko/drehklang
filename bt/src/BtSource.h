@@ -70,6 +70,7 @@ class BtSource {
   static int32_t onData(uint8_t *data, int32_t length);
   void post(const BtSourceEvent &event);
   static void log(const char *format, ...);
+  static void configureTarget();
 
   btaudio::HeadphoneStream &stream_;
   QueueHandle_t events_ = nullptr;
