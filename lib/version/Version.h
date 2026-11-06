@@ -7,6 +7,6 @@ namespace drehklang {
 // was built from. Bump it for every build that goes onto the device:
 // patch for fixes only, minor when a feature came in, each its own
 // "Release x.y.z: ..." commit (AGENTS.md).
-inline constexpr const char *kVersion = "2.6.1";
+inline constexpr const char *kVersion = "2.6.2";
 
 }  // namespace drehklang
