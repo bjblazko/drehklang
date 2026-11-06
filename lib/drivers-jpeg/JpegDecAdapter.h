@@ -2,8 +2,10 @@
 
 #include <Arduino.h>
 #include <JPEGDEC.h>
+#include <esp_heap_caps.h>
 
 #include <memory>
+#include <new>
 #include <vector>
 
 #include "CoverArtCache.h"
@@ -48,7 +50,10 @@ class JpegDecAdapter : public library::JpegDecoder {
     }
     scratchWidth_ = static_cast<uint16_t>((width + scale - 1) / scale);
     scratchHeight_ = static_cast<uint16_t>((height + scale - 1) / scale);
-    scratch_.assign(static_cast<size_t>(scratchWidth_) * scratchHeight_, 0);
+    if (!sizeScratch(width, height)) {
+      decoder->close();
+      return false;
+    }
 
     decoder->setUserPointer(this);
     const int options = scale == 8   ? JPEG_SCALE_EIGHTH
@@ -63,14 +68,46 @@ class JpegDecAdapter : public library::JpegDecoder {
                     height, error);
       return false;
     }
-    library::SquareResampler::resample(scratch_.data(), scratchWidth_,
-                                       scratchHeight_, outSize, outPixels);
+    const bool resampled = resample(outSize, outPixels);
     scratch_.clear();
     scratch_.shrink_to_fit();
-    return true;
+    return resampled;
   }
 
  private:
+  // A cover can need more contiguous PSRAM than is left (281 KB for a
+  // 3000 px progressive cover crashed a rescan after music had played,
+  // 2026-11-06): std::bad_alloc, uncaught, aborts the firmware. Such a
+  // cover is skipped, and the line says how short memory was.
+  bool sizeScratch(int width, int height) {
+    try {
+      scratch_.assign(static_cast<size_t>(scratchWidth_) * scratchHeight_, 0);
+      return true;
+    } catch (const std::bad_alloc &) {
+      logNoMemory(width, height, static_cast<size_t>(scratchWidth_) * scratchHeight_ * 2);
+      return false;
+    }
+  }
+
+  bool resample(uint16_t outSize, std::vector<uint16_t> *outPixels) {
+    try {
+      library::SquareResampler::resample(scratch_.data(), scratchWidth_, scratchHeight_,
+                                         outSize, outPixels);
+      return true;
+    } catch (const std::bad_alloc &) {
+      logNoMemory(outSize, outSize, static_cast<size_t>(outSize) * outSize * 2);
+      outPixels->clear();
+      return false;
+    }
+  }
+
+  static void logNoMemory(int width, int height, size_t bytes) {
+    Serial.printf("[cover] no memory for %dx%d (%u bytes), PSRAM free %u, largest %u\n",
+                  width, height, static_cast<unsigned>(bytes),
+                  static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)),
+                  static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)));
+  }
+
   // Copies one decoded block into scratch_; JPEGDEC hands blocks over in
   // RGB565, native byte order, matching what CoverWriter stores.
   static int draw(JPEGDRAW *block) {

@@ -89,6 +89,15 @@ Throwaway firmware on branch `experiment/format-feasibility`:
   AAC decoder was already compiled into every firmware image before this
   change (Audio.cpp references it unconditionally); only whether Drehklang
   *uses and advertises* it changes.
+- **A cover that does not fit in memory crashed the device** (2026-11-06,
+  2.6.3). The rescan after a USB drive session, with music played before,
+  aborted on a 3000 px progressive cover ("New Gold Dream", 1.35 MB of
+  JPEG): `JpegDecAdapter`'s 281 KB working buffer threw `std::bad_alloc`,
+  and nothing caught it. The same cover decoded fine in a rescan from the
+  menu (largest free PSRAM block 1.87 MB), so the shortfall depends on
+  what else is allocated; it was not reproduced. Cover buffers now catch
+  the failure and skip the cover, and `[cover] no memory for ...` logs
+  free and largest PSRAM if it happens again.
 
 ## Open
 

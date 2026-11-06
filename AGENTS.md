@@ -528,6 +528,10 @@ so a log or a screenshot always names the source it came from.
   that left the target's button mask empty, and no headphone button
   ever arrived, silently (2026-11-06, ADR 0027 item 10). Configure on the
   `*_PROF_STATE_EVT` and check every return value.
+- **Exceptions are on, and an uncaught `std::bad_alloc` aborts the
+  firmware.** An allocation sized by a file (a cover, a picture) must
+  catch it and skip, as `CoverArtCache` and `JpegDecAdapter` do; a large
+  embedded cover took a rescan down that way (2026-11-06, ADR 0016).
 - **On the new toolchain `uint32_t` is `unsigned long`**, so
   `std::min(uint32_value, 31u)` no longer compiles; give the type
   explicitly (`std::min<uint32_t>`).

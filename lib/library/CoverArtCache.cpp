@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <new>
 
 namespace drehklang::library {
 
@@ -13,6 +14,20 @@ std::string toLower(const std::string &s) {
   std::transform(out.begin(), out.end(), out.begin(),
                   [](unsigned char c) { return std::tolower(c); });
   return out;
+}
+
+// Sizes the buffer a cover is read into. A picture can be larger than the
+// memory left (a 1.35 MB cover during a rescan, 2026-11-06), and an
+// uncaught std::bad_alloc aborts the firmware: such a cover is skipped.
+bool sizeBuffer(std::vector<uint8_t> *out, size_t size) {
+  try {
+    out->resize(size);
+    return true;
+  } catch (const std::bad_alloc &) {
+    out->clear();
+    out->shrink_to_fit();
+    return false;
+  }
 }
 
 // Finds a cover.jpg/cover.jpeg (any casing) among an album folder's
@@ -70,7 +85,7 @@ bool CoverArtCache::readCoverJpeg(const std::string &albumFolderPath,
                                   DirectoryReader &dirReader, FileOpener &opener,
                                   std::vector<uint8_t> *out) {
   if (firstTrackTags.picture.present) {
-    out->resize(firstTrackTags.picture.length);
+    if (!sizeBuffer(out, firstTrackTags.picture.length)) return false;
     if (firstTrackFile.seek(firstTrackTags.picture.offset) &&
         firstTrackFile.read(out->data(), out->size()) == out->size()) {
       return true;
@@ -87,7 +102,7 @@ bool CoverArtCache::readCoverJpeg(const std::string &albumFolderPath,
     out->clear();
     return false;
   }
-  out->resize(coverFile->size());
+  if (!sizeBuffer(out, coverFile->size())) return false;
   if (coverFile->read(out->data(), out->size()) != out->size()) {
     out->clear();
     return false;

@@ -270,6 +270,23 @@ void test_reads_the_folder_cover_when_nothing_is_embedded() {
   TEST_ASSERT_EQUAL_UINT8_ARRAY(coverBytes.data(), bytes.data(), coverBytes.size());
 }
 
+// A picture bigger than memory (a 1.35 MB cover crashed the device during a
+// rescan, 2026-11-06): no cover, not an uncaught std::bad_alloc.
+void test_a_picture_too_big_for_memory_reads_nothing() {
+  FakeRawFile trackFile(std::vector<uint8_t>{});
+  TagResult tags;
+  tags.picture.present = true;
+  tags.picture.offset = 0;
+  tags.picture.length = size_t{1} << 60;
+  FakeDirectoryReader dirReader;
+  FakeFileOpener opener;
+  std::vector<uint8_t> bytes;
+
+  TEST_ASSERT_FALSE(CoverArtCache::readCoverJpeg("/Music/Artist/Album", trackFile, tags,
+                                                 dirReader, opener, &bytes));
+  TEST_ASSERT_TRUE(bytes.empty());
+}
+
 void test_no_cover_reads_nothing() {
   FakeRawFile trackFile(std::vector<uint8_t>{});
   TagResult tags;
@@ -286,6 +303,7 @@ int main(int argc, char **argv) {
   RUN_TEST(test_falls_back_to_folder_cover_jpg_when_no_embedded_picture);
   RUN_TEST(test_folder_cover_lookup_is_case_insensitive_and_accepts_jpeg_extension);
   RUN_TEST(test_no_cover_found_does_nothing);
+  RUN_TEST(test_a_picture_too_big_for_memory_reads_nothing);
   RUN_TEST(test_failed_decode_does_not_write_a_cover);
   RUN_TEST(test_album_folder_path_for_strips_filename);
   RUN_TEST(test_cache_filename_is_deterministic_for_same_path);
