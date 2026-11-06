@@ -63,14 +63,15 @@ class JpegDecAdapter : public library::JpegDecoder {
     const bool ok = decoder->decode(0, 0, options) == 1;
     const int error = decoder->getLastError();
     decoder->close();
+    // Given back either way: kept until the next cover, the buffer of a
+    // large failed decode (281 KB at 3000 px) was memory a rescan lacked.
+    const bool resampled = ok && resample(outSize, outPixels);
+    scratch_.clear();
+    scratch_.shrink_to_fit();
     if (!ok) {
       Serial.printf("[cover] JPEGDEC decode failed, %dx%d error=%d\n", width,
                     height, error);
-      return false;
     }
-    const bool resampled = resample(outSize, outPixels);
-    scratch_.clear();
-    scratch_.shrink_to_fit();
     return resampled;
   }
 
