@@ -200,9 +200,24 @@ def library(dev):
     dev.shot("now-playing")
     dev.tap(180, 340)  # The options handle.
     dev.shot("options")
+    visuals(dev)
+    dev.tap(180, 340)  # The options handle again.
     dev.tap(288, 244)  # Lock, the fourth of four (ADR 0034).
     dev.shot("locked")
     unlock(dev)
+
+
+def visuals(dev):
+    """The full-screen meters (ADR 0034), from the open options panel."""
+    dev.tap(216, 244)  # Visuals, the third of four.
+    time.sleep(2)  # Let the needle settle into the music.
+    dev.shot("visuals-vu")
+    dev.tap(180, 180)  # A tap: the next meter.
+    time.sleep(2)
+    dev.shot("visuals-bars")
+    dev.tap(180, 180)  # Back to the analog meter, which the device keeps.
+    dev.send("SWIPE 80 180 280 180", SETTLE_S)  # Back to Now Playing.
+    dev.expect("NowPlaying")
 
 
 def unlock(dev):

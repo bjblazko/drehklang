@@ -51,16 +51,16 @@ Now Playing shows its other pages in their place.
 | <img src="docs/screenshots/home.png" alt="Home: a carousel of round tiles turned by the knob, Music selected, the playing track below" width="240"> | <img src="docs/screenshots/library.png" alt="Music's artists, with Browse by and Shuffle on top" width="240"> | <img src="docs/screenshots/tracks.png" alt="An album's tracks with their numbers" width="240"> |
 | **Now Playing** | **Now Playing, scope** | **Now Playing, spectrum** |
 | <img src="docs/screenshots/now-playing.png" alt="Now Playing with the dot-matrix spectrum, the page dots under it, the title, the transport buttons and the song-progress ring" width="240"> | <img src="docs/screenshots/now-playing-scope.png" alt="Now Playing's cover slot swiped to the oscilloscope over the music" width="240"> | <img src="docs/screenshots/now-playing-spectrum.png" alt="Now Playing's cover slot swiped to the spectrum, 20 Hz to 20 kHz" width="240"> |
-| **Options** | **Locked** | **Sleep timer** |
-| <img src="docs/screenshots/options.png" alt="The options panel: shuffle, repeat, lock" width="240"> | <img src="docs/screenshots/locked.png" alt="The lock screen: hold the button and turn the knob to unlock" width="240"> | <img src="docs/screenshots/sleep.png" alt="The sleep timer, off, with its ring" width="240"> |
+| **Options** | **Visuals, VU meter** | **Visuals, bar meter** |
+| <img src="docs/screenshots/options.png" alt="The options panel: Shuffle, Repeat, Visuals, Lock" width="240"> | <img src="docs/screenshots/visuals-vu.png" alt="Visuals: a backlit analog VU meter, its needle over a cream scale from -20 to +3 with a red zone, and a PEAK lamp" width="240"> | <img src="docs/screenshots/visuals-bars.png" alt="Visuals: a fluorescent peak meter, L and R as cyan segments turning red from -3 dB, with held peaks" width="240"> |
+| **Locked** | **Sleep timer** | **Dictaphone** |
+| <img src="docs/screenshots/locked.png" alt="The lock screen: hold the button and turn the knob to unlock" width="240"> | <img src="docs/screenshots/sleep.png" alt="The sleep timer, off, with its ring" width="240"> | <img src="docs/screenshots/dictaphone.png" alt="The dictaphone: the microphone live on the oscilloscope, the time, the next recording's name, the list button and the orange record button" width="240"> |
 | **Tones** | **Tones, spectrum** | **Settings** |
 | <img src="docs/screenshots/tones.png" alt="The tone generator: a wave on the oscilloscope, its frequency large, the parameter chips and the stop button" width="240"> | <img src="docs/screenshots/tones-spectrum.png" alt="The tone generator's band swiped to the spectrum" width="240"> | <img src="docs/screenshots/settings.png" alt="Settings: a list, each row ending in its value" width="240"> |
 | **Bluetooth** | **About** | **Table Tennis** |
 | <img src="docs/screenshots/bluetooth.png" alt="Settings, Bluetooth: the switch, the paired headphones, find and forget" width="240"> | <img src="docs/screenshots/about.png" alt="About: version, author, source, licence" width="240"> | <img src="docs/screenshots/table-tennis.png" alt="Table Tennis: paddles, the net and the score, white on black" width="240"> |
 | **Gravity** | **Equalizer** | **Circuit** |
 | <img src="docs/screenshots/gravity.png" alt="Gravity: a lander above a landscape with three landing pads" width="240"> | <img src="docs/screenshots/equalizer.png" alt="The equalizer: seven sliders from 31 Hz to 16 kHz on a 0 dB line, the selected one in orange, and Flat" width="240"> | <img src="docs/screenshots/circuit.png" alt="Circuit: a red sports car from behind on a coast road, palms and chevron signs, time and lap in the sky" width="240"> |
-| **Dictaphone** | | |
-| <img src="docs/screenshots/dictaphone.png" alt="The dictaphone: the microphone live on the oscilloscope, the time, the next recording's name, the list button and the orange record button" width="240"> | | |
 
 ## Contents
 
@@ -110,7 +110,7 @@ screens.
   [ADR 0009](docs/adr/0009-now-playing-spectrum-analyzer.md) and
   [ADR 0028](docs/adr/0028-now-playing-slot-pages.md).
 - Visuals, from Now Playing's options panel: a backlit analog VU meter
-  (one needle for left and right, true VU ballistics, a peak lamp) or a
+  (one needle for left and right, VU-style ballistics, a peak lamp) or a
   fluorescent bar meter (left and right, peak hold), full-screen, with a
   toggle that keeps the display on while music plays — see
   [ADR 0034](docs/adr/0034-vu-meter-visualization.md).
